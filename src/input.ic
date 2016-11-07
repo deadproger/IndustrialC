@@ -1,0 +1,142 @@
+
+
+$#include <stdio.h>
+$#include <string.h>
+//$#include <util/delay.h>
+#include "atmega168.ih"
+
+register F_CPU;
+
+hyperprocess USART
+{
+	vector = USART_UDRE_vect;
+	register = UCSR0B;
+	bit = UDRIE0;
+}
+
+hyperprocess Analog
+{
+	vector = ADC_vect;
+	register = ADCSRA;
+	bit = ADIE;
+}
+
+#define PRINT_BUFFER_SIZE 128
+$volatile char print_buffer[PRINT_BUFFER_SIZE];
+int buf_index;
+int buf_length;
+
+//unsigned int adc0_val;
+$volatile unsigned int adc_val[8];
+unsigned char adc_channel;
+
+//Reads all 8 ADC channels, one channel per activation
+process AnalogRead : Analog
+{
+	state FS_START
+	{
+		//When we get here, a new conversion has already started
+		//New MUX bits will only take affect on the next conversion after that (ADMUX is double-buffered)
+		//Actual ADC selected channel always lags adc_channel value by 1
+		adc_channel = (adc_channel + 1)%8;
+		ADMUX = (ADMUX & 0xf0) | adc_channel; //Switch input multiplexor to next channel
+		
+		//Skip first conversion - it's for ADC0, as will be the next one (we convert ADC0 twice)
+		to state CONVERT;
+	}
+	state CONVERT
+	{
+		$adc_val[($adc_channel-1)%8] = ADCW; //Read converted value
+		
+		adc_channel = (adc_channel + 1)%8; 
+		$ADMUX = (ADMUX & 0xf0) | $adc_channel;//Switch input multiplexor to next channel
+	}
+}
+
+//Sends print_buffer string over USART
+process Print : USART
+{
+	state FS_START
+	{
+		if(buf_index < buf_length)
+		{
+			UDR0 = $$print_buffer[$buf_index]$$;
+			buf_index++;
+		}
+		else
+		{
+			stop process;
+		}
+	}
+	state FS_STOP
+	{
+		stop hyperprocess;
+	}
+}
+
+process Main : background
+{
+	state FS_START
+	{
+		//Init ADC
+		ADCSRA = 0;
+		ADMUX = 0;
+		ADCSRA |= (1<<ADPS0) | (1<<ADPS1) | (1<<ADPS2) | (1<<ADEN); //Set prescaler to 128 (gives us 125Hz) and enable ADC
+		ADMUX |= (1<<REFS0); //Set ADC reference voltage to internal Vcc
+		ADCSRA |= (1<<ADATE); //Enable auto-triggering
+		adc_channel = 0;
+		start process AnalogRead;
+		start hyperprocess Analog;
+		ADCSRA |= (1 << ADSC);//Start first conversion
+	
+		//Init USART0
+		unsigned int baud; baud = 9600;
+		unsigned int ubrr; ubrr = F_CPU/16/baud;
+		UCSR0B = 0x00;
+		UCSR0C = 0x00;
+		UBRR0H = ubrr>>8;     	// Set baud rate
+		UBRR0L = ubrr;
+		UCSR0B |= (1<<RXEN0)|(1<<TXEN0);        	// Enable receiver and transmitter
+		UCSR0C |= (1<<UCSZ00) | (1<<UCSZ01);    	// Set frame format: 8-bit data, 1 stop bit
+		buf_index = 0;
+		buf_length = 0;
+		to state FILL_BUFFER;
+	}
+	
+	state FILL_BUFFER
+	{
+		stop hyperprocess Analog; //Critical Section
+		$ sprintf((char*)print_buffer, "%u\t%u\t%u\t%u\t%u\t%u\t%u\t%u\r\n", 
+		$ adc_val[0], adc_val[1],adc_val[2],adc_val[3],adc_val[4],adc_val[5],adc_val[6],adc_val[7]);
+		start hyperprocess Analog; //End of critical section
+		
+		buf_length = $$strlen((char*)print_buffer)$$;
+		buf_index = 0;
+		
+		start process Print;
+		start hyperprocess USART;
+		
+		to state WAIT_PRINT;
+	}
+	
+	state WAIT_PRINT
+	{
+		if(Print passive)
+			to state WAIT_DELAY;
+		timeout(1000)
+		{
+			//print failed for some reason
+			stop process Print;
+			to state FILL_BUFFER;
+		}
+	}
+	
+	//non-locking delay between prints
+	state WAIT_DELAY
+	{
+		timeout(200)
+		{
+			to state FILL_BUFFER;
+		}
+	}
+}

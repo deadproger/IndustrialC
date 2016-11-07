@@ -1,0 +1,19 @@
+#pragma once
+
+#include "iCNode.h"
+class CodeGenContext;
+class ParserContext;
+class iCProgram;
+
+class iCStopHPStatement : public iCStatement
+{
+public:
+	std::string hp_name;
+	const iCHyperprocess* hp; // does not own
+	const iCProgram* program; // does not own
+
+	iCStopHPStatement(const std::string& hp_name, const ParserContext& context);
+	virtual ~iCStopHPStatement(){}
+	virtual void gen_code(CodeGenContext& context);
+	virtual void second_pass();
+};
