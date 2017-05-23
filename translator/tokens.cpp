@@ -1479,7 +1479,7 @@ case 96:
 YY_DO_BEFORE_ACTION; /* set up ic_text again */
 YY_RULE_SETUP
 #line 170 "tokens.l"
-/*parser_context->inc_line_num();*/parser_context->err_msg("the tail");
+/*parser_context->inc_line_num();*/
 	YY_BREAK
 
 

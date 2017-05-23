@@ -167,7 +167,7 @@ const int IC_TAB_SIZE = 4;
 								//parser_context->inc_line_num();
 								return TCCODELINE;
 							}
-\$/\n						/*parser_context->inc_line_num();*/parser_context->err_msg("the tail");
+\$/\n						/*parser_context->inc_line_num();*/
 
 (?# ----------------------------------------------------------------------------------------------- )
 (?# Multi-line comments 																			)
