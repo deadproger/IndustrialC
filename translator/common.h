@@ -21,27 +21,6 @@ const char START_STATE_NAME[] = "FS_START";
 const char STOP_STATE_NAME[] = "FS_STOP";
 
 const char C_MACRO_ROUTINES[] = "\
-#include <avr/io.h> \n\
-#include <avr/interrupt.h>\n\
-volatile unsigned long ovf_cnt = 0;\n\
-unsigned long millis()\n\
-{\n\
-	unsigned char sreg = SREG;\n\
-	cli();\n\
-	unsigned long ovf = ovf_cnt;\n\
-	unsigned long tcnt = TCNT0;\n\
-	SREG = sreg;\n\
-\n\
-	//Timer has already overflown, but interrupt has yet to execute\n\
-	if ((TIFR0 & _BV(TOV0)) && (tcnt < 255))\n\
-		ovf++;\n\
-	return (((ovf<<8) + tcnt)*1024)/(F_CPU/1000);\n\
-}\n\
-\n\
-ISR(TIMER0_OVF_vect)\n\
-{\n\
-	ovf_cnt++;\n\
-}\n\
 								\n\
 #define set_newfs(p, fs)    psw[p].fsp = fs; psw[p].T = SysTime_cur;\n\
 #define startp(p)	    psw[p].fsp = FS_START; psw[p].T = SysTime_cur;\n\
@@ -63,7 +42,7 @@ const char C_PROC_ARRAY_NAME[] = "psw";
 const char C_STATE_FUNC_ATTR_NAME[] = "fsp";
 const char C_STRANS_MACRO[] = "set_newfs";
 const char C_PROC_DATA_STRUCT_NAME[] = "S_PROC_DATA_STRUCT";
-const char C_SYS_TIME_UPDATE[] = "SysTime_cur = millis();";
+const char C_SYS_TIME_UPDATE[] = "SysTime_cur = ic_ts_millis();";
 
 const char C_STARTPROC_MACRO[] = "startp";
 const char C_STOPPROC_MACRO[] = "stopp";
