@@ -132,10 +132,11 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.indent_depth++;
 
 	//! AVR specific !
-	context.indent();context.to_code_fmt("//Init timer0\n");
+	/*context.indent();context.to_code_fmt("//Init timer0\n");
 	context.indent();context.to_code_fmt("TCCR0A = 0;\n");
 	context.indent();context.to_code_fmt("TCCR0B = (1<<CS00) | (1 <<CS02); // /1024 prescaler\n");
-	context.indent();context.to_code_fmt("TIMSK0 = (1<<TOIE0); // overflow interrupt\n");
+	context.indent();context.to_code_fmt("TIMSK0 = (1<<TOIE0); // overflow interrupt\n");*/
+	context.indent();context.to_code_fmt("ic_ts_init();\n");
 	context.indent();context.to_code_fmt("sei();\n");
 
 	//start the first defined background process
