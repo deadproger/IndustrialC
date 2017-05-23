@@ -1,0 +1,793 @@
+/*************************/
+/*ATmega 168 declarations*/
+/*************************/
+
+/* Registers and associated bit numbers */
+register PINB			;
+bit		 PINB0			;
+bit		 PINB1			;
+bit		 PINB2			;
+bit		 PINB3			;
+bit		 PINB4			;
+bit		 PINB5			;
+bit		 PINB6			;
+bit		 PINB7			;
+
+register DDRB 			;
+bit		 DDB0  			;
+bit		 DDB1  			;
+bit		 DDB2  			;
+bit		 DDB3  			;
+bit		 DDB4  			;
+bit		 DDB5  			;
+bit		 DDB6  			;
+bit		 DDB7  			;
+
+register PORTB 			;
+bit		 PORTB0			;
+bit		 PORTB1			;
+bit		 PORTB2			;
+bit		 PORTB3			;
+bit		 PORTB4			;
+bit		 PORTB5			;
+bit		 PORTB6			;
+bit		 PORTB7			;
+
+register PINC 			;
+bit		 PINC0			;
+bit		 PINC1			;
+bit		 PINC2			;
+bit		 PINC3			;
+bit		 PINC4			;
+bit		 PINC5			;
+bit		 PINC6			;
+			  			
+register DDRC 			;
+bit		 DDC0  			;
+bit		 DDC1  			;
+bit		 DDC2  			;
+bit		 DDC3  			;
+bit		 DDC4  			;
+bit		 DDC5  			;
+bit		 DDC6  			;
+			  			
+register PORTC 			;
+bit		 PORTC0			;
+bit		 PORTC1			;
+bit		 PORTC2			;
+bit		 PORTC3			;
+bit		 PORTC4			;
+bit		 PORTC5			;
+bit		 PORTC6			;
+			   			
+register PIND 			;
+bit		 PIND0			;
+bit		 PIND1			;
+bit		 PIND2			;
+bit		 PIND3			;
+bit		 PIND4			;
+bit		 PIND5			;
+bit		 PIND6			;
+bit		 PIND7			;
+
+register DDRD 			;
+bit		 DDD0  			;
+bit		 DDD1  			;
+bit		 DDD2  			;
+bit		 DDD3  			;
+bit		 DDD4  			;
+bit		 DDD5  			;
+bit		 DDD6  			;
+bit		 DDD7  			;
+
+register PORTD 			;
+bit		 PORTD0			; 
+bit		 PORTD1			; 
+bit		 PORTD2			; 
+bit		 PORTD3			; 
+bit		 PORTD4			; 
+bit		 PORTD5			; 
+bit		 PORTD6			; 
+bit		 PORTD7			; 
+
+register TIFR0			;
+bit		 TOV0 			;
+bit		 OCF0A			;
+bit		 OCF0B			;
+
+register TIFR1			;
+bit		 TOV1 			;
+bit		 OCF1A			;
+bit		 OCF1B			;
+bit		 ICF1 			;
+
+register TIFR2			;
+bit		 TOV2 			;
+bit		 OCF2A			;
+bit		 OCF2B			;
+
+register PCIFR			;
+bit		 PCIF0			;
+bit		 PCIF1			;
+bit		 PCIF2			;
+
+register EIFR 			;
+bit		 INTF0			;
+bit		 INTF1			;
+
+register EIMSK			;
+bit		 INT0 			;
+bit		 INT1			;
+
+register GPIOR0 		;
+bit		 GPIOR00		;
+bit		 GPIOR01		;
+bit		 GPIOR02		;
+bit		 GPIOR03		;
+bit		 GPIOR04		;
+bit		 GPIOR05		;
+bit		 GPIOR06		;
+bit		 GPIOR07		;
+
+register EECR 			;
+bit		 EERE 			;
+bit		 EEPE 			;
+bit		 EEMPE			;
+bit		 EERIE			;
+bit		 EEPM0			;
+bit		 EEPM1			;
+
+register EEDR 			;
+bit		 EEDR0			;
+bit		 EEDR1			;
+bit		 EEDR2			;
+bit		 EEDR3			;
+bit		 EEDR4			;
+bit		 EEDR5			;
+bit		 EEDR6			;
+bit		 EEDR7			;
+
+register EEAR 			;
+
+register EEARL			; 
+bit		 EEAR0			; 
+bit		 EEAR1			; 
+bit		 EEAR2			; 
+bit		 EEAR3			; 
+bit		 EEAR4			; 
+bit		 EEAR5			; 
+bit		 EEAR6			;
+bit		 EEAR7			;
+
+register EEARH			;
+bit		 EEAR8			;
+
+register GTCCR 			;
+bit		 PSRSYNC	   	;
+bit		 PSRASY		   	;
+bit		 TSM		   	;
+					   	
+register TCCR0A		   	;
+bit		 WGM00		   	;
+bit		 WGM01		   	;
+bit		 COM0B0		   	;
+bit		 COM0B1			;
+bit		 COM0A0			;
+bit		 COM0A1			;
+
+register TCCR0B			;
+bit		 CS00   		;
+bit		 CS01   		;
+bit		 CS02   		;
+bit		 WGM02   		;
+bit		 FOC0B			;		
+bit		 FOC0A			;
+
+register TCNT0			;
+bit		 TCNT0_0 		;
+bit		 TCNT0_1 		;
+bit		 TCNT0_2 		;
+bit		 TCNT0_3 		;
+bit		 TCNT0_4 		;
+bit		 TCNT0_5 		;
+bit		 TCNT0_6 		;
+bit		 TCNT0_7 		;
+
+register OCR0A			;
+bit		 OCR0A_0 		;
+bit		 OCR0A_1 		;
+bit		 OCR0A_2 		;
+bit		 OCR0A_3 		;
+bit		 OCR0A_4 		;
+bit		 OCR0A_5 		;
+bit		 OCR0A_6 		;
+bit		 OCR0A_7 		;
+
+register OCR0B			;
+bit		 OCR0B_0 		;
+bit		 OCR0B_1 		;
+bit		 OCR0B_2 		;
+bit		 OCR0B_3 		;
+bit		 OCR0B_4 		;
+bit		 OCR0B_5 		;
+bit		 OCR0B_6 		;
+bit		 OCR0B_7 		;
+
+register GPIOR1			;
+bit		 GPIOR10 		;
+bit		 GPIOR11 		;
+bit		 GPIOR12 		;
+bit		 GPIOR13 		;
+bit		 GPIOR14 		;
+bit		 GPIOR15 		;
+bit		 GPIOR16 		;
+bit		 GPIOR17 		;
+
+register GPIOR2 		;
+bit		 GPIOR20 		;
+bit		 GPIOR21 		;
+bit		 GPIOR22 		;
+bit		 GPIOR23 		;
+bit		 GPIOR24 		;
+bit		 GPIOR25 		;
+bit		 GPIOR26 		;
+bit		 GPIOR27 		;
+
+register SPCR			;
+bit		 SPR0			;
+bit		 SPR1			;
+bit		 CPHA			;
+bit		 CPOL			;
+bit		 MSTR			;
+bit		 DORD			;
+bit		 SPE 			;
+bit		 SPIE			;
+
+register SPSR 			;
+bit		 SPI2X			;
+bit		 WCOL 			;
+bit		 SPIF 			;
+
+register SPDR 			;
+bit		 SPDR0			;
+bit		 SPDR1			;
+bit		 SPDR2			;
+bit		 SPDR3			;
+bit		 SPDR4			;
+bit		 SPDR5			;
+bit		 SPDR6			;
+bit		 SPDR7			;
+
+register ACSR 			;
+bit		 ACIS0			;
+bit		 ACIS1			;
+bit		 ACIC 			;
+bit		 ACIE 			;
+bit		 ACI 			;
+bit		 ACO 			;
+bit		 ACBG 			;
+bit		 ACD 			;
+
+register SMCR 			;
+bit		 SE 			;
+bit		 SM0			;
+bit		 SM1			;
+bit		 SM2			;
+
+register MCUSR			;
+bit		 PORF 			;
+bit		 EXTRF			;
+bit		 BORF 			;
+bit		 WDRF 			;
+
+register MCUCR			;
+bit		 IVCE 			;
+bit		 IVSEL			;
+bit		 PUD 			;
+bit		 BODSE			;
+bit		 BODS 			;
+
+register SPMCSR 		;
+bit		 SELFPRGEN		; 
+bit		 SPMEN			;
+bit		 PGERS			;
+bit		 PGWRT			;
+bit		 BLBSET			;
+bit		 RWWSRE			;
+bit		 SIGRD 			;
+bit		 RWWSB 			;
+bit		 SPMIE 			;
+
+register WDTCSR 		;
+bit		 WDP0			;
+bit		 WDP1			;
+bit		 WDP2			;
+bit		 WDE 			;
+bit		 WDCE			;
+bit		 WDP3			;
+bit		 WDIE			;
+bit		 WDIF			;
+
+register CLKPR 			;
+bit		 CLKPS0			;
+bit		 CLKPS1			;
+bit		 CLKPS2			;
+bit		 CLKPS3			;
+bit		 CLKPCE			;
+
+register PRR			;
+bit		 PRADC			;
+bit		 PRUSART0		;
+bit		 PRSPI			;
+bit		 PRTIM1			;
+bit		 PRTIM0			;
+bit		 PRTIM2			;
+bit		 PRTWI			;
+
+register OSCCAL			;
+bit		 CAL0			;
+bit		 CAL1			;
+bit		 CAL2 			;
+bit		 CAL3 			;
+bit		 CAL4 			;
+bit		 CAL5 			;
+bit		 CAL6 			;
+bit		 CAL7 			;
+
+register PCICR 			;
+bit		 PCIE0 			;
+bit		 PCIE1 			;
+bit		 PCIE2 			;
+
+register EICRA 			;
+bit		 ISC00 			;
+bit		 ISC01 			;
+bit		 ISC10 			;
+bit		 ISC11 			;
+
+register PCMSK0			; 
+bit		 PCINT0 		;
+bit		 PCINT1 		;
+bit		 PCINT2 		;
+bit		 PCINT3 		;
+bit		 PCINT4 		;
+bit		 PCINT5 		;
+bit		 PCINT6 		;
+bit		 PCINT7 		;
+
+register PCMSK1 		;
+bit		 PCINT8 		;
+bit		 PCINT9 		;
+bit		 PCINT10		;
+bit		 PCINT11		;
+bit		 PCINT12		;
+bit		 PCINT13		;
+bit		 PCINT14		;
+
+register PCMSK2 		;
+bit		 PCINT16		;
+bit		 PCINT17		;
+bit		 PCINT18		;
+bit		 PCINT19		;
+bit		 PCINT20		;
+bit		 PCINT21		;
+bit		 PCINT22		;
+bit		 PCINT23		;
+
+register TIMSK0 		;
+bit		 TOIE0			;
+bit		 OCIE0A 		;
+bit		 OCIE0B 		;
+
+register TIMSK1			;
+bit		 TOIE1			;
+bit		 OCIE1A			;
+bit		 OCIE1B			;
+bit		 ICIE1 			;
+
+register TIMSK2			;
+bit		 TOIE2 			;
+bit		 OCIE2A			;
+bit		 OCIE2B			;
+
+register ADC   			; 
+
+register ADCW  			; 
+
+register ADCL 			;
+bit		 ADCL0			;
+bit		 ADCL1			;
+bit		 ADCL2			;
+bit		 ADCL3			;
+bit		 ADCL4			;
+bit		 ADCL5			;
+bit		 ADCL6			;
+bit		 ADCL7			;
+
+register ADCH 			;
+bit		 ADCH0			;
+bit		 ADCH1			;
+bit		 ADCH2			;
+bit		 ADCH3			;
+bit		 ADCH4			;
+bit		 ADCH5			;
+bit		 ADCH6			;
+bit		 ADCH7			;
+
+register ADCSRA			;
+bit		 ADPS0			;
+bit		 ADPS1			;
+bit		 ADPS2			;
+bit		 ADIE 			;
+bit		 ADIF 			;
+bit		 ADATE			;
+bit		 ADSC 			;
+bit		 ADEN 			;
+
+register ADCSRB			;
+bit		 ADTS0 			;
+bit		 ADTS1 			;
+bit		 ADTS2 			;
+bit		 ACME   		;
+
+register ADMUX			;
+bit		 MUX0 			;
+bit		 MUX1 			;
+bit		 MUX2 			;
+bit		 MUX3 			;
+bit		 ADLAR			;
+bit		 REFS0			;
+bit		 REFS1			;
+
+register DIDR0			;
+bit		 ADC0D			;
+bit		 ADC1D			;
+bit		 ADC2D			;
+bit		 ADC3D			;
+bit		 ADC4D			;
+bit		 ADC5D			;
+
+register DIDR1			;
+bit		 AIN0D			;
+bit		 AIN1D			;
+
+register TCCR1A 		;
+bit		 WGM10			;
+bit		 WGM11			;
+bit		 COM1B0 		;
+bit		 COM1B1 		;
+bit		 COM1A0 		;
+bit		 COM1A1 		;
+
+register TCCR1B 		;
+bit		 CS10 			;
+bit		 CS11 			;
+bit		 CS12 			;
+bit		 WGM12			;
+bit		 WGM13			;
+bit		 ICES1			;
+bit		 ICNC1			;
+
+register TCCR1C			;
+bit		 FOC1B			;
+bit		 FOC1A			;
+
+register TCNT1			;
+
+register TCNT1L 		;
+bit		 TCNT1L0		;
+bit		 TCNT1L1		;
+bit		 TCNT1L2		;
+bit		 TCNT1L3		;
+bit		 TCNT1L4		;
+bit		 TCNT1L5		;
+bit		 TCNT1L6		;
+bit		 TCNT1L7		;
+
+register TCNT1H 		;
+bit		 TCNT1H0		;
+bit		 TCNT1H1		;
+bit		 TCNT1H2		;
+bit		 TCNT1H3		;
+bit		 TCNT1H4		;
+bit		 TCNT1H5		;
+bit		 TCNT1H6		;
+bit		 TCNT1H7		;
+
+register ICR1			;
+
+register ICR1L 			;
+bit		 ICR1L0			;
+bit		 ICR1L1			;
+bit		 ICR1L2			;
+bit		 ICR1L3			;
+bit		 ICR1L4			;
+bit		 ICR1L5			;
+bit		 ICR1L6			;
+bit		 ICR1L7			;
+
+register ICR1H 			;
+bit		 ICR1H0			;
+bit		 ICR1H1			;
+bit		 ICR1H2			;
+bit		 ICR1H3			;
+bit		 ICR1H4			;
+bit		 ICR1H5			;
+bit		 ICR1H6			;
+bit		 ICR1H7			;
+
+register OCR1A			;
+
+register OCR1AL 		;
+bit		 OCR1AL0		;
+bit		 OCR1AL1		;
+bit		 OCR1AL2		;
+bit		 OCR1AL3		;
+bit		 OCR1AL4		;
+bit		 OCR1AL5		;
+bit		 OCR1AL6		;
+bit		 OCR1AL7		;
+
+register OCR1AH 		;
+bit		 OCR1AH0		;
+bit		 OCR1AH1		;
+bit		 OCR1AH2		;
+bit		 OCR1AH3		;
+bit		 OCR1AH4		;
+bit		 OCR1AH5		;
+bit		 OCR1AH6		;
+bit		 OCR1AH7		;
+
+register OCR1B			;
+
+register OCR1BL 		;
+bit		 OCR1BL0		;
+bit		 OCR1BL1		;
+bit		 OCR1BL2		;
+bit		 OCR1BL3		;
+bit		 OCR1BL4		;
+bit		 OCR1BL5		;
+bit		 OCR1BL6		;
+bit		 OCR1BL7		;
+
+register OCR1BH 		;
+bit		 OCR1BH0		;
+bit		 OCR1BH1		;
+bit		 OCR1BH2		;
+bit		 OCR1BH3		;
+bit		 OCR1BH4		;
+bit		 OCR1BH5		;
+bit		 OCR1BH6		;
+bit		 OCR1BH7		;
+
+register TCCR2A			;
+bit		 WGM20			;
+bit		 WGM21			;
+bit		 COM2B0			;
+bit		 COM2B1			;
+bit		 COM2A0			;
+bit		 COM2A1			;
+
+register TCCR2B	;
+bit		 CS20   		;
+bit		 CS21   		;
+bit		 CS22   		;
+bit		 WGM22 			;
+bit		 FOC2B 			;
+bit		 FOC2A			;
+
+register TCNT2			;
+bit		 TCNT2_0		;
+bit		 TCNT2_1		;
+bit		 TCNT2_2		;
+bit		 TCNT2_3		;
+bit		 TCNT2_4		;
+bit		 TCNT2_5		;
+bit		 TCNT2_6		;
+bit		 TCNT2_7		;
+
+register OCR2A 			;
+bit		 OCR2_0			;
+bit		 OCR2_1			;
+bit		 OCR2_2			;
+bit		 OCR2_3			;
+bit		 OCR2_4			;
+bit		 OCR2_5			;
+bit		 OCR2_6			;
+bit		 OCR2_7			;
+
+register OCR2B 			;
+
+register ASSR			;
+bit		 TCR2BUB		; 
+bit		 TCR2AUB		; 
+bit		 OCR2BUB		; 
+bit		 OCR2AUB 		;
+bit		 TCN2UB	 		;
+bit		 AS2	 		;
+bit		 EXCLK	 		;
+
+register TWBR	 		;
+bit		 TWBR0			;
+bit		 TWBR1			;
+bit		 TWBR2			;
+bit		 TWBR3			;
+bit		 TWBR4			;
+bit		 TWBR5			;
+bit		 TWBR6			;
+bit		 TWBR7			;
+
+register TWSR 			;
+bit		 TWPS0			;
+bit		 TWPS1			;
+bit		 TWS3 			;
+bit		 TWS4 			;
+bit		 TWS5 			;
+bit		 TWS6 			;
+bit		 TWS7 			;
+
+register TWAR 			;
+bit		 TWGCE			;
+bit		 TWA0 			;
+bit		 TWA1 			;
+bit		 TWA2 			;
+bit		 TWA3 			;
+bit		 TWA4 			;
+bit		 TWA5 			;
+bit		 TWA6 			;
+
+register TWDR 			;
+bit		 TWD0 			;
+bit		 TWD1 			;
+bit		 TWD2 			;
+bit		 TWD3 			;
+bit		 TWD4 			;
+bit		 TWD5 			;
+bit		 TWD6 			;
+bit		 TWD7 			;
+
+register TWCR 			;
+bit		 TWIE 			;
+bit		 TWEN 			;
+bit		 TWWC 			;
+bit		 TWSTO			;
+bit		 TWSTA			;
+bit		 TWEA 			;
+bit		 TWINT			;
+
+register TWAMR			; 
+bit		 TWAM0 			;
+bit		 TWAM1 			;
+bit		 TWAM2 			;
+bit		 TWAM3 			;
+bit		 TWAM4 			;
+bit		 TWAM5 			;
+bit		 TWAM6 			;
+
+register UCSR0A			;
+bit		 MPCM0 			;
+bit		 U2X0   		;
+bit		 UPE0   		;
+bit		 DOR0 			;
+bit		 FE0  			;
+bit		 UDRE0			;
+bit		 TXC0 			;
+bit		 RXC0 			;
+
+register UCSR0B			;
+bit		 TXB80 			;
+bit		 RXB80 			;
+bit		 UCSZ02			;
+bit		 TXEN0 			;
+bit		 RXEN0 			;
+bit		 UDRIE0			;
+bit		 TXCIE0			;
+bit		 RXCIE0			;
+
+register UCSR0C			;
+bit		 UCPOL0			;
+bit		 UCSZ00			;
+bit		 UCPHA0			;
+bit		 UCSZ01			;
+bit		 UDORD0			;
+bit		 USBS0 			;
+bit		 UPM00 			;
+bit		 UPM01			;
+bit		 UMSEL00		; 
+bit		 UMSEL01		; 
+
+register UBRR0			;
+
+register UBRR0L 		;
+bit		 UBRR0_0		;
+bit		 UBRR0_1		;
+bit		 UBRR0_2		;
+bit		 UBRR0_3		;
+bit		 UBRR0_4		;
+bit		 UBRR0_5		;
+bit		 UBRR0_6		;
+bit		 UBRR0_7		;
+
+register UBRR0H 		;
+bit		 UBRR0_8		;
+bit		 UBRR0_9		;
+bit		 UBRR0_10		;
+bit		 UBRR0_11		;
+
+register UDR0			;
+bit		 UDR0_0			;
+bit		 UDR0_1			;
+bit		 UDR0_2			;
+bit		 UDR0_3			;
+bit		 UDR0_4			;
+bit		 UDR0_5			;
+bit		 UDR0_6			;
+bit		 UDR0_7			;
+
+/* Interrupt vectors */
+vector INT0_vect          ; /* External Interrupt Request 0 */
+vector INT1_vect          ; /* External Interrupt Request 1 */
+vector PCINT0_vect        ; /* Pin Change Interrupt Request 0 */
+vector PCINT1_vect        ; /* Pin Change Interrupt Request 0 */
+vector PCINT2_vect        ; /* Pin Change Interrupt Request 1 */
+vector WDT_vect           ; /* Watchdog Time-out Interrupt */
+vector TIMER2_COMPA_vect  ; /* Timer/Counter2 Compare Match A */
+vector TIMER2_COMPB_vect  ; /* Timer/Counter2 Compare Match A */
+vector TIMER2_OVF_vect    ; /* Timer/Counter2 Overflow */
+vector TIMER1_CAPT_vect   ; /* Timer/Counter1 Capture Event */
+vector TIMER1_COMPA_vect  ; /* Timer/Counter1 Compare Match A */
+vector TIMER1_COMPB_vect  ; /* Timer/Counter1 Compare Match B */ 
+vector TIMER1_OVF_vect    ; /* Timer/Counter1 Overflow */
+vector TIMER0_COMPA_vect  ; /* TimerCounter0 Compare Match A */
+vector TIMER0_COMPB_vect  ; /* TimerCounter0 Compare Match B */
+vector TIMER0_OVF_vect    ; /* Timer/Couner0 Overflow */
+vector SPI_STC_vect       ; /* SPI Serial Transfer Complete */
+vector USART_RX_vect      ; /* USART Rx Complete */
+vector USART_UDRE_vect    ; /* USART, Data Register Empty */
+vector USART_TX_vect      ; /* USART Tx Complete */
+vector ADC_vect           ; /* ADC Conversion Complete */
+vector EE_READY_vect      ; /* EEPROM Ready */
+vector ANALOG_COMP_vect   ; /* Analog Comparator */
+vector TWI_vect           ; /* Two-wire Serial Interface */
+vector SPM_READY_vect     ; /* Store Program Memory Read */
+
+/************************************************************************/
+/*        uC-specific time serice implementation                        */
+/* The time service needs two functions implemented:                    */
+/* unsigned long ic_ts_millis(); //returns milliseconds counter value   */
+/* void ic_ts_init(); //executed upon reset                             */
+/************************************************************************/
+$	#include <avr/io.h> 
+$	#include <avr/interrupt.h>
+$	volatile unsigned long ovf_cnt = 0;
+$
+$	//industrialC time service millis() millisecond counter
+$	unsigned long ic_ts_millis()
+$	{
+$		unsigned char sreg = SREG;
+$		cli();
+$		unsigned long ovf = ovf_cnt;
+$		unsigned long tcnt = TCNT0;
+$		SREG = sreg;
+$		
+$		//Timer has already overflown, but interrupt has yet to execute
+$		if ((TIFR0 & _BV(TOV0)) && (tcnt < 255))
+$			ovf++;
+$
+$		return (((ovf<<8) + tcnt)*1024)/(F_CPU/1000);
+$	}
+$	
+$	//industrialC time service uses timer0 overflow interrupt to track time
+$	ISR(TIMER0_OVF_vect)
+$	{
+$		ovf_cnt++;
+$	}
+$	
+$	//industrialC time service initialization
+$	void ic_ts_init()
+$	{
+$		//Init timer0
+$		TCCR0A = 0;
+$		TCCR0B = (1<<CS00) | (1 <<CS02); // /1024 prescaler
+$		TIMSK0 = (1<<TOIE0); // overflow interrupt
+$	}

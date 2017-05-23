@@ -1,0 +1,996 @@
+/***************************************/
+/*industrialC declarations for atmega128*/
+/***************************************/
+
+/* I/O registers */
+
+/* Input Pins, Port F */
+register 	PINF			;
+bit			PINF7			;
+bit			PINF6			;
+bit			PINF5			;
+bit			PINF4			;
+bit			PINF3			;
+bit			PINF2			; 
+bit			PINF1			;
+bit			PINF0			;
+
+/* Input Pins, Port E */
+register	PINE			;
+bit			PINE7			;
+bit			PINE6			;
+bit			PINE5			;
+bit			PINE4			;
+bit			PINE3			;
+bit			PINE2			; 
+bit			PINE1			;
+bit			PINE0			;
+
+/* Data Direction Register, Port E */
+register	DDRE			;
+bit			DDE7			;
+bit			DDE6			;
+bit			DDE5			;
+bit			DDE4			;
+bit			DDE3			;
+bit			DDE2			;
+bit			DDE1			;
+bit			DDE0			;
+
+/* Data Register, Port E */
+register	PORTE			;
+bit			PE7				;
+bit			PE6				;
+bit			PE5				;
+bit			PE4				;
+bit			PE3				;
+bit			PE2				;
+bit			PE1				;
+bit			PE0				;
+
+/* ADC Data Register */
+register	ADCW			;
+register	ADC				;
+register	ADCL			;
+register	ADCH			;
+
+/* ADC Control and status register */
+register	ADCSR			;
+register	ADCSRA			;
+bit			ADEN			;
+bit			ADSC			;
+bit			ADFR			;
+bit			ADIF			;
+bit			ADIE			;
+bit			ADPS2			;
+bit			ADPS1			;
+bit			ADPS0			;
+
+/* ADC Multiplexer select */
+register	ADMUX			;
+bit			REFS1			;
+bit			REFS0			;
+bit			ADLAR			;
+bit			MUX4			;
+bit			MUX3			;
+bit			MUX2			;
+bit			MUX1			;
+bit			MUX0			;
+
+/* Analog Comparator Control and Status Register */
+register	ACSR			;
+bit			ACD				;
+bit			ACBG			;
+bit			ACO				;
+bit			ACI				;
+bit			ACIE			;
+bit			ACIC			;
+bit			ACIS1			;
+bit			ACIS0			;
+
+/* USART0 Baud Rate Register Low */
+register	UBRR0L			;
+
+/* USART0 Control and Status Register B */
+register	UCSR0B			;
+bit			RXCIE0			;
+bit			TXCIE0			;
+bit			UDRIE0			;
+bit			RXEN0			;
+bit			TXEN0			;
+bit			UCSZ02			;
+bit			RXB80			;
+bit			TXB80			;
+
+/* USART0 Control and Status Register A */
+register	UCSR0A			;
+bit			RXC0			;
+bit			TXC0			;
+bit			UDRE0			;
+bit			FE0				;
+bit			DOR0			;
+bit			UPE0			;
+bit			U2X0			;
+bit			MPCM0			;
+
+/* USART0 I/O Data Register */
+register	UDR0			;
+
+/* SPI Control Register */
+register	SPCR			;
+bit			SPIE			;
+bit			SPE				;
+bit			DORD			;
+bit			MSTR			;
+bit			CPOL			;
+bit			CPHA			;
+bit			SPR1			;
+bit			SPR0			;
+
+/* SPI Status Register */
+register	SPSR			;
+bit			SPIF			;
+bit			WCOL			;
+bit			SPI2X			;
+
+/* SPI I/O Data Register */
+register	SPDR			;
+
+/* Input Pins, Port D */
+register	PIND			;
+bit			PIND7			;
+bit			PIND6			;
+bit			PIND5			;
+bit			PIND4			;
+bit			PIND3			;
+bit			PIND2			; 
+bit			PIND1			;
+bit			PIND0			;
+
+/* Data Direction Register, Port D */
+register	DDRD			;
+bit			DDD7			;
+bit			DDD6			;
+bit			DDD5			;
+bit			DDD4			;
+bit			DDD3			;
+bit			DDD2			;
+bit			DDD1			;
+bit			DDD0			;
+
+/* Data Register, Port D */
+register	PORTD			;
+bit			PD7				;
+bit			PD6				;
+bit			PD5				;
+bit			PD4				;
+bit			PD3				;
+bit			PD2				;
+bit			PD1				;
+bit			PD0				;
+
+/* Input Pins, Port C */
+register	PINC			;
+bit			PINC7			;
+bit			PINC6			;
+bit			PINC5			;
+bit			PINC4			;
+bit			PINC3			;
+bit			PINC2			;
+bit			PINC1			;
+bit			PINC0			;
+
+/* Data Direction Register, Port C */
+register	DDRC			;
+bit			DDC7			;
+bit			DDC6			;
+bit			DDC5			;
+bit			DDC4			;
+bit			DDC3			;
+bit			DDC2			;
+bit			DDC1			;
+bit			DDC0			;
+
+/* Data Register, Port C */
+register	PORTC  ;
+bit			PC7				;
+bit			PC6				;
+bit			PC5				;
+bit			PC4				;
+bit			PC3				;
+bit			PC2				;
+bit			PC1				;
+bit			PC0				;
+
+/* Input Pins, Port B */
+register	PINB			;
+bit			PINB7			;
+bit			PINB6			;
+bit			PINB5			;
+bit			PINB4			;
+bit			PINB3			;
+bit			PINB2			;
+bit			PINB1			;
+bit			PINB0			;
+
+/* Data Direction Register, Port B */
+register	DDRB			;
+bit			DDB7			;
+bit			DDB6			;
+bit			DDB5			;
+bit			DDB4			;
+bit			DDB3			;
+bit			DDB2			;
+bit			DDB1			;
+bit			DDB0			;
+
+/* Data Register, Port B */
+register	PORTB			;
+bit			PB7				;
+bit			PB6				;
+bit			PB5				;
+bit			PB4				;
+bit			PB3				;
+bit			PB2				;
+bit			PB1				;
+bit			PB0				;
+
+/* Input Pins, Port A */
+register	PINA			;
+bit			PINA7			;
+bit			PINA6			;
+bit			PINA5			;
+bit			PINA4			;
+bit			PINA3			;
+bit			PINA2			;
+bit			PINA1			;
+bit			PINA0			;
+
+/* Data Direction Register, Port A */
+register	DDRA			;
+bit			DDA7			;
+bit			DDA6			;
+bit			DDA5			;
+bit			DDA4			;
+bit			DDA3			;
+bit			DDA2			;
+bit			DDA1			;
+bit			DDA0			;
+
+/* Data Register, Port A */
+register	PORTA			;
+bit			PA7				;
+bit			PA6				;
+bit			PA5				;
+bit			PA4				;
+bit			PA3				;
+bit			PA2				;
+bit			PA1				;
+bit			PA0				;
+
+/* EEPROM Control Register */
+register	EECR			;
+bit			EERIE			;
+bit			EEMWE			;
+bit			EEWE			;
+bit			EERE			;
+
+/* EEPROM Data Register */
+register	EEDR			;
+
+/* EEPROM Address Register */
+register	EEAR			;
+register	EEARL			;
+register	EEARH			;
+
+/* Special Function I/O Register */
+register	SFIOR			;
+bit			TSM				;
+bit			ACME			;
+bit			PUD				;
+bit			PSR0			;
+bit			PSR321			;
+
+/* Watchdog Timer Control Register */
+register	WDTCR			;
+bit			WDCE			;
+bit			WDE				;
+bit			WDP2			;
+bit			WDP1			;
+bit			WDP0			;
+
+/* On-chip Debug Register */
+register	OCDR			;
+bit			IDRD			;
+bit			OCDR7			;
+bit			OCDR6			;
+bit			OCDR5			;
+bit			OCDR4			;
+bit			OCDR3			;
+bit			OCDR2			;
+bit			OCDR1			;
+bit			OCDR0			;
+
+/* Timer2 Output Compare Register */
+register	OCR2			;
+
+/* Timer/Counter 2 */
+register	TCNT2			;
+
+/* Timer/Counter 2 Control register */
+register	TCCR2			;
+bit			FOC2			;
+bit			WGM20			;
+bit			COM21			;
+bit			COM20			;
+bit			WGM21			;
+bit			CS22			;
+bit			CS21			;
+bit			CS20			;
+
+/* T/C 1 Input Capture Register */
+register	ICR1			;
+register	ICR1L			;
+register	ICR1H			;
+
+/* Timer/Counter1 Output Compare Register B */
+register	OCR1B			;
+register	OCR1BL			;
+register	OCR1BH			;
+
+/* Timer/Counter1 Output Compare Register A */
+register	OCR1A			;
+register	OCR1AL			;
+register	OCR1AH			;
+
+/* Timer/Counter 1 */
+register	TCNT1			;
+register	TCNT1L			;
+register	TCNT1H			;
+
+/* Timer/Counter 1 Control and Status Register */
+register	TCCR1B			;
+bit			ICNC1			;
+bit			ICES1			;
+bit			WGM13			;
+bit			WGM12			;
+bit			CS12			;
+bit			CS11			;
+bit			CS10			;
+
+/* Timer/Counter 1 Control Register */
+register	TCCR1A			;
+bit			COM1A1			;
+bit			COM1A0			;
+bit			COM1B1			;
+bit			COM1B0			;
+bit			COM1C1			;
+bit			COM1C0			;
+bit			WGM11			;
+bit			WGM10			;
+
+/* Timer/Counter 0 Asynchronous Control & Status Register */
+register	ASSR			;
+bit			AS0				;
+bit			TCN0UB			;
+bit			OCR0UB			;
+bit			TCR0UB			;
+
+/* Output Compare Register 0 */
+register	OCR0			;
+
+/* Timer/Counter 0 */
+register	TCNT0			;
+
+/* Timer/Counter 0 Control Register */
+register	TCCR0			;
+bit			FOC0			;
+bit			WGM00			;
+bit			COM01			;
+bit			COM00			;
+bit			WGM01			;
+bit			CS02			;
+bit			CS01			;
+bit			CS00			;
+
+/* MCU Status Register */
+register	MCUSR			;
+register	MCUCSR			; /* new name in datasheet (2467E-AVR-05/02) */
+bit			JTD				;
+bit			JTRF			;
+bit			WDRF			;
+bit			BORF			;
+bit			EXTRF			;
+bit			PORF			;
+
+/* MCU general Control Register */
+register	MCUCR			;
+bit			SRE				;
+bit			SRW				;
+bit			SRW10			;       /* new name in datasheet (2467E-AVR-05/02) */
+bit			SE				;
+bit			SM1				;
+bit			SM0				;
+bit			SM2				;
+bit			IVSEL			;
+bit			IVCE			;
+
+/* Timer/Counter Interrupt Flag Register */
+register	TIFR			;
+bit			OCF2			;
+bit			TOV2			;
+bit			ICF1			;
+bit			OCF1A			;
+bit			OCF1B			;
+bit			TOV1			;
+bit			OCF0			;
+bit			TOV0			;
+
+/* Timer/Counter Interrupt MaSK register */
+register	TIMSK			;
+bit			OCIE2			;
+bit			TOIE2			;
+bit			TICIE1			;
+bit			OCIE1A			;
+bit			OCIE1B			;
+bit			TOIE1			;
+bit			OCIE0			;
+bit			TOIE0			;
+
+/* External Interrupt Flag Register */
+register	EIFR			;
+bit			INTF7			;
+bit			INTF6			;
+bit			INTF5			;
+bit			INTF4			;
+bit			INTF3			;
+bit			INTF2			;
+bit			INTF1			;
+bit			INTF0			;
+
+/* External Interrupt MaSK register */
+register	EIMSK			;
+bit			INT7			;
+bit			INT6			;
+bit			INT5			;
+bit			INT4			;
+bit			INT3			;
+bit			INT2			;
+bit			INT1			;
+bit			INT0			;
+
+/* External Interrupt Control Register B */
+register	EICRB			;
+bit			ISC71			;
+bit			ISC70			;
+bit			ISC61			;
+bit			ISC60			;
+bit			ISC51			;
+bit			ISC50			;
+bit			ISC41			;
+bit			ISC40			;
+
+/* RAM Page Z select register */
+register	RAMPZ			;
+bit			RAMPZ0			;
+
+/* XDIV Divide control register */
+register	XDIV			;
+bit			XDIVEN			;
+bit			XDIV6			;
+bit			XDIV5			;
+bit			XDIV4			;
+bit			XDIV3			;
+bit			XDIV2			;
+bit			XDIV1			;
+bit			XDIV0			;
+
+/* Extended I/O registers */
+
+/* Data Direction Register, Port F */
+register	DDRF			;
+bit			DDF7			;
+bit			DDF6			;
+bit			DDF5			;
+bit			DDF4			;
+bit			DDF3			;
+bit			DDF2			;
+bit			DDF1			;
+bit			DDF0			;
+
+/* Data Register, Port F */
+register	PORTF			;
+bit			PF7				;
+bit			PF6				;
+bit			PF5				;
+bit			PF4				;
+bit			PF3				;
+bit			PF2				;
+bit			PF1				;
+bit			PF0				;
+
+/* Input Pins, Port G */
+register	PING			;
+bit			PING4			;
+bit			PING3			;
+bit			PING2			;
+bit			PING1			;
+bit			PING0			;
+
+/* Data Direction Register, Port G */
+register	DDRG			;
+bit			DDG4			;
+bit			DDG3			;
+bit			DDG2			;
+bit			DDG1			;
+bit			DDG0			;
+
+/* Data Register, Port G */
+register	PORTG			;
+bit			PG4				;
+bit			PG3				;
+bit			PG2				;
+bit			PG1				;
+bit			PG0				;
+
+/* Store Program Memory Control and Status Register */
+register	SPMCR			;
+register	SPMCSR			; /* new name in datasheet (2467E-AVR-05/02) */
+bit			SPMIE			;
+bit			RWWSB			;
+bit			RWWSRE			;
+bit			BLBSET			;
+bit			PGWRT			;
+bit			PGERS			;
+bit			SPMEN			;
+
+/* External Interrupt Control Register A */
+register	EICRA			;
+bit			ISC31			;
+bit			ISC30			;
+bit			ISC21			;
+bit			ISC20			;
+bit			ISC11			;
+bit			ISC10			;
+bit			ISC01			;
+bit			ISC00			;
+
+/* External Memory Control Register B */
+register	XMCRB			;
+bit			XMBK			;
+bit			XMM2			;
+bit			XMM1			;
+bit			XMM0			;
+
+/* External Memory Control Register A */
+register	XMCRA			;
+bit			SRL2			;
+bit			SRL1			;
+bit			SRL0			;
+bit			SRW01			;
+bit			SRW00			;
+bit			SRW11			;
+
+/* Oscillator Calibration Register */
+register	OSCCAL			;
+
+/* 2-wire Serial Interface Bit Rate Register */
+register	TWBR			;
+
+/* 2-wire Serial Interface Status Register */
+register	TWSR			;
+bit			TWS7			;
+bit			TWS6			;
+bit			TWS5			;
+bit			TWS4			;
+bit			TWS3			;
+bit			TWPS1			;
+bit			TWPS0			;
+
+/* 2-wire Serial Interface Address Register */
+register	TWAR			;
+bit			TWA6			;
+bit			TWA5			;
+bit			TWA4			;
+bit			TWA3			;
+bit			TWA2			;
+bit			TWA1			;
+bit			TWA0			;
+bit			TWGCE			;
+
+/* 2-wire Serial Interface Data Register */
+register	TWDR			;
+
+/* 2-wire Serial Interface Control Register */
+register	TWCR			;
+bit			TWINT			;
+bit			TWEA			;
+bit			TWSTA			;
+bit			TWSTO			;
+bit			TWWC			;
+bit			TWEN			;
+bit			TWIE			;
+
+/* Time Counter 1 Output Compare Register C */
+register	OCR1C			;
+register	OCR1CL			;
+register	OCR1CH			;
+
+/* Timer/Counter 1 Control Register C */
+register	TCCR1C			;
+bit			FOC1A			;
+bit			FOC1B			;
+bit			FOC1C			;
+
+/* Extended Timer Interrupt Flag Register */
+register	ETIFR			;
+bit			ICF3			;
+bit			OCF3A			;
+bit			OCF3B			;
+bit			TOV3			;
+bit			OCF3C			;
+bit			OCF1C			;
+
+/* Extended Timer Interrupt Mask Register */
+register	ETIMSK			;
+bit			TICIE3			;
+bit			OCIE3A			;
+bit			OCIE3B			;
+bit			TOIE3			;
+bit			OCIE3C			;
+bit			OCIE1C			;
+
+/* Timer/Counter 3 Input Capture Register */
+register	ICR3			;
+register	ICR3L			;
+register	ICR3H			;
+
+/* Timer/Counter 3 Output Compare Register C */
+register	OCR3C			;
+register	OCR3CL			;
+register	OCR3CH			;
+
+/* Timer/Counter 3 Output Compare Register B */
+register	OCR3B			;
+register	OCR3BL			;
+register	OCR3BH			;
+
+/* Timer/Counter 3 Output Compare Register A */
+register	OCR3A			;
+register	OCR3AL			;
+register	OCR3AH			;
+
+/* Timer/Counter 3 Counter Register */
+register	TCNT3			;
+register	TCNT3L			;
+register	TCNT3H			;
+
+/* Timer/Counter 3 Control Register B */
+register	TCCR3B			;
+bit			ICNC3			;
+bit			ICES3			;
+bit			WGM33			;
+bit			WGM32			;
+bit			CS32			;
+bit			CS31			;
+bit			CS30			;
+
+/* Timer/Counter 3 Control Register A */
+register	TCCR3A			;
+bit			COM3A1			;
+bit			COM3A0			;
+bit			COM3B1			;
+bit			COM3B0			;
+bit			COM3C1			;
+bit			COM3C0			;
+bit			WGM31			;
+bit			WGM30			;
+
+/* Timer/Counter 3 Control Register C */
+register	TCCR3C			;
+bit			FOC3A			;
+bit			FOC3B			;
+bit			FOC3C			;
+
+/* USART0 Baud Rate Register High */
+register	UBRR0H			;
+
+/* USART0 Control and Status Register C */
+register	UCSR0C			;
+bit			UMSEL0			;
+bit			UPM01			;
+bit			UPM00			;
+bit			USBS0			;
+bit			UCSZ01			;
+bit			UCSZ00			;
+bit			UCPOL0			;
+
+/* USART1 Baud Rate Register High */
+register	UBRR1H			;
+
+/* USART1 Baud Rate Register Low*/
+register	UBRR1L			;
+
+/* USART1 Control and Status Register B */
+register	UCSR1B			;
+bit			RXCIE1			;
+bit			TXCIE1			;
+bit			UDRIE1			;
+bit			RXEN1			;
+bit			TXEN1			;
+bit			UCSZ12			;
+bit			RXB81			;
+bit			TXB81			;
+
+/* USART1 Control and Status Register A */
+register	UCSR1A			;
+bit			RXC1			;
+bit			TXC1			;
+bit			UDRE1			;
+bit			FE1				;
+bit			DOR1			;
+bit			UPE1			;
+bit			U2X1			;
+bit			MPCM1			;
+
+/* USART1 I/O Data Register */
+register	UDR1			;
+
+/* USART1 Control and Status Register C */
+register	UCSR1C			;
+bit			UMSEL1			;
+bit			UPM11			;
+bit			UPM10			;
+bit			USBS1			;
+bit			UCSZ11			;
+bit			UCSZ10			;
+bit			UCPOL1			;
+
+/* Timer/Counter Control Register (generic) */
+bit			FOC				;
+bit			WGM0			;
+bit			COM1			;
+bit			COM0			;
+bit			WGM1			;
+bit			CS2				;
+bit			CS1				;
+bit			CS0				;
+
+/* Timer/Counter Control Register A (generic) */
+bit			COMA1			;
+bit			COMA0			;
+bit			COMB1			;
+bit			COMB0			;
+bit			COMC1			;
+bit			COMC0			;
+bit			WGMA1			;
+bit			WGMA0			;
+
+/* Timer/Counter Control and Status Register B (generic) */
+bit			ICNC			;
+bit			ICES			;
+bit			WGMB3			;
+bit			WGMB2			;
+bit			CSB2			;
+bit			CSB1			;
+bit			CSB0			;
+
+/* Timer/Counter Control Register C (generic) */
+bit			FOCA			;
+bit			FOCB			;
+bit			FOCC			;
+
+/* USART Register C (generic) */
+bit			UMSEL			;
+bit			UPM1			;
+bit			UPM0			;
+bit			USBS			;
+bit			UCSZ1			;
+bit			UCSZ0			;
+bit			UCPOL			;
+
+/* USART Status Register A (generic) */
+bit			RXC				;
+bit			TXC				;
+bit			UDRE			;
+bit			FE				;
+bit			DOR				;
+bit			UPE				;
+bit			U2X				;
+bit			MPCM			;
+
+/* USART Control Register B (generic) */
+bit			RXCIE			;
+bit			TXCIE			;
+bit			UDRIE			;
+bit			RXEN			;
+bit			TXEN			;
+bit			UCSZ			;
+bit			UCSZ2			;       /* new name in datasheet (2467E-AVR-05/02) */
+bit			RXB8			;
+bit			TXB8			;
+
+/* Interrupt vectors */
+
+/* External Interrupt Request 0 */
+vector		INT0_vect				;
+vector		SIG_INTERRUPT0			;
+
+/* External Interrupt Request 1 */
+vector		INT1_vect				;
+vector		SIG_INTERRUPT1			;
+
+/* External Interrupt Request 2 */
+vector		INT2_vect				;
+vector		SIG_INTERRUPT2			;
+
+/* External Interrupt Request 3 */
+vector		INT3_vect				;
+vector		SIG_INTERRUPT3			;
+
+/* External Interrupt Request 4 */
+vector		INT4_vect				;
+vector		SIG_INTERRUPT4			;
+
+/* External Interrupt Request 5 */
+vector		INT5_vect				;
+vector		SIG_INTERRUPT5			;
+
+/* External Interrupt Request 6 */
+vector		INT6_vect				;
+vector		SIG_INTERRUPT6			;
+
+/* External Interrupt Request 7 */
+vector		INT7_vect				;
+vector		SIG_INTERRUPT7			;
+
+/* Timer/Counter2 Compare Match */
+vector		TIMER2_COMP_vect		;
+vector		SIG_OUTPUT_COMPARE2		;
+
+/* Timer/Counter2 Overflow */
+vector		TIMER2_OVF_vect			;
+vector		SIG_OVERFLOW2			;
+
+/* Timer/Counter1 Capture Event */
+vector		TIMER1_CAPT_vect		;
+vector		SIG_INPUT_CAPTURE1		;
+
+/* Timer/Counter1 Compare Match A */
+vector		TIMER1_COMPA_vect		;
+vector		SIG_OUTPUT_COMPARE1A	;
+
+/* Timer/Counter Compare Match B */
+vector		TIMER1_COMPB_vect		;
+vector		SIG_OUTPUT_COMPARE1B	;
+
+/* Timer/Counter1 Overflow */
+vector		TIMER1_OVF_vect			;
+vector		SIG_OVERFLOW1			;
+
+/* Timer/Counter0 Compare Match */
+vector		TIMER0_COMP_vect		;
+vector		SIG_OUTPUT_COMPARE0		;
+
+/* Timer/Counter0 Overflow */
+vector		TIMER0_OVF_vect			;
+vector		SIG_OVERFLOW0			;
+
+/* SPI Serial Transfer Complete */
+vector		SPI_STC_vect			;
+vector		SIG_SPI					;
+
+/* USART0, Rx Complete */
+vector		USART0_RX_vect			;
+vector		SIG_USART0_RECV			;
+vector		SIG_UART0_RECV			;
+
+/* USART0 Data Register Empty */
+vector		USART0_UDRE_vect		;
+vector		SIG_USART0_DATA			;
+vector		SIG_UART0_DATA			;
+
+/* USART0, Tx Complete */
+vector		USART0_TX_vect			;
+vector		SIG_USART0_TRANS		;
+vector		SIG_UART0_TRANS			;
+
+/* ADC Conversion Complete */
+vector		ADC_vect				;
+vector		SIG_ADC					;
+
+/* EEPROM Ready */
+vector		EE_READY_vect			;
+vector		SIG_EEPROM_READY		;
+
+/* Analog Comparator */
+vector		ANALOG_COMP_vect		;
+vector		SIG_COMPARATOR			;
+
+/* Timer/Counter1 Compare Match C */
+vector		TIMER1_COMPC_vect		;
+vector		SIG_OUTPUT_COMPARE1C	;
+
+/* Timer/Counter3 Capture Event */
+vector		TIMER3_CAPT_vect		;
+vector		SIG_INPUT_CAPTURE3		;
+
+/* Timer/Counter3 Compare Match A */
+vector		TIMER3_COMPA_vect		;
+vector		SIG_OUTPUT_COMPARE3A	;
+
+/* Timer/Counter3 Compare Match B */
+vector		TIMER3_COMPB_vect		;
+vector		SIG_OUTPUT_COMPARE3B	;
+
+/* Timer/Counter3 Compare Match C */
+vector		TIMER3_COMPC_vect		;
+vector		SIG_OUTPUT_COMPARE3C	;
+
+/* Timer/Counter3 Overflow */
+vector		TIMER3_OVF_vect			;
+vector		SIG_OVERFLOW3			;
+
+/* USART1, Rx Complete */
+vector		USART1_RX_vect			;
+vector		SIG_USART1_RECV			;
+vector		SIG_UART1_RECV			;
+
+/* USART1, Data Register Empty */
+vector		USART1_UDRE_vect		;
+vector		SIG_USART1_DATA			;
+vector		SIG_UART1_DATA			;
+
+/* USART1, Tx Complete */
+vector		USART1_TX_vect			;
+vector		SIG_USART1_TRANS		;
+vector		SIG_UART1_TRANS			;
+
+/* 2-wire Serial Interface */
+vector		TWI_vect				;
+vector		SIG_2WIRE_SERIAL		;
+
+/* Store Program Memory Read */
+vector		SPM_READY_vect			;
+vector		SIG_SPM_READY			;
+
+
+/************************************************************************/
+/*        uC-specific time serice implementation                        */
+/* The time service needs two functions implemented:                    */
+/* unsigned long ic_ts_millis(); //returns milliseconds counter value   */
+/* void ic_ts_init(); //executed upon reset                             */
+/************************************************************************/
+$	#include <avr/io.h> 
+$	#include <avr/interrupt.h>
+$	volatile unsigned long ovf_cnt = 0;
+$
+$	//industrialC time service millis() millisecond counter
+$	unsigned long ic_ts_millis()
+$	{
+$		unsigned char sreg = SREG;
+$		cli();
+$		unsigned long ovf = ovf_cnt;
+$		unsigned long tcnt = TCNT0;
+$		SREG = sreg;
+$		
+$		//Timer has already overflown, but interrupt has yet to execute
+$		if ((TIFR & _BV(TOV0)) && (tcnt < 255))
+$			ovf++;
+$
+$		return (((ovf<<8) + tcnt)*1024)/(F_CPU/1000);
+$	}
+$	
+$	//industrialC time service uses timer0 overflow interrupt to track time
+$	ISR(TIMER0_OVF_vect)
+$	{
+$		ovf_cnt++;
+$	}
+$	
+$	//industrialC time service initialization
+$	void ic_ts_init()
+$	{
+$		//Init timer0
+$		TCCR0 = (1<<CS00) | (1<<CS01) | (1 <<CS02); // /1024 prescaler
+$		TIMSK = (1<<TOIE0); // overflow interrupt
+$	}
