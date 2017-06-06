@@ -195,9 +195,9 @@ void upload()
 	if(0 != build_())
 		return;
 
-	//Get COM port index
+	//Check if setting have been set
 	int port_index = thePlugin.get_port_index();
-	if(port_index < 0)
+	if(port_index < 0 || 0 == thePlugin.get_prog_name().size())
 	{
 		settings();
 	}
@@ -212,11 +212,14 @@ void upload()
 	DWORD exit_code = 0;
 	std::wostringstream cmd;
 
+	const std::wstring& mcu_name = thePlugin.get_mcu_name();
 
 	//Upload
 	//avrdude -carduino -patmega168 -P<port> -b19200 -Uflash:w:"<file>.hex":i
 	cmd.str(_T(""));cmd.clear();
-	cmd	<< _T("avrdude -carduino -patmega168 -P") 
+	cmd	<< _T("avrdude -c")
+		<< thePlugin.get_prog_name().c_str() 
+		<<_T(" -p")<< mcu_name.c_str() <<_T(" -P") 
 		<< port.c_str() << _T(" -b19200 -Uflash:w:\"") << file.c_str() << _T(".hex\":i");
 	thePlugin.CreateChildProcess(&exit_code, cmd.str().c_str());
 
@@ -237,6 +240,18 @@ void settings()
 
 int build_()
 {
+	//Get COM port index
+	/*int port_index = thePlugin.get_port_index();
+	if(port_index < 0)
+	{
+		settings();
+	}*/
+
+	if(0 == thePlugin.get_mcu_name().size())
+	{
+		settings();
+	}
+
 	::SendMessage(nppData._nppHandle, NPPM_SAVEALLFILES, 0, 0);
 
 	TCHAR* buffer = new TCHAR[MAX_PATH];
@@ -301,10 +316,13 @@ int build_()
 
 	Sleep(200);
 
+	const std::wstring& mcu_name = thePlugin.get_mcu_name();
+
 	//Build
 	//avr-gcc -Os -mmcu=atmega168 -DF_CPU=16000000UL -o "<dir>/<file>.elf" "<dir>/<file>.cpp"
 	cmd.str(_T(""));cmd.clear();
-	cmd	<< _T("avr-gcc -Os -ffunction-sections -fdata-sections -fno-threadsafe-statics -mmcu=atmega168 -DF_CPU=16000000UL -o \"") 
+	cmd	<< _T("avr-gcc -Os -ffunction-sections -fdata-sections -fno-threadsafe-statics -mmcu=")
+		<< mcu_name.c_str() <<(" -DF_CPU=16000000UL -o \"") 
 		<< file.c_str() << _T(".elf\" \"") 
 		<< file.c_str() << _T(".cpp\"");
 	thePlugin.CreateChildProcess(&exit_code, cmd.str().c_str());

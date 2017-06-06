@@ -1140,6 +1140,7 @@
 #define WM_DDE_FIRST                    0x03E0
 #define IDC_LIST_MCU                    1001
 #define IDC_LIST_PORT                   1004
+#define IDC_LIST_PROG					1005
 #define IDC_OUTPUT_EDIT                 1006
 #define CF_GDIOBJLAST                   0x03FF
 #define _WIN32_WINNT_NT4                0x0400
