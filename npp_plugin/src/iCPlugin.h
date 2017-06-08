@@ -42,6 +42,10 @@ public:
 		}
 		return com_ports_list;
 	}
+	const WStringList& get_mcu_list() {return mcu_list;}
+	const WStringList& get_prog_list() {return programmer_list;}
+	int get_mcu_index(){return selected_mcu_index;}
+	int get_prog_index(){return selected_programmer_index;}
 
 	void dock_output_dlg();
 
