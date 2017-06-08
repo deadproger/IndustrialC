@@ -484,7 +484,15 @@ void iCPlugin::OnNppReady()
 //=============================================================================
 void iCPlugin::SaveSettings()
 {
+	//Get ini file full path
+	TCHAR szPath[2*MAX_PATH + 1];
+	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM) 2*MAX_PATH, (LPARAM) szPath);
+	lstrcat(szPath, _T("\\"));
+	lstrcat(szPath, m_szIniFileName);
 
+	WritePrivateProfileString(_T("Settings"), _T("mcu"), get_mcu_name().c_str(), szPath);
+	WritePrivateProfileString(_T("Settings"), _T("port"), get_selected_port().c_str(), szPath);
+	WritePrivateProfileString(_T("Settings"), _T("programmer"), get_prog_name().c_str(), szPath);
 }
 
 //=============================================================================
@@ -509,14 +517,14 @@ void iCPlugin::LoadSettings()
 		select_mcu(get_index(mcu_list, settings_buffer));
 
 	//read next setting
-	dw = GetPrivateProfileString(_T("Settings"), _T("programmer"), NULL,
-		settings_buffer, SETTINGS_BUF_SIZE, szPath);
-	if(0 != dw)
-		select_programmer(get_index(programmer_list, settings_buffer));
-
-	//read next setting
 	dw = GetPrivateProfileString(_T("Settings"), _T("port"), NULL,
 		settings_buffer, SETTINGS_BUF_SIZE, szPath);
 	if(0 != dw)
 		select_port_index(get_index(com_ports_list, settings_buffer));
+
+	//read next setting
+	dw = GetPrivateProfileString(_T("Settings"), _T("programmer"), NULL,
+		settings_buffer, SETTINGS_BUF_SIZE, szPath);
+	if(0 != dw)
+		select_programmer(get_index(programmer_list, settings_buffer));
 }
