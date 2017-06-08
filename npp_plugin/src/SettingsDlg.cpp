@@ -55,6 +55,8 @@ INT_PTR CALLBACK SettingsDlgProc(
 				//SendMessage(ProgList, CB_GETLBTEXT, prog, (LPARAM)prog_name_buf);
 				thePlugin.select_programmer(prog);
 
+				thePlugin.SaveSettings();
+
 				EndDialog(hDlg, 1); // OK - returns 1
 				return 1;
 			}
