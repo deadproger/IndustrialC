@@ -73,7 +73,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 		case NPPN_READY:
 		{
-			thePlugin.dock_output_dlg();
+			thePlugin.OnNppReady();
 		}
 		break;
 		case NPPN_SHUTDOWN:

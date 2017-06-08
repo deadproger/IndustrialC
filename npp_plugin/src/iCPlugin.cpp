@@ -242,7 +242,7 @@ BOOL iCPlugin::CreateChildProcess( DWORD *exit_code, LPCTSTR cszCommandLine )
 
 	  if (output_dlg_docked && !_consoleProcessBreak)
 	  {
-		  // maybe the child process is exited but not all its data is read
+		  // maybe the child process has exited but not all its data is read
 		  Console_ReadPipesAndOutput(bufLine, 
 			  bPrevLineEmpty, nPrevState, true, bDoOutputNext);
 	  }
@@ -428,4 +428,52 @@ void iCPlugin::output_error( LPCTSTR err_msg )
 	std::wostringstream wss;
 	wss<<_T("error: ")<<err_msg<<_T("\r\n");
 	write_to_output(wss.str().c_str());
+}
+
+void iCPlugin::OnNppReady()
+{
+	
+	LoadSettings();
+
+	//Dock the console
+	dock_output_dlg();
+}
+
+void iCPlugin::SaveSettings()
+{
+
+}
+
+void iCPlugin::LoadSettings()
+{
+	//Get ini file full path
+	TCHAR szPath[2*MAX_PATH + 1];
+	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM) 2*MAX_PATH, (LPARAM) szPath);
+	lstrcat(szPath, _T("\\"));
+	lstrcat(szPath, m_szIniFileName);
+
+	DWORD dw;
+
+	//Read the first option and check if .ini file exists
+	dw = GetPrivateProfileString(_T("Settings"),
+		_T("mcu"),
+		NULL,
+		settings_buffer,
+		SETTINGS_BUF_SIZE,
+		szPath);
+	if(ERROR_FILE_NOT_FOUND == GetLastError())
+	{
+		//.ini file does not exist - do nothing
+		//MessageBox(NULL, szIniFilePath, _T(""), MB_OK);
+		return;
+	}
+	else
+	{
+		//.ini file exists - continue reading settings
+		if(0 != dw)//setting is there
+		{
+			MessageBox(NULL, settings_buffer, _T(""), MB_OK);
+		}
+
+	}
 }

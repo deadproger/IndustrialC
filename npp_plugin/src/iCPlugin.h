@@ -4,6 +4,7 @@
 #include <vector>
 #include "CStrT.h"
 
+const unsigned int SETTINGS_BUF_SIZE = 256;
 
 typedef std::vector<std::wstring> WStringList;
 typedef CStrT<TCHAR> tstr;
@@ -58,6 +59,11 @@ public:
 
 	HWND output_dlg_wnd;
 	bool output_dlg_docked;
+
+	void OnNppReady();
+	void SaveSettings();
+	void LoadSettings();
+
 	//HWND output_edit_box;
 
 	
@@ -75,8 +81,11 @@ private:
 	HANDLE 	_consoleProcessHandle;
 	int     m_nChildProcessExitCode;
 
+	//Settings
 	WStringList com_ports_list;
 	int selected_port_index;
 	std::wstring selected_mcu;
 	std::wstring selected_programmer;
+
+	TCHAR settings_buffer[SETTINGS_BUF_SIZE];
 };
