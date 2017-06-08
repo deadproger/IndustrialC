@@ -6,12 +6,15 @@
 #include "PluginInterface.h"
 
 
+
 class CNppPlugin
 {
     protected:
         HMODULE       m_hDllModule;
         TCHAR         m_szDllFileName[100];
         TCHAR         m_szIniFileName[100];
+
+		
 
     public:
         CNppPlugin();
