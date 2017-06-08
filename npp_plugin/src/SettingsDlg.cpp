@@ -79,13 +79,21 @@ INT_PTR CALLBACK SettingsDlgProc(
 
 	else if ( uMessage == WM_INITDIALOG )
 	{
-		//::MessageBox(0, TEXT("WM_INITDIALOG"), TEXT(""), MB_OK);
+		thePlugin.LoadSettings();
+		/*std::wstringstream ws;
+		ws<<"mcu_index: "<<thePlugin.get_mcu_index()<<std::endl<<
+			"port_index: "<<thePlugin.get_port_index()<<std::endl<<
+			"prog_index: "<<thePlugin.get_prog_index()<<std::endl;
+		MessageBox(NULL, ws.str().c_str(), _T(""), MB_OK);*/
 
 		//Fill the MCU listbox
-		SendMessage(MCUList, CB_ADDSTRING, 0, (LPARAM)L"atmega168");
-		SendMessage(MCUList, CB_ADDSTRING, 0, (LPARAM)L"atmega128");
-		SendMessage(MCUList, CB_SETCURSEL, 0, 0);
-
+		const WStringList& mcu_list = thePlugin.get_mcu_list();
+		for(WStringList::const_iterator i=mcu_list.begin();i!=mcu_list.end();i++)
+		{
+			SendMessage(MCUList, CB_ADDSTRING, 0, (LPARAM)((*i).c_str()));
+		}
+		SendMessage(MCUList, CB_SETCURSEL, (WPARAM)thePlugin.get_mcu_index(), 0);
+		
 		//Fill the ports list box
 		//HWND PortList = GetDlgItem(hDlg, IDC_LIST_PORT);
 		thePlugin.build_ports_list();//force rebuild each time the dialog is initialized
@@ -100,10 +108,13 @@ INT_PTR CALLBACK SettingsDlgProc(
 		if(port_index < 0) port_index = 0;
 		SendMessage(PortList, CB_SETCURSEL, (WPARAM)port_index, 0);
 
-		//Fill the MCU listbox
-		SendMessage(ProgList, CB_ADDSTRING, 0, (LPARAM)L"arduino");
-		SendMessage(ProgList, CB_ADDSTRING, 0, (LPARAM)L"usbasp");
-		SendMessage(ProgList, CB_SETCURSEL, 0, 0);
+		//Fill the programmer listbox
+		const WStringList& prog_list = thePlugin.get_prog_list();
+		for(WStringList::const_iterator i=prog_list.begin();i!=prog_list.end();i++)
+		{
+			SendMessage(ProgList, CB_ADDSTRING, 0, (LPARAM)((*i).c_str()));
+		}
+		SendMessage(ProgList, CB_SETCURSEL, (WPARAM)thePlugin.get_prog_index(), 0);
 
 		AnyWindow_CenterWindow(hDlg, nppData._nppHandle, FALSE);
 	}

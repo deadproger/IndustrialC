@@ -10,15 +10,12 @@ extern NppData nppData;
 #define  MAX_PLUGIN_NAME  60
 TCHAR PLUGIN_NAME_DLL[MAX_PLUGIN_NAME + 6] = _T("industrialC.dll");
 
-const wchar_t DEFAULT_MCU[] = _T("atmega168");
-const wchar_t DEFAULT_PROGRAMMER[]= _T("arduino");
-
 //Default MCU and Programmer lists initializers
-const wchar_t *MCU_LIST[] = {_T("atmega168"), _T("atmega128")};
-const wchar_t *PROGRAMMER_LIST[] = {_T("arduino"), _T("usbasp")};
+const wchar_t* MCU_LIST[] = {_T("atmega128"), _T("atmega168"), _T("atmega328")};
+const wchar_t* PROGRAMMER_LIST[] = {_T("arduino"), _T("usbasp")};
 
 //=============================================================================
-//
+//Searches WStringList for a string, returns index if found, 0 otherwise 
 //=============================================================================
 int get_index(WStringList& v, const wchar_t* s)
 {
@@ -30,29 +27,22 @@ int get_index(WStringList& v, const wchar_t* s)
 //Analogous to end() in C++11
 //returns pointer to the past-the-end element in an array
 //=============================================================================
-template<typename T> inline T* end(T* t)
-{
-	return t+sizeof(t)/sizeof(t[0])+1;
+template<typename T, size_t N>
+T * end(T (&ra)[N]) {
+	return ra + N;
 }
-
 //=============================================================================
 //
 //=============================================================================
 iCPlugin::iCPlugin() :	selected_port_index(-1),
-						//selected_mcu(TEXT("")),
-						//selected_programmer(TEXT("")),
 						output_dlg_wnd(NULL),
-						//output_edit_box(NULL),
 						output_dlg_docked(false),
-						//mcu_list(MCU_LIST, MCU_LIST + sizeof(MCU_LIST)/sizeof(MCU_LIST[0])),
-						//programmer_list(PROGRAMMER_LIST, PROGRAMMER_LIST + sizeof(PROGRAMMER_LIST)/sizeof(PROGRAMMER_LIST[0]))
 						mcu_list(MCU_LIST, end(MCU_LIST)),
 						programmer_list(PROGRAMMER_LIST, end(PROGRAMMER_LIST)),
 						selected_mcu_index(0),
 						selected_programmer_index(0)
 {
 	build_ports_list();
-	//MessageBox(NULL, *end(MCU_LIST), _T(""), MB_OK);
 }
 
 //=============================================================================
