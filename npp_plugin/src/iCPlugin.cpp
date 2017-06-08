@@ -2,14 +2,61 @@
 #include "resource.h"
 #include "OutputDlg.h"
 #include "docking.h"
+#include <algorithm>
+#include <sstream>
 
 extern NppData nppData;
 
 #define  MAX_PLUGIN_NAME  60
 TCHAR PLUGIN_NAME_DLL[MAX_PLUGIN_NAME + 6] = _T("industrialC.dll");
 
+const wchar_t DEFAULT_MCU[] = _T("atmega168");
+const wchar_t DEFAULT_PROGRAMMER[]= _T("arduino");
+
+//Default MCU and Programmer lists initializers
+const wchar_t *MCU_LIST[] = {_T("atmega168"), _T("atmega128")};
+const wchar_t *PROGRAMMER_LIST[] = {_T("arduino"), _T("usbasp")};
+
 //=============================================================================
 //
+//=============================================================================
+int get_index(WStringList& v, const wchar_t* s)
+{
+	WStringList::iterator it = std::find(v.begin(), v.end(), s);
+	return v.end() != it ? it - v.begin() : 0;
+}
+
+//=============================================================================
+//Analogous to end() in C++11
+//returns pointer to the past-the-end element in an array
+//=============================================================================
+template<typename T> inline T* end(T* t)
+{
+	return t+sizeof(t)/sizeof(t[0])+1;
+}
+
+//=============================================================================
+//
+//=============================================================================
+iCPlugin::iCPlugin() :	selected_port_index(-1),
+						//selected_mcu(TEXT("")),
+						//selected_programmer(TEXT("")),
+						output_dlg_wnd(NULL),
+						//output_edit_box(NULL),
+						output_dlg_docked(false),
+						//mcu_list(MCU_LIST, MCU_LIST + sizeof(MCU_LIST)/sizeof(MCU_LIST[0])),
+						//programmer_list(PROGRAMMER_LIST, PROGRAMMER_LIST + sizeof(PROGRAMMER_LIST)/sizeof(PROGRAMMER_LIST[0]))
+						mcu_list(MCU_LIST, end(MCU_LIST)),
+						programmer_list(PROGRAMMER_LIST, end(PROGRAMMER_LIST)),
+						selected_mcu_index(0),
+						selected_programmer_index(0)
+{
+	build_ports_list();
+	//MessageBox(NULL, *end(MCU_LIST), _T(""), MB_OK);
+}
+
+//=============================================================================
+//Generates list of COM ports currenlt available in system
 //=============================================================================
 void iCPlugin::build_ports_list()
 {
@@ -367,7 +414,7 @@ DWORD iCPlugin::Console_ReadPipesAndOutput(CStrT<char>& bufLine,
 			{
 				// some data has been read from the Pipe or bOutputAll==true
 
-				int copy_len;
+				//int copy_len;
 
 				Buf[dwBytesRead/sizeof(char)] = 0;
 				//bufLine += Buf;
@@ -430,6 +477,9 @@ void iCPlugin::output_error( LPCTSTR err_msg )
 	write_to_output(wss.str().c_str());
 }
 
+//=============================================================================
+//Called upon NPPN_READY event in nppBeNotified
+//=============================================================================
 void iCPlugin::OnNppReady()
 {
 	
@@ -439,11 +489,17 @@ void iCPlugin::OnNppReady()
 	dock_output_dlg();
 }
 
+//=============================================================================
+//
+//=============================================================================
 void iCPlugin::SaveSettings()
 {
 
 }
 
+//=============================================================================
+//
+//=============================================================================
 void iCPlugin::LoadSettings()
 {
 	//Get ini file full path
@@ -454,26 +510,23 @@ void iCPlugin::LoadSettings()
 
 	DWORD dw;
 
-	//Read the first option and check if .ini file exists
-	dw = GetPrivateProfileString(_T("Settings"),
-		_T("mcu"),
-		NULL,
-		settings_buffer,
-		SETTINGS_BUF_SIZE,
-		szPath);
+	//Read the first setting and check if .ini file exists
+	dw = GetPrivateProfileString(_T("Settings"), _T("mcu"), NULL,
+		settings_buffer, SETTINGS_BUF_SIZE, szPath);
 	if(ERROR_FILE_NOT_FOUND == GetLastError())
-	{
-		//.ini file does not exist - do nothing
-		//MessageBox(NULL, szIniFilePath, _T(""), MB_OK);
-		return;
-	}
-	else
-	{
-		//.ini file exists - continue reading settings
-		if(0 != dw)//setting is there
-		{
-			MessageBox(NULL, settings_buffer, _T(""), MB_OK);
-		}
+		return; //.ini file does not exist
+	if(0 != dw)
+		select_mcu(get_index(mcu_list, settings_buffer));
 
-	}
+	//read next setting
+	dw = GetPrivateProfileString(_T("Settings"), _T("programmer"), NULL,
+		settings_buffer, SETTINGS_BUF_SIZE, szPath);
+	if(0 != dw)
+		select_programmer(get_index(programmer_list, settings_buffer));
+
+	//read next setting
+	dw = GetPrivateProfileString(_T("Settings"), _T("port"), NULL,
+		settings_buffer, SETTINGS_BUF_SIZE, szPath);
+	if(0 != dw)
+		select_port_index(get_index(com_ports_list, settings_buffer));
 }

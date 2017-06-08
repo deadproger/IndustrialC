@@ -6,6 +6,8 @@
 
 const unsigned int SETTINGS_BUF_SIZE = 256;
 
+
+
 typedef std::vector<std::wstring> WStringList;
 typedef CStrT<TCHAR> tstr;
 const std::wstring no_port = TEXT("No Ports");
@@ -13,24 +15,18 @@ const std::wstring no_port = TEXT("No Ports");
 class iCPlugin : public CNppPlugin
 {
 public:
-	iCPlugin()
-		:	selected_port_index(-1),
-			selected_mcu(TEXT("")),
-			selected_programmer(TEXT("")),
-			output_dlg_wnd(NULL),
-			//output_edit_box(NULL),
-			output_dlg_docked(false)
-	{
-		build_ports_list();
-	}
+	iCPlugin();
 	virtual const TCHAR* nppGetName() {return NPP_PLUGIN_NAME;}
 
 	void select_port_index(unsigned int index) {selected_port_index = index;}
-	void select_mcu(const std::wstring& mcu_name) {selected_mcu = mcu_name;}
-	void select_programmer(const std::wstring& prog_name) {selected_programmer = prog_name;}
+	//void select_mcu(const std::wstring& mcu_name) {selected_mcu = mcu_name;}
+	//void select_programmer(const std::wstring& prog_name) {selected_programmer = prog_name;}
+	void select_mcu(int index) {selected_mcu_index = index;}
+	void select_programmer(int index) {selected_programmer_index = index;}
+
 	int get_port_index() {return selected_port_index;}
-	const std::wstring& get_mcu_name() {return selected_mcu;}
-	const std::wstring& get_prog_name() {return selected_programmer;}
+	const std::wstring& get_mcu_name() {return mcu_list[selected_mcu_index];}
+	const std::wstring& get_prog_name() {return programmer_list[selected_programmer_index];}
 	const std::wstring& get_selected_port()
 	{
 		if(com_ports_list.empty())
@@ -84,8 +80,13 @@ private:
 	//Settings
 	WStringList com_ports_list;
 	int selected_port_index;
-	std::wstring selected_mcu;
-	std::wstring selected_programmer;
+	WStringList mcu_list;
+	int selected_mcu_index;
+	WStringList programmer_list;
+	int selected_programmer_index;
 
-	TCHAR settings_buffer[SETTINGS_BUF_SIZE];
+	//std::wstring selected_mcu;
+	//std::wstring selected_programmer;
+
+	TCHAR settings_buffer[SETTINGS_BUF_SIZE];//auxiliary - used for reading settings from .ini
 };

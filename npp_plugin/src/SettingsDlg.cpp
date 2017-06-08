@@ -46,14 +46,14 @@ INT_PTR CALLBACK SettingsDlgProc(
 				thePlugin.select_port_index(port);
 
 				unsigned int mcu = SendMessage(MCUList, CB_GETCURSEL, 0, 0);
-				WCHAR mcu_name_buf[MAX_MCU_NAME_LENGTH];
-				SendMessage(MCUList, CB_GETLBTEXT, mcu, (LPARAM)mcu_name_buf);
-				thePlugin.select_mcu(mcu_name_buf);
+				//WCHAR mcu_name_buf[MAX_MCU_NAME_LENGTH];
+				//SendMessage(MCUList, CB_GETLBTEXT, mcu, (LPARAM)mcu_name_buf);
+				thePlugin.select_mcu(mcu);
 
 				unsigned int prog = SendMessage(ProgList, CB_GETCURSEL, 0, 0);
-				WCHAR prog_name_buf[MAX_PROG_NAME_LENGTH];
-				SendMessage(ProgList, CB_GETLBTEXT, prog, (LPARAM)prog_name_buf);
-				thePlugin.select_programmer(prog_name_buf);
+				//WCHAR prog_name_buf[MAX_PROG_NAME_LENGTH];
+				//SendMessage(ProgList, CB_GETLBTEXT, prog, (LPARAM)prog_name_buf);
+				thePlugin.select_programmer(prog);
 
 				EndDialog(hDlg, 1); // OK - returns 1
 				return 1;
