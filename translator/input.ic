@@ -25,7 +25,7 @@ $	}
 $	
 
 
-
+int a,b,c;
 
 /*Blink process*/
 process Proc1 : background
@@ -34,6 +34,11 @@ process Proc1 : background
 
 	state FS_START 
 	{	
+		{
+			a=b-c;
+			b++;
+		}
+	
 		DDRB |= (1<<5);
 		to state LED_ON;	
 	}

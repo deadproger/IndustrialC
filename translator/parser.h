@@ -197,7 +197,10 @@
 //%type <string>				init_declarator		
 %type <string>				direct_declarator					
 //%type <string>				initializer 		
-%type <string>				type_spec			
+%type <string>				type_spec		
+
+%type <string>				func_declaration
+%type <string>				func_definition
 
 
 /***********************************************/
@@ -324,6 +327,8 @@ program_item	:	var_declaration
 					//$$ = new CCodeLine(*$1, *parser_context);
 					//delete $1;
 				}*/
+				|	func_declaration	{}
+				|	func_definition		{}
 				;
 
 c_code		:	TCCODELINE 
@@ -801,6 +806,21 @@ assignement_op : TASSGN
 /***********************************************/     
 /*           D E C L A R A T I O N S           */     
 /***********************************************/
+
+func_declaration		:	decl_specs direct_declarator TLPAREN TRPAREN
+							{
+								$$ = $2;
+								$1;$3;$4;
+							}
+						;
+
+func_definition			:	decl_specs direct_declarator TLPAREN TRPAREN prep_compound TLBRACE block_items_list TRBRACE // compound statement
+							{
+								$$ = $2;
+								$1;$3;$4;$5;$6;$7;$8;$9;
+							}
+							;
+
 
 var_declaration			:	decl_specs init_declarator_list TSEMIC 
 							{
