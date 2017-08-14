@@ -7,6 +7,7 @@ class CodeGenContext;
 class iCProcess;
 class iCHyperprocess;
 class ParserContext;
+class iCFunction;
 
 //=================================================================================================
 //Program
@@ -25,6 +26,7 @@ private:
 	iCDeclarationList mcu_decls;
 	iCProcessList procs; // does not own, auxiliary list for quick checks
 	std::list<iCVariable*> var_list;
+	std::list<iCFunction*> func_list;
 
 public:
 	iCProgram(const ParserContext& context) : iCNode(context), first_bkgrnd_process(NULL){}
@@ -38,6 +40,7 @@ public:
 	{	
 		var_list.push_back(var);
 	}
+	void add_function(iCFunction* func);
 	bool hp_defined(const std::string& activator);
 
 	const iCHyperprocessMap* get_hps() const {return &hps;} 

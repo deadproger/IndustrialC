@@ -171,6 +171,14 @@ void ParserContext::add_mcu_decl_to_scope( const std::string& name )
 //=================================================================================================
 //
 //=================================================================================================
+void ParserContext::add_func_to_scope( const std::string& name )
+{
+	root_scope->funcs.insert(name);
+}
+
+//=================================================================================================
+//
+//=================================================================================================
 const iCScope* ParserContext::get_mcu_decl_scope( const std::string& mcu_decl ) const
 {
 	iCScope* scope = current_scope;
@@ -180,6 +188,27 @@ const iCScope* ParserContext::get_mcu_decl_scope( const std::string& mcu_decl ) 
 		//Check if it's an mcu identifier (vector, register or bit) declared in this scope
 		std::set<std::string>::iterator it = scope->mcu_decls.find(mcu_decl);
 		if(scope->mcu_decls.end() != it)
+			return scope;
+
+		//go up the scope tree
+		scope = scope->prev_scope;
+	}
+
+	return NULL;
+}
+
+//=================================================================================================
+//
+//=================================================================================================
+const iCScope* ParserContext::get_func_scope( const std::string& func ) const
+{
+	iCScope* scope = current_scope;
+
+	while(NULL != scope)
+	{
+		//Check if it's an mcu identifier (vector, register or bit) declared in this scope
+		std::set<std::string>::iterator it = scope->funcs.find(func);
+		if(scope->funcs.end() != it)
 			return scope;
 
 		//go up the scope tree

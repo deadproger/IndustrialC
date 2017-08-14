@@ -179,6 +179,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\iCFunction.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\iCFunction.h"
+				>
+			</File>
+			<File
 				RelativePath="..\iCHyperprocess.cpp"
 				>
 			</File>
@@ -291,6 +299,14 @@
 				</File>
 				<File
 					RelativePath="..\iCDouble.h"
+					>
+				</File>
+				<File
+					RelativePath="..\iCFunctionCall.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCFunctionCall.h"
 					>
 				</File>
 				<File

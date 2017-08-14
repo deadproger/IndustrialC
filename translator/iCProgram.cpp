@@ -3,11 +3,12 @@
 #include "iCHyperprocess.h"
 #include "iCProcess.h"
 #include "iCState.h"
+#include "iCFunction.h"
 #include <sstream>
 
 class ParserContext;
 
-ParserContext* parser_context;
+ParserContext* parser_context = NULL;
 
 //=================================================================================================
 //Code generator
@@ -34,6 +35,12 @@ void iCProgram::gen_code(CodeGenContext& context)
 
 	//variable declarations
 	for(std::list<iCVariable*>::iterator i=var_list.begin();i!=var_list.end();i++)
+	{
+		(*i)->gen_code(context);
+	}
+
+	//function definitions
+	for(std::list<iCFunction*>::iterator i=func_list.begin();i!=func_list.end();i++)
 	{
 		(*i)->gen_code(context);
 	}
@@ -176,6 +183,10 @@ iCProgram::~iCProgram()
 	for(iCDeclarationList::iterator i=mcu_decls.begin();i!=mcu_decls.end();i++)
 		delete *i;	
 
+	//clear functions
+	for(std::list<iCFunction*>::iterator i=func_list.begin();i!=func_list.end();i++)
+		delete *i;	
+
 	//clear variables
 	for(std::list<iCVariable*>::iterator i=var_list.begin();i!=var_list.end();i++)
 	{
@@ -247,6 +258,14 @@ void iCProgram::add_mcu_declaration( iCDeclaration* decl )
 //=================================================================================================
 //
 //=================================================================================================
+void iCProgram::add_function( iCFunction* func )
+{
+	func_list.push_back(func);
+}
+
+//=================================================================================================
+//
+//=================================================================================================
 const iCHyperprocess* iCProgram::get_hp( const std::string& hp_name ) const
 {
 	iCHyperprocessMap::const_iterator hp = hps.find(hp_name);
@@ -271,3 +290,4 @@ void iCProgram::second_pass()
 		std::cout<<var.full_name<<std::endl;
 	}*/
 }
+

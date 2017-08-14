@@ -34,7 +34,9 @@ iCNode.cpp ^
 iCCompoundStatement.cpp ^
 iCMCUIdentifier.cpp ^
 iCSelectionStatement.cpp ^
-iCVariable.cpp
+iCVariable.cpp ^
+iCFunction.cpp ^
+iCFunctionCall.cpp
 @echo --------------------------------Done-------------------------------------
 
  

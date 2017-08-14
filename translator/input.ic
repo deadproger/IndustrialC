@@ -27,6 +27,16 @@ $
 
 int a,b,c;
 
+void some_function()
+{
+	a+=b-c;
+}
+
+void another_function()
+{
+	1;
+}
+
 /*Blink process*/
 process Proc1 : background
 {
@@ -35,8 +45,16 @@ process Proc1 : background
 	state FS_START 
 	{	
 		{
-			a=b-c;
+			if(a<b)
+			{
+				c = a + b;
+				_delay_us(50);
+			}
+		
+			some_function(a,a,a,a);
+			
 			b++;
+			b--;
 		}
 	
 		DDRB |= (1<<5);
