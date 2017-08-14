@@ -1,16 +1,17 @@
-#include "iCVariable.h"
+#include "iCFunction.h"
 #include "iCScope.h"
 #include "CodeGenContext.h"
 
-
-iCVariable::iCVariable( const iCStringList& type_specs_, const std::string name, const iCScope* scope, const ParserContext& context )
+iCFunction::iCFunction( const iCStringList& type_specs_,
+						const std::string name,
+						const iCScope* scope,
+						const ParserContext& context )
 	:	//type_specs(type_specs),
 		name(name),
 		scope(scope),
 		iCNode(context),
-		used_in_isr(false)
+		body(NULL)
 {
-
 	for(iCStringList::const_iterator i=type_specs_.begin();i!=type_specs_.end();i++)
 	{
 		type_specs.push_back(*i);
@@ -18,23 +19,26 @@ iCVariable::iCVariable( const iCStringList& type_specs_, const std::string name,
 	full_name = scope->name + "_" + name;
 }
 
-void iCVariable::gen_code( CodeGenContext& context )
+iCFunction::~iCFunction()
+{
+	if(NULL != body)
+		delete body;
+}
+
+void iCFunction::gen_code( CodeGenContext& context )
 {
 	context.set_location(line_num, filename);
 	context.indent();
-	if(used_in_isr)
-		context.to_code_fmt("volatile ");
 	for(iCStringList::iterator i=type_specs.begin();i!=type_specs.end();i++)
 	{
 		context.to_code_fmt("%s ", (*i).c_str());
 	}
 
 	context.to_code_fmt(full_name.c_str());
+	context.to_code("()");
 	context.to_code_fmt(";\n");
-}
-
-iCVariable::~iCVariable()
-{
-	/*for(iCStringList::iterator i=type_specs.begin();i!=type_specs.end();i++)
-		delete *i;*/
+	if(NULL != body)
+		body->gen_code(context);
+	else
+		context.to_code(";");
 }

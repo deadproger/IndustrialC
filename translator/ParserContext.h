@@ -47,7 +47,7 @@ public:
 	void set_state(const iCState* state) {this->state = state;}
 
 	const iCProgram* get_program() const {ICASSERT(NULL != program); return program;}
-	const iCProcess* get_process() const {ICASSERT(NULL != process); return process;}
+	const iCProcess* get_process() const {/*ICASSERT(NULL != process);*/ return process;}//removed assert because vars in functions are used outside processes
 	iCProcess* modify_process() {return process;}
 	const iCState* get_state() const {ICASSERT(NULL != state); return state;}
 
@@ -84,10 +84,12 @@ public:
 	void add_state_to_scope(const std::string& name);
 	void add_proc_to_scope(const std::string& name);
 	void add_mcu_decl_to_scope(const std::string& name);
+	void add_func_to_scope(const std::string& func);
 
 	//bool check_scope(const std::string& identifier)const;
 	const iCScope* get_var_scope(const std::string& identifier)const;
 	const iCScope* get_mcu_decl_scope(const std::string& mcu_decl)const;
+	const iCScope* get_func_scope(const std::string& func)const;
 	const iCScope* get_state_scope(const std::string& name)const;
 	const iCScope* get_proc_scope(const std::string& name)const;
 	const iCScope* get_current_scope()const{return current_scope;}

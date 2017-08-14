@@ -12,6 +12,6 @@ private:
 	iCExpression* expr;
 public:
 	iCPrimaryExpression(iCExpression* expr, const ParserContext& context) : expr(expr), iCNode(context) {}
-	~iCPrimaryExpression();
+	 ~iCPrimaryExpression();
 	virtual void gen_code(CodeGenContext& context);
 };

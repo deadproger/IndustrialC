@@ -1,13 +1,12 @@
 #include "icmemory.h"
 #include <iostream>
 #include <set>
-
+#include <typeinfo>
 
 //=================================================================================================
 //Memory leak tracker
 //=================================================================================================
 #ifdef ICDEBUG
-
 
 unsigned long ptrs_index = 0;
 void* ptrs[0xffffff];
@@ -21,7 +20,7 @@ inline void* ic_mem_new(std::size_t sz)
 		std::cout<<"Bad alloc: trying to allocate "<<sz<<"bytes"<<std::endl;
 		exit(-1);
 	}
-	num_allocated_ptrs++;	
+	num_allocated_ptrs++;
 
 	for(unsigned long i = 0;i<ptrs_index;i++)
 	{
@@ -35,7 +34,10 @@ inline void ic_mem_delete(void* ptr)
 {
 	//std::cout<<"deallocating "<<ptr<<std::endl;
 	if(NULL == ptr) 
+	{
+		std::cout<<"deleting NULL"<<std::endl;
 		return; 
+	}
 	num_allocated_ptrs--; 
 	
 	for(unsigned long i = 0;i<ptrs_index;i++)

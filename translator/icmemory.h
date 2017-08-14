@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <new>
 
-//#define ICDEBUG
+#define ICDEBUG
 
 //Pseudo assertion - prints a message to std::cout
 #ifdef ICDEBUG

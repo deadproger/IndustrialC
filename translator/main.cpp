@@ -7,7 +7,7 @@
 #include "CodeGenContext.h"
 #include <fstream>
 #include <typeinfo>
-extern iCProgram* ic_program;
+extern iCProgram* ic_program ;
 extern int ic_parse();
 extern FILE *ic_in;
 
@@ -36,7 +36,6 @@ int main(int argc, char **argv)
 	// open a file handle to a particular file:
 	FILE *myfile = fopen(input_filename.c_str(), "r");
 	
-
 	// make sure it's valid:
 	if (!myfile) 
 	{
