@@ -1,83 +1,27 @@
 
-#include "atmega168.ih"
+char sreg_lcd;
 
-$	#include <avr/io.h> 
-$	#include <avr/interrupt.h>
-$	volatile unsigned long ovf_cnt = 0;
-$	unsigned long millis()
-$	{
-$		unsigned char sreg = SREG;
-$		cli();
-$		unsigned long ovf = ovf_cnt;
-$		unsigned long tcnt = TCNT0;
-$		SREG = sreg;
-$		
-$		//Timer has already overflown, but interrupt has yet to execute
-$		if ((TIFR0 & _BV(TOV0)) && (tcnt < 255))
-$			ovf++;
-$		return (((ovf<<8) + tcnt)*1024)/(F_CPU/1000);
-$	}
-$	
-$	ISR(TIMER0_OVF_vect)
-$	{
-$		ovf_cnt++;
-$	}
-$	
-
-
-int a,b,c;
-
-void some_function()
+//=============================================================================
+//Writes 16 characters from LCD_text to LCD
+//Writes LEDs and reads keyboard
+//=============================================================================
+void UpdateLCD()
 {
-	a+=b-c;
+		char text_pos;
+		text_pos = 0;
+$		$sreg_lcd = LCD_text[ $text_pos ++];
 }
 
-void another_function()
+
+process Main : background
 {
-	1;
-}
-
-/*Blink process*/
-process Proc1 : background
-{
-
-
-	state FS_START 
-	{	
-		{
-			if(a<b)
-			{
-				c = a + b;
-				_delay_us(50);
-			}
+	state FS_START
+	{
+		0b10000000;
+		to state Main;
+	}
+	state Main
+	{
 		
-			some_function(a,a,a,a);
-			
-			b++;
-			b--;
-		}
-	
-		DDRB |= (1<<5);
-		to state LED_ON;	
-	}
-	
-	state LED_ON 
-	{
-	
-		timeout(500)
-		{
-			PORTB &= ~(1<<5);
-			to state LED_OFF;	
-		}
-	}
-	
-	state LED_OFF
-	{
-		timeout(500)
-		{
-			PORTB |= (1<<5);
-			to state LED_ON;
-		}
 	}
 }
-
