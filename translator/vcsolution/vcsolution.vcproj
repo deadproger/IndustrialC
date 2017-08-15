@@ -326,6 +326,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCLogicConst.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCLogicConst.h"
+					>
+				</File>
+				<File
 					RelativePath="..\iCMCUIdentifier.cpp"
 					>
 				</File>

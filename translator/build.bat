@@ -36,7 +36,8 @@ iCMCUIdentifier.cpp ^
 iCSelectionStatement.cpp ^
 iCVariable.cpp ^
 iCFunction.cpp ^
-iCFunctionCall.cpp
+iCFunctionCall.cpp ^
+iCLogicConst.cpp
 @echo --------------------------------Done-------------------------------------
 
  

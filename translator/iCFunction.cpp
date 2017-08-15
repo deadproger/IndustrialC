@@ -16,7 +16,10 @@ iCFunction::iCFunction( const iCStringList& type_specs_,
 	{
 		type_specs.push_back(*i);
 	}
-	full_name = scope->name + "_" + name;
+
+	//functions don't need prefixes - they are all in global scope
+	//this also eases using C functions
+	full_name = /*scope->name + "_" + */name;
 }
 
 iCFunction::~iCFunction()
@@ -36,7 +39,7 @@ void iCFunction::gen_code( CodeGenContext& context )
 
 	context.to_code_fmt(full_name.c_str());
 	context.to_code("()");
-	context.to_code_fmt(";\n");
+	context.to_code_fmt("\n");
 	if(NULL != body)
 		body->gen_code(context);
 	else

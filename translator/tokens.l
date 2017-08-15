@@ -59,6 +59,10 @@ const int IC_TAB_SIZE = 4;
 "clean"					return TOKEN(TCLEAN			);
 "if"					return TOKEN(TIF			);
 "else"					return TOKEN(TELSE			);
+"for"					return TOKEN(TFOR			);
+
+"true"					return TOKEN(TTRUE			);
+"false"					return TOKEN(TFALSE	 		);
 
 "void"					SAVE_TOKEN; return TVOID	 ;
 "char"					SAVE_TOKEN; return TCHAR	 ;
@@ -70,6 +74,8 @@ const int IC_TAB_SIZE = 4;
 "signed"				SAVE_TOKEN; return TSGND	 ;
 "unsigned"				SAVE_TOKEN; return TUNSGND	 ;
 "bool"					SAVE_TOKEN; return TBOOL	 ;
+
+
 
 [a-zA-Z_][a-zA-Z0-9_]*  SAVE_TOKEN; return TIDENTIFIER	;
 [0-9]+\.[0-9]*          SAVE_TOKEN; return TDCONST		;

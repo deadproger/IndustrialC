@@ -50,6 +50,7 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 
 	while((pos = this->text.find_first_of("$", last_pos)) != std::string::npos)
 	{
+
 		//dump clean substring to the stream
 		text_stream<<this->text.substr(last_pos, pos - last_pos);
 
@@ -62,6 +63,7 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 		//look up the var name in current scope 
 		//const iCScope* var_scope = parser_context.get_var_scope(var_name);
 		iCVariable* var = parser_context.get_var(var_name);
+
 		if(NULL == var) // variable not defined in this scope
 		{
 			//report error
@@ -76,9 +78,15 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 			ParserContext pc;
 			//iCIdentifier var_id(var_name, var->scope, pc);
 			text_stream<<var->full_name;
-			if(0 != parser_context.get_process()->activator.compare("background"))
+
+			const iCProcess* var_proc = parser_context.get_process();
+
+			if(NULL != var_proc)
 			{
-				var->used_in_isr = true;
+				if(0 != var_proc->activator.compare("background"))
+				{
+					var->used_in_isr = true;
+				}
 			}
 		}
 		last_pos = pos = end_pos;
@@ -91,7 +99,6 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 	}
 
 	this->text = text_stream.str();
-	
 }
 
 //=================================================================================================

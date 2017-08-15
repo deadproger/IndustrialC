@@ -26,6 +26,7 @@
 	#include "iCDouble.h"
 	#include "iCExpressionStatement.h"
 	#include "iCInteger.h"
+	#include "iCLogicConst.h"
 	#include "iCPostfixExpression.h"
 	#include "iCPrimaryExpression.h"
 	#include "iCUnaryExpression.h"
@@ -108,6 +109,9 @@
 %token <token> TCLEAN			"clean"	
 %token <token> TIF				"if"
 %token <token> TELSE			"else"
+%token <token> TFOR				"for"
+%token <token> TTRUE			"true"
+%token <token> TFALSE			"false"
 %token <string> TVOID			"void"		
 %token <string> TCHAR			"char"		
 %token <string> TINT			"int"			
@@ -526,7 +530,10 @@ state_body	:	%empty {$$ = new iCBlockItemsList();}
 state_items_list	:	state_items_list state_block_item 
 						{
 							if(NULL != $2)
-								$1->push_back($2); $$=$1;
+							{
+								$1->push_back($2);
+							}
+							$$=$1;
 						}
 					|	state_block_item 
 					{
@@ -570,29 +577,69 @@ block_item	:	var_declaration
 			
 statement	:	TTO TSTATE TIDENTIFIER TSEMIC //state transition
 				{
-				  $$ = new iCStateTransition(*$3, *parser_context); 
-				  parser_context->add_to_second_pass($$); // to check if state was defined
-				  delete $3;
-				  $1;$2;$4;//suppress unused value warning
+					const iCProcess* proc = parser_context->get_process();
+					if(NULL == proc)
+					{
+						parser_context->err_msg("state transitions can only be used inside states");
+						$$ = NULL;
+					}
+					else
+					{
+						$$ = new iCStateTransition(*$3, *parser_context); 
+						parser_context->add_to_second_pass($$); // to check if state was defined
+					}
+				  
+					delete $3;
+					$1;$2;$4;//suppress unused value warning
 				}			
 			|	TSTART TPROC TIDENTIFIER TSEMIC //start process
 				{
-					$$ = new iCStartProcStatement(*$3, *parser_context); 
-					parser_context->add_to_second_pass($$); // to check if process was defined
+					const iCProcess* proc = parser_context->get_process();
+					if(NULL == proc)
+					{
+						parser_context->err_msg("start process statement can only be used inside states");
+						$$ = NULL;
+					}
+					else
+					{
+						$$ = new iCStartProcStatement(*$3, *parser_context); 
+						parser_context->add_to_second_pass($$); // to check if process was defined
+					}
+					
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}	
 			|	TSTOP TPROC TIDENTIFIER TSEMIC //stop process
 				{
-					$$ = new iCStopProcStatement(*$3, *parser_context); 
-					parser_context->add_to_second_pass($$); // to check if process was defined
+					const iCProcess* proc = parser_context->get_process();
+					if(NULL == proc)
+					{
+						parser_context->err_msg("stop process statement can only be used inside states");
+						$$ = NULL;
+					}
+					else
+					{
+						$$ = new iCStopProcStatement(*$3, *parser_context); 
+						parser_context->add_to_second_pass($$); // to check if process was defined
+					}
+					
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}	
 			|	TSTOP TPROC TSEMIC
 				{
-					$$ = new iCStopProcStatement(parser_context->get_process()->name, *parser_context); 
-					parser_context->add_to_second_pass($$);
+					const iCProcess* proc = parser_context->get_process();
+					if(NULL == proc)
+					{
+						parser_context->err_msg("stop process statement can only be used inside states");
+						$$ = NULL;
+					}
+					else
+					{
+						$$ = new iCStopProcStatement(proc->name, *parser_context); 
+						parser_context->add_to_second_pass($$);
+					}
+					
 					$1;$2;$3;//suppress unused value warning
 				}
 			|	expr TSEMIC //expression statement
@@ -617,8 +664,18 @@ statement	:	TTO TSTATE TIDENTIFIER TSEMIC //state transition
 				}
 			|	TSTOP THYPERPROCESS TSEMIC
 				{
-					$$ = new iCStopHPStatement(parser_context->get_process()->activator, *parser_context); 
-					parser_context->add_to_second_pass($$); // required for it to work
+					const iCProcess* proc = parser_context->get_process();
+					if(NULL == proc)
+					{
+						parser_context->err_msg("stop hyperprocess statement can only be used inside states");
+						$$ = NULL;
+					}
+					else
+					{
+						$$ = new iCStopHPStatement(proc->activator, *parser_context); 
+						parser_context->add_to_second_pass($$); // required for it to work
+					}
+					
 					$1;$2;$3;//suppress unused value warning
 				}
 			|	compound_statement
@@ -787,7 +844,9 @@ arg_expr_list  :	arg_expr_list TCOMMA assignment_expr
 					}
 			   ;
 
-primary_expr : TICONST {$$ = new iCInteger(*$1, *parser_context); delete $1;}
+primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
+			 | TFALSE  {$$ = new iCLogicConst(false, *parser_context); $1;}
+			 | TICONST {$$ = new iCInteger(*$1, *parser_context); delete $1;}
 			 | TDCONST {$$ = new iCDouble(*$1, *parser_context); delete $1;}
 			 | THCONST {$$ = new iCInteger(*$1, *parser_context); delete $1;}
 			 | TBCONST {$$ = new iCInteger(*$1, *parser_context); delete $1;}
