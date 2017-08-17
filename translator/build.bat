@@ -37,7 +37,9 @@ iCSelectionStatement.cpp ^
 iCVariable.cpp ^
 iCFunction.cpp ^
 iCFunctionCall.cpp ^
-iCLogicConst.cpp
+iCLogicConst.cpp ^
+iCSubscriptExpression.cpp ^
+iCInitializer.cpp  
 @echo --------------------------------Done-------------------------------------
 
  

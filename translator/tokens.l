@@ -92,6 +92,7 @@ const int IC_TAB_SIZE = 4;
 "signed"				SAVE_TOKEN; return TSGND	 ;
 "unsigned"				SAVE_TOKEN; return TUNSGND	 ;
 "bool"					SAVE_TOKEN; return TBOOL	 ;
+"const"					SAVE_TOKEN; return TCONST	 ;
 
 
 
@@ -104,8 +105,8 @@ const int IC_TAB_SIZE = 4;
 
 "("                     return TOKEN(TLPAREN);
 ")"                     return TOKEN(TRPAREN);
-"["						return TOKEN(TLBRCKT);
-"]"						return TOKEN(TRBRCKT);
+"["						return TOKEN(TLBRACKET);
+"]"						return TOKEN(TRBRACKET);
 "{"                     return TOKEN(TLBRACE);
 "}"                     return TOKEN(TRBRACE);
 ":"						return TOKEN(TCOLON);

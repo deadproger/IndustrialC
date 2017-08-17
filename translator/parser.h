@@ -30,15 +30,19 @@
 	#include "iCPostfixExpression.h"
 	#include "iCPrimaryExpression.h"
 	#include "iCUnaryExpression.h"
+	#include "iCSubscriptExpression.h"
 	//#include "iCVariableDeclaration.h"
 	#include "iCVariable.h"
 	#include "iCFunction.h"
 	#include "iCFunctionCall.h"
+	//#include "iCDeclarator.h"
+	#include "iCInitializer.h"
 
 	#include <stdio.h>
 	#include <stdarg.h> 
 	#include <typeinfo>
 	#include <set>
+	
 	
 
     iCProgram* ic_program = NULL; /* AST root */
@@ -86,6 +90,10 @@
 	iCProgramItem* program_item;
 
 	iCProcBody* proc_body;
+
+	//iCDeclarator* declarator;
+	//std::vector<iCDeclarator*>* declarator_list;
+	iCInitializer* icinitializer;
 }
 
 /***********************************************/
@@ -121,7 +129,8 @@
 %token <string> TDBL			"double"		
 %token <string> TSGND			"signed"	
 %token <string> TUNSGND			"unsigned"	
-%token <string> TBOOL			"bool"		
+%token <string> TBOOL			"bool"	
+%token <string> TCONST			"const"
 %token <string> TIDENTIFIER		"identifier"
 %token <string> TICONST			"integer constant"
 %token <string> TDCONST			"double constant"
@@ -133,8 +142,8 @@
 %token <string> TSTRING			"string literal"
 %token <token> TLPAREN			"(" 
 %token <token> TRPAREN			")" 
-%token <token> TLBRCKT			"["	
-%token <token> TRBRCKT			"]"	
+%token <token> TLBRACKET			"["	
+%token <token> TRBRACKET			"]"	
 %token <token> TLBRACE			"{" 
 %token <token> TRBRACE			"}" 
 %token <token> TSEMIC			";" 
@@ -205,13 +214,17 @@
 %type <var_list> 			var_declaration
 %type <string> 				mcu_declaration
 %type <str_list>			decl_specs			
-%type <str_list>			init_declarator_list		
+%type <var_list>			init_declarator_list		
 //%type <string>				init_declarator		
-%type <string>				direct_declarator					
-//%type <string>				initializer 		
+%type <variable>				direct_declarator					
+%type <icinitializer>				initializer 
+%type <icinitializer>				initializer_list
 %type <string>				type_spec		
 %type <func>				func_definition
 %type <expr_list>			arg_expr_list
+%type <variable>			init_declarator
+%type <string>				func_declarator
+
 
 
 /***********************************************/
@@ -291,9 +304,9 @@
 
 
 
-/***********************************************/
-/*                   GRAMMAR                   */
-/***********************************************/
+/*************************************************************************************************/
+/*                                        GRAMMAR                                                */
+/*************************************************************************************************/
 
 %%
 
@@ -761,9 +774,9 @@ block_items_list	:	block_items_list block_item
 					;
 			
 
-/***********************************************/     
-/*           E X P R E S S I O N S             */     
-/***********************************************/
+/*************************************************************************************************/     
+/*                                 E X P R E S S I O N S                                         */     
+/*************************************************************************************************/
 
 expr 		: assignment_expr 
 	 		;
@@ -809,7 +822,11 @@ unary_expr 	: postfix_expr
 		   	;
 		   	
 postfix_expr : primary_expr 
-			 /*| postfix_expr TLBRCKT expr TRBRCKT*/
+			 | postfix_expr TLBRACKET expr TRBRACKET 
+			   {
+				   $$ = new iCSubscriptExpression($1, $3, *parser_context);
+				   $2;$4;
+			   }
 			 |	TIDENTIFIER TLPAREN TRPAREN 
 			   {
 				   $$ = new iCFunctionCall(*$1, *parser_context);
@@ -922,11 +939,11 @@ assignement_op : TASSGN
 		 | TEXCLAM
 		 ;*/
 
-/***********************************************/     
-/*           D E C L A R A T I O N S           */     
-/***********************************************/
+/*************************************************************************************************/     
+/*                              D E C L A R A T I O N S                                          */     
+/*************************************************************************************************/
 
-func_definition			:	decl_specs direct_declarator TLPAREN  
+func_definition			:	decl_specs func_declarator TLPAREN  
 							{
 								const iCScope* scope = parser_context->get_current_scope();
 								$<func>$ = new iCFunction(*$1, *$2, scope, *parser_context);
@@ -946,19 +963,40 @@ func_body				:	compound_statement { $$ = $1; }
 						|	TSEMIC { $$ = NULL; $1; }
 						;
 
+func_declarator			: TIDENTIFIER
+						  {
+							  //check if already defined in this scope
+							  const iCScope* var_scope = parser_context->get_var_scope(*$1);
+							  const iCScope* mcu_decl_scope = parser_context->get_mcu_decl_scope(*$1);
+							  const iCScope* func_scope = parser_context->get_func_scope(*$1);
+							  if(NULL != var_scope || NULL != mcu_decl_scope || NULL != func_scope)
+							  {
+								  const iCScope* scope = (NULL != var_scope)?var_scope:((NULL != mcu_decl_scope)?mcu_decl_scope:func_scope);
+								  parser_context->err_msg("symbol redefinition: %s aready defined in %s",
+									  $1->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
+							  }
+							  $$ = $1;
+						  };
+
 
 var_declaration			:	decl_specs init_declarator_list TSEMIC 
 							{
-								const iCScope* scope = parser_context->get_current_scope();
-								$$ = new std::list<iCVariable*>;
-								for(iCStringList::iterator i=$2->begin();i!=$2->end();i++)
+								$$ = $2;
+
+								for(std::list<iCVariable*>::iterator i=$2->begin();i!=$2->end();i++)
+								{
+									iCVariable* var = *i;
+									var->set_type_specs(*$1);
+								}
+
+								/*for(iCStringList::iterator i=$2->begin();i!=$2->end();i++)
 								{
 									iCVariable* var = new iCVariable(*$1, *i, scope, *parser_context);
 									$$->push_back(var);
 									parser_context->add_var_to_scope(var);
 								}
 								delete $1;
-								delete $2;
+								delete $2;*/
 								
 								$3;//suppress unused value warning*/
 							}
@@ -973,15 +1011,36 @@ decl_specs				:	decl_specs type_spec {$1->push_back(*$2); delete $2; $$=$1;}
 						|	type_spec {$$ = new iCStringList; $$->push_back(*$1); delete $1;}
 						;
 
-init_declarator_list	:	init_declarator_list TCOMMA direct_declarator {$1->push_back(*$3); delete $3; delete $2; $$=$1;}
-						|	direct_declarator {$$ = new iCStringList; $$->push_back(*$1); delete $1;}
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+
+init_declarator_list	:	init_declarator_list TCOMMA init_declarator 
+							{
+								$$=$1;
+								$1->push_back($3);
+								delete $2;
+							}
+						|	init_declarator 
+							{
+								$$ = new std::list<iCVariable*>;
+								$$->push_back($1);
+								//delete $1;
+							}
 						;
 
-/*init_declarator			:	declarator {$$ = $1;}
-							|	declarator TASSGN initializer {$$ = $1; delete $2; delete $3;}
-							;*/
+init_declarator			:	direct_declarator {$$ = $1;}
+						|	direct_declarator TASSGN initializer 
+							{
+								$$ = $1;
+								$$->set_initializer($3);
+								delete $2;
+							}
+						;
 
-direct_declarator				:	TIDENTIFIER 
+direct_declarator			:	TIDENTIFIER 
 							{
 								//check if already defined in this scope
 								const iCScope* var_scope = parser_context->get_var_scope(*$1);
@@ -993,13 +1052,59 @@ direct_declarator				:	TIDENTIFIER
 									parser_context->err_msg("symbol redefinition: %s aready defined in %s",
 										$1->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
 								}
+
+								const iCScope* scope = parser_context->get_current_scope();
+								$$ = new iCVariable(*$1, scope, *parser_context);
+								parser_context->add_var_to_scope($$);
+							}
+							| direct_declarator TLBRACKET binary_expr TRBRACKET 
+							{
 								$$ = $1;
+								$$->add_dimension($3);
+								$2;$4;
+							}
+							| direct_declarator TLBRACKET TRBRACKET 
+							{
+								$$ = $1;
+								$$->add_dimension(NULL); //dimension size is implicit
+								$2;$3;
 							}
 							;
 
-/*initializer 			:	TICONST  {$$ = $1;}
-							|	TDCONST {$$ = $1;}
-							;*/
+initializer 			:	assignment_expr  
+							{
+								$$ = new iCInitializer(*parser_context);
+								$$->add_initializer($1);
+							}
+							|	TLBRACE initializer_list TRBRACE 
+							{
+								$$ = $2;
+								$1;$3;
+							}
+							|	TLBRACE initializer_list TCOMMA TRBRACE 
+							{
+								$$ = $2;
+								$1;$3;$4;
+							}
+						;
+
+initializer_list		:	initializer_list TCOMMA initializer 
+							{
+								$$ = $1;
+								$$->add_initializer($3);
+								$2;
+							}
+						|	initializer 
+							{
+								$$ = $1;
+							}
+						;
+
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
 
 type_spec				:	TVOID	
 								|	TCHAR	
@@ -1010,7 +1115,8 @@ type_spec				:	TVOID
 								|	TDBL		
 								|	TSGND	
 								|	TUNSGND	
-								|	TBOOL	
+								|	TBOOL
+								|	TCONST
 								;
 
 %%

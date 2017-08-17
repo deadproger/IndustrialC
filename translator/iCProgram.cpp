@@ -179,13 +179,14 @@ iCProgram::~iCProgram()
 	for(iCHyperprocessMap::iterator i=hps.begin();i!=hps.end();i++)
 		delete i->second;	
 
-	//clear the declarations
+	//clear mcu declarations
 	for(iCDeclarationList::iterator i=mcu_decls.begin();i!=mcu_decls.end();i++)
 		delete *i;	
 
 	//clear functions
 	for(std::list<iCFunction*>::iterator i=func_list.begin();i!=func_list.end();i++)
 		delete *i;	
+
 
 	//clear variables
 	for(std::list<iCVariable*>::iterator i=var_list.begin();i!=var_list.end();i++)

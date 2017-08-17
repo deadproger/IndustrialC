@@ -75,7 +75,6 @@ int main(int argc, char **argv)
 
 		output_file.close();
 	}
-
 	delete ic_program;
 	delete parser_context;
 
