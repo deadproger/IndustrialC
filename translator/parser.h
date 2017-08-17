@@ -128,6 +128,7 @@
 %token <string> THCONST			"hex constant"
 %token <string> TBCONST			"binary constant"
 %token <string> TCCODELINE		"c code line"
+%token <string> TCOMMENTLINE	"comment line"
 %token <string> TCCODEEXPR		"c code expression"
 %token <string> TSTRING			"string literal"
 %token <token> TLPAREN			"(" 
@@ -191,6 +192,7 @@
 %type <timeout>				timeout
 %type <statement>			statement
 %type <statement>			compound_statement
+%type <statement>			func_body
 %type <statement>			prep_compound
 %type <expression>			expr
 %type <expression> 			assignment_expr
@@ -930,7 +932,7 @@ func_definition			:	decl_specs direct_declarator TLPAREN
 								$<func>$ = new iCFunction(*$1, *$2, scope, *parser_context);
 								parser_context->add_func_to_scope(*$2);
 							}
-							TRPAREN compound_statement // compound statement
+							TRPAREN func_body // compound statement
 							{
 								$$ = $<func>4;
 								$$->body = $6;	
@@ -938,16 +940,10 @@ func_definition			:	decl_specs direct_declarator TLPAREN
 								delete $2;
 								$3;$5;
 							}
-						/*|
-							decl_specs direct_declarator TLPAREN TRPAREN TSEMIC
-							{
-								const iCScope* scope = parser_context->get_current_scope();
-								$$ = new iCFunction(*$1, *$2, scope, *parser_context);
-								parser_context->add_func_to_scope(*$2);
-								delete $1;
-								delete $2;
-								$3;$4;$5;
-							}*/
+						;
+
+func_body				:	compound_statement { $$ = $1; }
+						|	TSEMIC { $$ = NULL; $1; }
 						;
 
 

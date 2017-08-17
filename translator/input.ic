@@ -1,5 +1,153 @@
+#include "atmega128.ih"
 
+$ #include <avr/io.h>
+$ #include <util/delay.h>
+$ #include <stdint.h>
+$ #include <stdio.h>
+
+#define LCD_RS_PORT 	PORTC
+#define LCD_RS_PIN 		PC0
+#define LCLK_PORT 		PORTC
+#define LCLK_PIN 		PC1
+#define DI_PORT 		PORTC
+#define	DI_PIN 			PC2
+#define DO_PORT 		PINC
+#define	DO_PIN 			PC3
+#define SCLK_PORT 		PORTC
+#define SCLK_PIN 		PC4
+#define LCD_E_PORT 		PORTC
+#define LCD_E_PIN 		PC5
+
+#define LCD_FUNC_SET  		 0b00100000	
+#define LCD_8_BIT 			 0b00010000	
+#define LCD_TWO_LINES 		 0b00001000	
+#define LCD_FONT_5x8		 0b00000100	
+#define LCD_ON_OFF_CTRL 	 0b00001000	
+#define LCD_ON				 0b00000100	
+#define LCD_CLEAR_CMD 		 0b00000001	
+#define LCD_ENTRY_MODE_SET 	 0b00000100	
+#define LCD_INCREMENT		 0b00000010	
+#define LCD_SET_DDRAM_ADDR	 0b10000000	
+#define LCD_SET_CGRAM_ADDR	 0x40		
+#define LCD_DEGREE_SYM_ADDR	 0			
+#define LCD_FIRST_POS_ADDR	 0			
+#define LCD_NINTH_POS_ADDR	 40	
+
+//AC-161A datasheet requires 39us for cmd and 43us for data to process instructions
+//These delays are adjusted for overhead and SREG session time to ensure 39/43us between LCD Executes
+#define LCD_DELAY_DATA_US  22
+#define LCD_DELAY_CMD_US  22
+
+$const char degree_symbol[] = 
+${
+$	0b00110,
+$	0b01001,
+$	0b01001,
+$	0b00110,
+$	0b00000,
+$	0b00000,
+$	0b00000,
+$	0b00000,
+$};
+
+char sreg_led;
 char sreg_lcd;
+char sreg_keyboard;
+
+$char LCD_text[17]="                ";
+
+
+void asdasff();
+
+void qwergeg() {}
+
+
+//=============================================================================
+//Writes 16 bits via two daisy-chained 595 serial-in parallel-out shift registers
+//Reads 8 bits from the upper 165 parallel-in serial-out shift register
+//=============================================================================
+void SREG_send_data()
+{
+	sreg_keyboard = 0;
+	char data;
+	data = sreg_led;
+$	for(int i=0;i<8;i++)//Write 8 LED bits, read 8 keyboard bits
+	{
+		sreg_keyboard <<= 1;
+		SCLK_PORT &= ~_BV(SCLK_PIN); //SCLK LOW
+		if(DO_PORT & _BV(DO_PIN)) //Read keyboard
+			sreg_keyboard |= 1;
+		if(data & 0x80) //Fetch LED bit and write it into DI
+			DI_PORT |= _BV(DI_PIN);
+		else
+			DI_PORT &= ~_BV(DI_PIN);
+		data <<= 1;
+		SCLK_PORT |= _BV(SCLK_PIN); //SCLK HIGH
+	}
+	
+	data = sreg_lcd;
+$	for(int i=0;i<8;i++)//Write 8 LCD bits
+	{
+		SCLK_PORT &= ~_BV(SCLK_PIN); //SCLK LOW
+		if(data & 0x80) //Fetch LCD bit and write it into DI
+			DI_PORT |= _BV(DI_PIN);
+		else
+			DI_PORT &= ~_BV(DI_PIN);
+		data <<= 1;
+		SCLK_PORT |= _BV(SCLK_PIN); //SCLK HIGH
+	}
+	
+	//Latch
+	LCLK_PORT &= ~_BV(LCLK_PIN);
+	LCLK_PORT |= _BV(LCLK_PIN);
+	
+	//LCD Execute
+	LCD_E_PORT |= _BV(LCD_E_PIN);
+	_delay_us(0.5);
+	LCD_E_PORT &= ~_BV(LCD_E_PIN);
+}
+
+//=============================================================================
+//Initializes AC-161A LCD display
+// 8-bit mode, two lines(last 8 symbols are treated as 2nd line), 5x8 font,
+// cursor off, blink off, shift off, increment mode
+//Writes degree symbol into CGRAM
+//=============================================================================
+void InitLCD()
+{
+	//LCD Initialization
+	_delay_ms(30);
+	LCD_RS_PORT &= ~_BV(LCD_RS_PIN); // RS low for commands
+	sreg_lcd = LCD_FUNC_SET | LCD_8_BIT | LCD_TWO_LINES | LCD_FONT_5x8	;
+	SREG_send_data();
+	_delay_us(LCD_DELAY_CMD_US);
+	
+	sreg_lcd = LCD_ON_OFF_CTRL | LCD_ON;
+	SREG_send_data();
+	_delay_us(LCD_DELAY_CMD_US);
+	
+	sreg_lcd = LCD_CLEAR_CMD;
+	SREG_send_data();
+	_delay_ms(2);
+	
+	sreg_lcd = LCD_ENTRY_MODE_SET | LCD_INCREMENT;
+	SREG_send_data();
+	_delay_us(LCD_DELAY_CMD_US);
+	
+	//Load degree symbol into CGRAM
+	LCD_RS_PORT &= ~_BV(LCD_RS_PIN); // RS low for commands
+	sreg_lcd = LCD_SET_CGRAM_ADDR + LCD_DEGREE_SYM_ADDR;//Set CGRAM address 00
+	SREG_send_data();
+	_delay_us(LCD_DELAY_CMD_US);
+	
+$	for(int i=0;i<8;i++)//Symbol has 8 rows, each row is presented by 5 lsbs in data byte
+	{
+		LCD_RS_PORT |= _BV(LCD_RS_PIN); // RS high for data
+		sreg_lcd = $$degree_symbol[i]$$;
+		SREG_send_data();
+		_delay_us(LCD_DELAY_DATA_US);
+	}
+}
 
 //=============================================================================
 //Writes 16 characters from LCD_text to LCD
@@ -9,19 +157,347 @@ void UpdateLCD()
 {
 		char text_pos;
 		text_pos = 0;
-$		$sreg_lcd = LCD_text[ $text_pos ++];
+	
+		//Send a character to LCD
+		LCD_RS_PORT &= ~_BV(LCD_RS_PIN); // RS low for commands
+		sreg_lcd = LCD_SET_DDRAM_ADDR + LCD_FIRST_POS_ADDR;//Set DDRAM address 00
+		SREG_send_data();
+		_delay_us(LCD_DELAY_CMD_US);
+		LCD_RS_PORT |= _BV(LCD_RS_PIN); // RS high for data
+		
+$		for(int i=0;i<8;i++)
+		{
+			sreg_lcd = $$LCD_text[$text_pos++]$$;
+			SREG_send_data();
+			_delay_us(LCD_DELAY_DATA_US);
+		}
+		
+		LCD_RS_PORT &= ~_BV(LCD_RS_PIN); // RS low for commands
+		sreg_lcd = LCD_SET_DDRAM_ADDR + LCD_NINTH_POS_ADDR;//Set DDRAM address 40
+		SREG_send_data();
+		_delay_us(LCD_DELAY_CMD_US);
+		LCD_RS_PORT |= _BV(LCD_RS_PIN); // RS high for data
+		
+$		for(int i=0;i<8;i++)
+		{
+			sreg_lcd = $$LCD_text[$text_pos++]$$;
+			SREG_send_data();
+			_delay_us(LCD_DELAY_DATA_US);
+		}
 }
 
+//bool A_button_pressed;
+//bool A_button_held;
+
+char button_up_pressed;
+char button_down_pressed;
+char button_A_pressed;
+char button_A_held;
+char button_B_pressed;
+char button_B_held;
+
+bool ledA_state;
 
 process Main : background
 {
+	unsigned int counter;
 	state FS_START
 	{
-		0b10000000;
+		sreg_led = 0;
+		sreg_lcd = 0;
+		
+		counter = 0;
+
+		DDRC = _BV(LCD_RS_PIN) | _BV(LCLK_PIN) | _BV(DI_PIN) /*| _BV(DO_PIN)*/ | _BV(SCLK_PIN) | _BV(LCD_E_PIN);//0b00110111; 
+		
+		SCLK_PORT |= _BV(SCLK_PIN); // Shift clock high
+		LCLK_PORT |= _BV(LCLK_PIN); // Latch clock high
+		LCD_RS_PORT |= _BV(LCD_RS_PIN); // Set LCD RS high (data)
+		LCD_E_PORT &= ~_BV(LCD_E_PIN); // Set LCD Execute low
+		
+		InitLCD();
+		
+		//A_button_pressed = false;
+		ledA_state = false;
+		
+		
+		
+		start process ShiftRegisters;
+		start process ButtonUp;
+		start process ButtonDown;
+		start process ButtonA;
+		start process ButtonB;
+		
+		start process Empty;
+		
 		to state Main;
 	}
 	state Main
 	{
+		//UpdateLCD();
 		
+		/*
+$		for(int i=0;i<8;i++)
+$			LCD_text[i] = ($sreg_keyboard & (1<<(7-i))) ? '1' : '0';
+$		for(int i=8;i<16;i++)
+$			LCD_text[i] = 0;
+		*/
+		
+$		for(int i=0;i<16;i++)
+$			LCD_text[i] = ' ';
+$		sprintf(LCD_text, "%u", $counter);
+		
+		if(button_up_pressed)
+		{
+			counter++;
+			button_up_pressed = false;
+		}
+		
+		if(button_down_pressed)
+		{
+			counter--;
+			button_down_pressed = false;
+		}
+		
+		if(ledA_state)
+			sreg_led |= _BV(0);
+		else
+			sreg_led &= ~_BV(0);
+		
+		//_delay_ms(40);
 	}
 }
+
+process ShiftRegisters : background
+{
+	state FS_START
+	{
+		UpdateLCD();
+		to state Wait;
+	}
+	state Wait
+	{
+		timeout(40)
+		{
+			to state FS_START;
+		}
+	}
+}
+
+#define BUTTON_UP_BIT  		3
+#define BUTTON_DOWN_BIT  	4
+#define BUTTON_A_BIT		0
+#define BUTTON_B_BIT		1
+
+#define BUTTON_HOLD_TIME_MS	1000
+#define BUTTON_SPD0_TIME_MS 200
+#define BUTTON_SPD1_TIME_MS 100
+#define BUTTON_SPD2_TIME_MS 20
+
+process ButtonUp : background
+{
+	unsigned int hold_counter;
+	state FS_START
+	{
+		if(!(sreg_keyboard & _BV(BUTTON_UP_BIT)))
+		{
+			hold_counter = 0;
+			button_up_pressed = true;
+			to state Pressed;
+		}
+	}
+	state Pressed
+	{
+		if(sreg_keyboard & _BV(BUTTON_UP_BIT))
+		{
+			to state FS_START;
+		}
+		timeout(BUTTON_SPD0_TIME_MS)
+		{
+			to state Held;
+		}
+	}
+	state Held
+	{
+		if(sreg_keyboard & _BV(BUTTON_UP_BIT))
+		{
+			to state FS_START;
+		}
+		
+		timeout(BUTTON_SPD1_TIME_MS)
+		{
+			button_up_pressed = true;
+			hold_counter++;
+			to state Held;
+		}
+		
+		if(hold_counter > BUTTON_SPD2_TIME_MS)
+		{
+			hold_counter = 0;
+			to state LongHeld;
+		}
+	}
+	state LongHeld
+	{
+		if(sreg_keyboard & _BV(BUTTON_UP_BIT))
+		{
+			to state FS_START;
+		}
+		timeout(10)
+		{
+			button_up_pressed = true;
+			to state LongHeld;
+		}
+	}
+}
+
+process ButtonDown : background
+{
+	unsigned int hold_counter;
+	state FS_START
+	{
+		if(!(sreg_keyboard & _BV(BUTTON_DOWN_BIT)))
+		{
+			hold_counter = 0;
+			button_down_pressed = true;
+			to state Pressed;
+		}
+	}
+	state Pressed
+	{
+		if(sreg_keyboard & _BV(BUTTON_DOWN_BIT))
+		{
+			to state FS_START;
+		}
+		timeout(BUTTON_SPD0_TIME_MS)
+		{
+			to state Held;
+		}
+	}
+	state Held
+	{
+		if(sreg_keyboard & _BV(BUTTON_DOWN_BIT))
+		{
+			to state FS_START;
+		}
+		
+		timeout(BUTTON_SPD1_TIME_MS)
+		{
+			button_down_pressed = true;
+			hold_counter++;
+			to state Held;
+		}
+		
+		if(hold_counter > BUTTON_SPD2_TIME_MS)
+		{
+			hold_counter = 0;
+			to state LongHeld;
+		}
+	}
+	state LongHeld
+	{
+		if(sreg_keyboard & _BV(BUTTON_DOWN_BIT))
+		{
+			to state FS_START;
+		}
+		timeout(10)
+		{
+			button_down_pressed = true;
+			to state LongHeld;
+		}
+	}
+}
+
+//=============================================================================
+//A button control process
+//=============================================================================
+process ButtonA : background
+{
+	state FS_START
+	{
+		if(!(sreg_keyboard & _BV(BUTTON_A_BIT)))
+		{
+			button_A_pressed = true;
+			to state Pressed;
+		}
+	}
+	state Pressed
+	{
+		if(sreg_keyboard & _BV(BUTTON_A_BIT))
+		{
+			to state FS_START;
+		}
+		timeout(BUTTON_HOLD_TIME_MS)
+		{
+			button_A_held = true;
+			to state Held;
+		}
+	}
+	state Held
+	{
+		if(sreg_keyboard & _BV(BUTTON_A_BIT))
+		{
+			to state FS_START;
+		}
+	}
+}
+
+//=============================================================================
+//B button control process
+//=============================================================================
+process ButtonB : background
+{
+	state FS_START
+	{
+		if(!(sreg_keyboard & _BV(BUTTON_B_BIT)))
+		{
+			button_B_pressed = true;
+			to state Pressed;
+		}
+	}
+	state Pressed
+	{
+		if(sreg_keyboard & _BV(BUTTON_B_BIT))
+		{
+			to state FS_START;
+		}
+		timeout(BUTTON_HOLD_TIME_MS)
+		{
+			button_B_held = true;
+			to state Held;
+		}
+	}
+	state Held
+	{
+		if(sreg_keyboard & _BV(BUTTON_B_BIT))
+		{
+			to state FS_START;
+		}
+	}
+}
+
+process Empty : background
+{
+	state FS_START
+	{
+		to state Some;
+	}
+	state Some{to state Some1;}
+	state Some1{to state Some2;}
+	state Some2{to state Some3;}
+	state Some3{to state Some4;}
+	state Some4{to state Some5;}
+	state Some5{to state FS_START;}
+}
+
+
+
+
+
+
+
+
+
+
+
+
