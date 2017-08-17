@@ -8,7 +8,17 @@ const char degree_symbol[] =
 	0b00000,
 	0b00000,
 	0b00000,
+	0b00000,
+	0b00000,0b00000,
 };
+
+
+
+char LCD_text[] = "asdasdasd";
+char LCD_text2, sadfsdf, qweqwe;
+int asdawww;
+
+void const asdwwwrgg();
 
 process a : background
 {

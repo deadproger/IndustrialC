@@ -39,7 +39,8 @@ iCFunction.cpp ^
 iCFunctionCall.cpp ^
 iCLogicConst.cpp ^
 iCSubscriptExpression.cpp ^
-iCInitializer.cpp  
+iCInitializer.cpp ^
+iCString.cpp 
 @echo --------------------------------Done-------------------------------------
 
  
