@@ -37,6 +37,7 @@
 	#include "iCFunctionCall.h"
 	//#include "iCDeclarator.h"
 	#include "iCInitializer.h"
+	#include "iCString.h"
 
 	#include <stdio.h>
 	#include <stdarg.h> 
@@ -919,6 +920,11 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 					delete $1;
 				}
 				/* add hyperprocess control - check*/
+			 |	TSTRING
+				{
+					$$ = new iCString(*$1, *parser_context);
+					delete $1;
+				}
 			 ;
 
 assignement_op : TASSGN 
@@ -997,6 +1003,8 @@ var_declaration			:	decl_specs init_declarator_list TSEMIC
 								}
 								delete $1;
 								delete $2;*/
+
+								delete $1;
 								
 								$3;//suppress unused value warning*/
 							}
@@ -1056,6 +1064,7 @@ direct_declarator			:	TIDENTIFIER
 								const iCScope* scope = parser_context->get_current_scope();
 								$$ = new iCVariable(*$1, scope, *parser_context);
 								parser_context->add_var_to_scope($$);
+								delete $1;
 							}
 							| direct_declarator TLBRACKET binary_expr TRBRACKET 
 							{
@@ -1084,7 +1093,8 @@ initializer 			:	assignment_expr
 							|	TLBRACE initializer_list TCOMMA TRBRACE 
 							{
 								$$ = $2;
-								$1;$3;$4;
+								delete $3;
+								$1;$4;
 							}
 						;
 
@@ -1092,7 +1102,7 @@ initializer_list		:	initializer_list TCOMMA initializer
 							{
 								$$ = $1;
 								$$->add_initializer($3);
-								$2;
+								delete $2;
 							}
 						|	initializer 
 							{

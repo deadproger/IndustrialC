@@ -374,6 +374,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCString.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCString.h"
+					>
+				</File>
+				<File
 					RelativePath="..\iCSubscriptExpression.cpp"
 					>
 				</File>
