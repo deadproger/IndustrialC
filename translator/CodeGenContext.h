@@ -4,7 +4,7 @@
 class iCProcess;
 class iCState;
 
-const unsigned int NEW_LINES_THRESHOLD = 0;
+const unsigned int NEW_LINES_THRESHOLD = 5;
 const unsigned int CODEGEN_BUFFER_SIZE = 1024;
 
 //=================================================================================================
@@ -54,9 +54,13 @@ public:
 		else
 		{
 			if(line_num < cur_line_num)
+			{
 				place_line_marker(line_num);
+			}
 			else
+			{
 				add_new_lines(line_num - cur_line_num);
+			}
 		}
 	}
 	

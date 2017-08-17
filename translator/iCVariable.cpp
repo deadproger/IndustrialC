@@ -1,20 +1,23 @@
 #include "iCVariable.h"
 #include "iCScope.h"
 #include "CodeGenContext.h"
+#include "iCInitializer.h"
 
 
-iCVariable::iCVariable( const iCStringList& type_specs_, const std::string name, const iCScope* scope, const ParserContext& context )
-	:	//type_specs(type_specs),
-		name(name),
+iCVariable::iCVariable( const std::string& name,
+						const iCScope* scope,
+						const ParserContext& context )
+	:	name(name),
 		scope(scope),
 		iCNode(context),
-		used_in_isr(false)
+		used_in_isr(false),
+		decl_initializer(NULL)
 {
 
-	for(iCStringList::const_iterator i=type_specs_.begin();i!=type_specs_.end();i++)
+	/*for(iCStringList::const_iterator i=type_specs_.begin();i!=type_specs_.end();i++)
 	{
 		type_specs.push_back(*i);
-	}
+	}*/
 	full_name = scope->name + "_" + name;
 }
 
@@ -30,11 +33,42 @@ void iCVariable::gen_code( CodeGenContext& context )
 	}
 
 	context.to_code_fmt(full_name.c_str());
+
+	for(std::vector<iCExpression*>::iterator i=array_dimensions.begin();i!=array_dimensions.end();i++)
+	{
+		iCExpression* dimension = *i;
+		context.to_code("[");
+		if(NULL != dimension)
+			dimension->gen_code(context);
+		context.to_code("]");
+	}
+
+	if(NULL != decl_initializer)
+	{
+		context.to_code(" = ");
+		decl_initializer->gen_code(context);
+	}
+
 	context.to_code_fmt(";\n");
 }
 
 iCVariable::~iCVariable()
 {
-	/*for(iCStringList::iterator i=type_specs.begin();i!=type_specs.end();i++)
-		delete *i;*/
+	if(NULL != decl_initializer)
+		delete decl_initializer;
+
+	for(std::vector<iCExpression*>::iterator i=array_dimensions.begin();i!=array_dimensions.end();i++)
+	{
+		iCExpression* dimension = *i;
+		if(NULL != dimension)
+			delete dimension;
+	}
+}
+
+void iCVariable::set_type_specs( const iCStringList& _type_specs )
+{
+	for(iCStringList::const_iterator i=_type_specs.begin();i!=_type_specs.end();i++)
+	{
+		type_specs.push_back(*i);
+	}
 }
