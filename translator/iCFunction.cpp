@@ -39,9 +39,11 @@ void iCFunction::gen_code( CodeGenContext& context )
 
 	context.to_code_fmt(full_name.c_str());
 	context.to_code("()");
-	context.to_code_fmt("\n");
 	if(NULL != body)
+	{
+		context.to_code_fmt("\n");
 		body->gen_code(context);
+	}
 	else
 		context.to_code(";");
 }

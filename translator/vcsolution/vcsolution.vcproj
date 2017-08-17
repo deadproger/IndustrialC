@@ -491,6 +491,10 @@
 			Name="Files"
 			>
 			<File
+				RelativePath="..\atmega128.ih"
+				>
+			</File>
+			<File
 				RelativePath="..\atmega168.ih"
 				>
 			</File>
