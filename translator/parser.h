@@ -38,6 +38,7 @@
 	//#include "iCDeclarator.h"
 	#include "iCInitializer.h"
 	#include "iCString.h"
+	#include "iCIterationStatement.h"
 
 	#include <stdio.h>
 	#include <stdarg.h> 
@@ -95,6 +96,7 @@
 	//iCDeclarator* declarator;
 	//std::vector<iCDeclarator*>* declarator_list;
 	iCInitializer* icinitializer;
+	unsigned long line_num;
 }
 
 /***********************************************/
@@ -204,6 +206,7 @@
 %type <statement>			compound_statement
 %type <statement>			func_body
 %type <statement>			prep_compound
+%type <statement>			expression_statement
 %type <expression>			expr
 %type <expression> 			assignment_expr
 %type <expression> 			binary_expr
@@ -658,11 +661,14 @@ statement	:	TTO TSTATE TIDENTIFIER TSEMIC //state transition
 					
 					$1;$2;$3;//suppress unused value warning
 				}
-			|	expr TSEMIC //expression statement
+			|	expression_statement
 				{
+					$$ = $1;
+					/*
 					$$ = new iCExpressionStatement($1, *parser_context);
 					$$->line_num = parser_context->line();
 					$2;//suppress unused value warning
+					*/
 				}					
 			|	TSTART THYPERPROCESS TIDENTIFIER TSEMIC //hyperprocess control - start
 				{
@@ -715,8 +721,31 @@ statement	:	TTO TSTATE TIDENTIFIER TSEMIC //state transition
 					
 					$1;$2;$4;//suppress unused value warning
 				}
+			|	TFOR TLPAREN expression_statement expression_statement expr TRPAREN statement
+				{
+					$$ = new iCIterationStatement($3, $4, $5, $7, *parser_context);
+					$1;$2;$6;
+				}
+			|	TFOR TLPAREN expression_statement expression_statement TRPAREN statement
+				{
+					$$ = new iCIterationStatement($3, $4, NULL, $6, *parser_context);
+					$1;$2;$5;
+				}
 			
 			;
+
+expression_statement: expr TSEMIC //expression statement
+					  {
+						  $$ = new iCExpressionStatement($1, *parser_context);
+						  $$->line_num = parser_context->line();
+						  $2;//suppress unused value warning
+					  }
+					  | TSEMIC
+					  {
+						  $$ = new iCExpressionStatement(NULL, *parser_context);
+						  $$->line_num = parser_context->line();
+						  $1;
+					  }
 
 compound_statement:		prep_compound TLBRACE block_items_list TRBRACE // compound statement
 						{

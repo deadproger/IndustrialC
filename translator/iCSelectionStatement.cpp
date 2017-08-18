@@ -6,7 +6,7 @@ iCSelectionStatement::iCSelectionStatement( const ParserContext& context )
 	  body(NULL),
 	  else_body(NULL)
 {
-
+	
 }
 
 void iCSelectionStatement::gen_code( CodeGenContext& context )
@@ -27,6 +27,7 @@ void iCSelectionStatement::gen_code( CodeGenContext& context )
 	//else body
 	if(NULL != else_body)
 	{
+		context.to_code_fmt("\n");
 		context.indent();
 		context.to_code_fmt("else\n");
 		if(!else_body->is_compound()) context.indent_depth++;

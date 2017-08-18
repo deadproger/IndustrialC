@@ -24,8 +24,9 @@ void iCCompoundStatement::gen_code( CodeGenContext& context )
 
 	//footer
 	context.indent_depth--;
+	context.to_code_fmt("\n");
 	context.indent();
-	context.to_code_fmt("} \n\n");
+	context.to_code_fmt("}");
 }
 
 iCCompoundStatement::~iCCompoundStatement()

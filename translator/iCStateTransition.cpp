@@ -29,7 +29,7 @@ void iCStateTransition::gen_code(CodeGenContext& context)
 	{
 		context.to_code_fmt(context.process->name.c_str());
 	}
-	context.to_code_fmt("%s);\n", state_name.c_str());
+	context.to_code_fmt("%s);", state_name.c_str());
 }
 
 //=================================================================================================

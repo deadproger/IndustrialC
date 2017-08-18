@@ -101,6 +101,7 @@ const int IC_TAB_SIZE = 4;
 [0-9]+          		{SAVE_TOKEN; return TICONST;}
 "0x"[a-fA-F0-9]+		{SAVE_TOKEN; return THCONST;}
 "0b"[0-1]+				{SAVE_TOKEN; return TBCONST;}
+'(\\.|[^\\'])+'			{SAVE_TOKEN; return TSTRING;}
 \"[^"\\\n]*\"	 		{SAVE_TOKEN; return TSTRING;}
 
 "("                     return TOKEN(TLPAREN);
@@ -197,7 +198,7 @@ const int IC_TAB_SIZE = 4;
 
 
 
-.                       	printf("Unknown token!\n"); yyterminate();
+.                       	printf("Unknown token at line %ul\n", parser_context->line()); yyterminate();
 
 %%
 

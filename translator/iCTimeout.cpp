@@ -25,8 +25,9 @@ void iCTimeout::gen_code( CodeGenContext& context )
 
 	//state footer
 	context.indent_depth--;
+	context.to_code_fmt("\n");
 	context.indent();
-	context.to_code_fmt("}\n");
+	context.to_code_fmt("}");
 }
 
 //=================================================================================================

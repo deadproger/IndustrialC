@@ -40,7 +40,8 @@ iCFunctionCall.cpp ^
 iCLogicConst.cpp ^
 iCSubscriptExpression.cpp ^
 iCInitializer.cpp ^
-iCString.cpp 
+iCString.cpp ^
+iCIterationStatement.cpp 
 @echo --------------------------------Done-------------------------------------
 
  
