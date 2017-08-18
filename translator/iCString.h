@@ -16,3 +16,4 @@ public:
 
 	virtual void gen_code(CodeGenContext& context);
 };
+

@@ -32,6 +32,7 @@ void iCState::gen_code(CodeGenContext& context)
 
 	//state footer
 	context.indent_depth--;
+	context.to_code_fmt("\n");
 	context.indent();
 	context.to_code_fmt("} //state %s\n", state_name.c_str());
 	context.indent();

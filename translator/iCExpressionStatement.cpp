@@ -9,9 +9,12 @@
 void iCExpressionStatement::gen_code(CodeGenContext& context)
 {
 	context.set_location(line_num, filename);
-	context.indent();
-	expr->gen_code(context);
-	context.to_code_fmt(";\n");
+	if(NULL != expr)
+	{
+		context.indent();
+		expr->gen_code(context);
+	}
+	context.to_code_fmt(";");
 }
 
 //=================================================================================================
@@ -19,5 +22,6 @@ void iCExpressionStatement::gen_code(CodeGenContext& context)
 //=================================================================================================
 iCExpressionStatement::~iCExpressionStatement()
 {
-	delete expr;
+	if(NULL != expr)
+		delete expr;
 }

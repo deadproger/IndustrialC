@@ -426,6 +426,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCIterationStatement.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCIterationStatement.h"
+					>
+				</File>
+				<File
 					RelativePath="..\iCSelectionStatement.cpp"
 					>
 				</File>
