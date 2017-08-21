@@ -54,7 +54,23 @@ char sreg_led;
 char sreg_lcd;
 char sreg_keyboard;
 
-char LCD_text[17]="                ";
+char Normal_LCD_text[17]="                ";
+char Blink_LCD_text[17];
+$char* LCD_text = $Normal_LCD_text;
+
+void test_func(int a, char b[], char casd[666], int bawd, float asdasdww)
+{
+	casd[1] = '0';
+	casd[1] = '0';
+	casd[1] = '0';
+	casd[1] = '0';
+	casd[1] = '0';
+}
+
+void some_other_func(int soljme)
+{
+	
+}
 
 //=============================================================================
 //Writes 16 bits via two daisy-chained 595 serial-in parallel-out shift registers
@@ -164,7 +180,7 @@ void UpdateLCD()
 		int i;
 		for(i=0;i<8;i++)
 		{
-			sreg_lcd = LCD_text[text_pos++];
+			sreg_lcd = $$LCD_text[$text_pos++]$$;
 			SREG_send_data();
 			_delay_us(LCD_DELAY_DATA_US);
 		}
@@ -177,7 +193,7 @@ void UpdateLCD()
 		
 		for(i=0;i<8;i++)
 		{
-			sreg_lcd = LCD_text[text_pos++];
+			sreg_lcd = $$LCD_text[$text_pos++]$$;
 			SREG_send_data();
 			_delay_us(LCD_DELAY_DATA_US);
 		}
@@ -192,6 +208,10 @@ char button_A_pressed;
 char button_A_held;
 char button_B_pressed;
 char button_B_held;
+char button_C_pressed;
+char button_C_held;
+char button_Enter_pressed;
+char button_Enter_held;
 
 bool ledA_state;
 
@@ -222,6 +242,8 @@ process Main : background
 		start process ButtonDown;
 		start process ButtonA;
 		start process ButtonB;
+		start process ButtonC;
+		start process ButtonEnter;
 		
 		to state Main;
 	}
@@ -229,8 +251,8 @@ process Main : background
 	{
 		int i;
 		for(i=0;i<16;i++)
-			LCD_text[i] = ' ';
-		sprintf(LCD_text, "%u", counter);
+			$$LCD_text[$i]$$ = ' ';
+		sprintf($$LCD_text$$, "%u", counter);
 		
 		if(button_up_pressed)
 		{
@@ -244,12 +266,56 @@ process Main : background
 			button_down_pressed = false;
 		}
 		
+		if(button_Enter_pressed)
+		{
+			start process Blink;
+			counter = 9999;
+		}
+		
+		if(button_Enter_held)
+		{
+			stop process Blink;
+		}
+		
 		if(ledA_state)
 			sreg_led |= _BV(0);
 		else
 			sreg_led &= ~_BV(0);
 		
 		//_delay_ms(40);
+	}
+}
+
+unsigned char blink_start_pos = 1;
+unsigned char blink_end_pos = 5;
+char blink_symbols;
+#define BLINK_PERIOD_MS 200
+process Blink : background
+{
+	state FS_START
+	{
+		to state Hide;
+	}
+	state Hide
+	{
+		//Hide characters
+		int i;
+		for(i=blink_start_pos;i<blink_end_pos;i++)
+		{
+			$$LCD_text[$i]$$ = ' ';
+		}
+		
+		timeout(BLINK_PERIOD_MS)
+		{
+			to state Show;
+		}
+	}
+	state Show
+	{
+		timeout(BLINK_PERIOD_MS)
+		{
+			to state Hide;
+		}
 	}
 }
 
@@ -269,16 +335,23 @@ process ShiftRegisters : background
 	}
 }
 
+
+
 #define BUTTON_UP_BIT  		3
 #define BUTTON_DOWN_BIT  	4
 #define BUTTON_A_BIT		0
 #define BUTTON_B_BIT		1
+#define BUTTON_C_BIT		2
+#define BUTTON_ENTER_BIT	5
 
 #define BUTTON_HOLD_TIME_MS	1000
 #define BUTTON_SPD0_TIME_MS 200
 #define BUTTON_SPD1_TIME_MS 100
 #define BUTTON_SPD2_TIME_MS 20
 
+//=============================================================================
+//Up button control process
+//=============================================================================
 process ButtonUp : background
 {
 	unsigned int hold_counter;
@@ -336,6 +409,9 @@ process ButtonUp : background
 	}
 }
 
+//=============================================================================
+//Down button control process
+//=============================================================================
 process ButtonDown : background
 {
 	unsigned int hold_counter;
@@ -460,6 +536,75 @@ process ButtonB : background
 		}
 	}
 }
+
+//=============================================================================
+//C button control process
+//=============================================================================
+process ButtonC : background
+{
+	state FS_START
+	{
+		if(!(sreg_keyboard & _BV(BUTTON_C_BIT)))
+		{
+			button_C_pressed = true;
+			to state Pressed;
+		}
+	}
+	state Pressed
+	{
+		if(sreg_keyboard & _BV(BUTTON_C_BIT))
+		{
+			to state FS_START;
+		}
+		timeout(BUTTON_HOLD_TIME_MS)
+		{
+			button_C_held = true;
+			to state Held;
+		}
+	}
+	state Held
+	{
+		if(sreg_keyboard & _BV(BUTTON_C_BIT))
+		{
+			to state FS_START;
+		}
+	}
+}
+
+//=============================================================================
+//Enter button control process
+//=============================================================================
+process ButtonEnter : background
+{
+	state FS_START
+	{
+		if(!(sreg_keyboard & _BV(BUTTON_ENTER_BIT)))
+		{
+			button_Enter_pressed = true;
+			to state Pressed;
+		}
+	}
+	state Pressed
+	{
+		if(sreg_keyboard & _BV(BUTTON_ENTER_BIT))
+		{
+			to state FS_START;
+		}
+		timeout(BUTTON_HOLD_TIME_MS)
+		{
+			button_Enter_held = true;
+			to state Held;
+		}
+	}
+	state Held
+	{
+		if(sreg_keyboard & _BV(BUTTON_ENTER_BIT))
+		{
+			to state FS_START;
+		}
+	}
+}
+
 
 
 
