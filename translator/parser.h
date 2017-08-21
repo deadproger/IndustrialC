@@ -227,7 +227,10 @@
 %type <func>				func_definition
 %type <expr_list>			arg_expr_list
 %type <variable>			init_declarator
-%type <string>				func_declarator
+%type <func>				func_declarator
+%type <var_list>				param_list
+%type <var_list>			prep_param_scope
+%type <variable>				param_declarator
 
 
 
@@ -512,8 +515,8 @@ proc_body	: proc_body state {$1->states.push_back($2); $$=$1;}
 				//$$ = NULL;
 				$$ = new iCProcBody(); //$$->decls.push_back($1);
 			}
-			| c_code proc_body{if(NULL!=$1)$2->decls.push_back($1);	$$=$2;}
-
+			| proc_body c_code{if(NULL!=$2)$1->decls.push_back($2);	$$=$1;}
+			| c_code {$$ = new iCProcBody();if(NULL!=$1)$$->decls.push_back($1);}
 			;
 
 state		:	TSTATE TIDENTIFIER
@@ -978,19 +981,16 @@ assignement_op : TASSGN
 /*                              D E C L A R A T I O N S                                          */     
 /*************************************************************************************************/
 
-func_definition			:	decl_specs func_declarator TLPAREN  
+func_definition			:	decl_specs func_declarator func_body // compound statement
 							{
-								const iCScope* scope = parser_context->get_current_scope();
-								$<func>$ = new iCFunction(*$1, *$2, scope, *parser_context);
-								parser_context->add_func_to_scope(*$2);
-							}
-							TRPAREN func_body // compound statement
-							{
-								$$ = $<func>4;
-								$$->body = $6;	
+								$$ = $2;
+								$$->set_type_specs(*$1);
+								$$->body = $3;	
 								delete $1;
-								delete $2;
-								$3;$5;
+								if(!$$->params.empty())
+									parser_context->close_scope();
+								//delete $2;
+								//$3;$5;
 							}
 						;
 
@@ -998,7 +998,7 @@ func_body				:	compound_statement { $$ = $1; }
 						|	TSEMIC { $$ = NULL; $1; }
 						;
 
-func_declarator			: TIDENTIFIER
+func_declarator			: TIDENTIFIER TLPAREN TRPAREN
 						  {
 							  //check if already defined in this scope
 							  const iCScope* var_scope = parser_context->get_var_scope(*$1);
@@ -1010,8 +1010,67 @@ func_declarator			: TIDENTIFIER
 								  parser_context->err_msg("symbol redefinition: %s aready defined in %s",
 									  $1->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
 							  }
+
+							  const iCScope* scope = parser_context->get_current_scope();
+							  $$ = new iCFunction(*$1, scope, *parser_context);
+							  parser_context->add_func_to_scope(*$1);
+							  delete $1;
+
+							  //$$ = $1;
+							  $2;$3;
+						  }
+						| TIDENTIFIER TLPAREN param_list TRPAREN
+						{
+							//check if already defined in this scope
+							const iCScope* var_scope = parser_context->get_var_scope(*$1);
+							const iCScope* mcu_decl_scope = parser_context->get_mcu_decl_scope(*$1);
+							const iCScope* func_scope = parser_context->get_func_scope(*$1);
+							if(NULL != var_scope || NULL != mcu_decl_scope || NULL != func_scope)
+							{
+								const iCScope* scope = (NULL != var_scope)?var_scope:((NULL != mcu_decl_scope)?mcu_decl_scope:func_scope);
+								parser_context->err_msg("symbol redefinition: %s aready defined in %s",
+									$1->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
+							}
+
+							const iCScope* scope = parser_context->get_current_scope();
+							$$ = new iCFunction(*$1, scope, *parser_context);
+							parser_context->add_func_to_scope(*$1);
+
+							$$->set_params(*$3);
+
+							delete $1;
+							delete $3;
+							$2;$4;
+						}
+						;
+
+prep_param_scope		: %empty
+						  {
+							  $<var_list>$ = new std::list<iCVariable*>;
+							  parser_context->open_scope("func_params");
+						  }
+						;
+
+param_list				: param_list TCOMMA param_declarator 
+						  {
 							  $$ = $1;
-						  };
+							  $$->push_back($3);
+							  delete $2;
+						  }
+						| prep_param_scope param_declarator 
+						{
+							$$ = $<var_list>1;
+							$$->push_back($2);	
+						}
+						;
+
+param_declarator		: decl_specs direct_declarator 
+						  {
+							  $$ = $2;
+							  $$->set_type_specs(*$1);
+							  delete $1;
+						  }
+						;
 
 
 var_declaration			:	decl_specs init_declarator_list TSEMIC 
