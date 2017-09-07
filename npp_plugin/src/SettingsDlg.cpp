@@ -22,6 +22,7 @@ INT_PTR CALLBACK SettingsDlgProc(
 	HWND MCUList = GetDlgItem(hDlg, IDC_LIST_MCU);
 	HWND PortList = GetDlgItem(hDlg, IDC_LIST_PORT);
 	HWND ProgList = GetDlgItem(hDlg, IDC_LIST_PROG);
+	HWND KeepCpp = GetDlgItem(hDlg, IDC_KEEP_CPP);
 	if ( uMessage == WM_COMMAND )
 	{
 		switch ( LOWORD(wParam) ) 
@@ -54,6 +55,8 @@ INT_PTR CALLBACK SettingsDlgProc(
 				//WCHAR prog_name_buf[MAX_PROG_NAME_LENGTH];
 				//SendMessage(ProgList, CB_GETLBTEXT, prog, (LPARAM)prog_name_buf);
 				thePlugin.select_programmer(prog);
+
+				thePlugin.set_keep_cpp(BST_CHECKED == SendMessage(KeepCpp, BM_GETCHECK, 0, 0));
 
 				thePlugin.SaveSettings();
 
@@ -117,6 +120,9 @@ INT_PTR CALLBACK SettingsDlgProc(
 			SendMessage(ProgList, CB_ADDSTRING, 0, (LPARAM)((*i).c_str()));
 		}
 		SendMessage(ProgList, CB_SETCURSEL, (WPARAM)thePlugin.get_prog_index(), 0);
+
+		//Set the keep cpp checkbox
+		SendMessage(KeepCpp, BM_SETCHECK, (WPARAM)(thePlugin.get_keep_cpp()?BST_CHECKED:BST_UNCHECKED), 0);
 
 		AnyWindow_CenterWindow(hDlg, nppData._nppHandle, FALSE);
 	}

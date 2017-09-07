@@ -1142,6 +1142,7 @@
 #define IDC_LIST_PORT                   1004
 #define IDC_LIST_PROG					1005
 #define IDC_OUTPUT_EDIT                 1006
+#define IDC_KEEP_CPP					1007
 #define CF_GDIOBJLAST                   0x03FF
 #define _WIN32_WINNT_NT4                0x0400
 #define _WIN32_IE_IE40                  0x0400
