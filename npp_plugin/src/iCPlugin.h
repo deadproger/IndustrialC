@@ -23,6 +23,7 @@ public:
 	//void select_programmer(const std::wstring& prog_name) {selected_programmer = prog_name;}
 	void select_mcu(int index) {selected_mcu_index = index;}
 	void select_programmer(int index) {selected_programmer_index = index;}
+	void set_keep_cpp(bool _keep_cpp) {keep_cpp = _keep_cpp;}
 
 	int get_port_index() {return selected_port_index;}
 	const std::wstring& get_mcu_name() {return mcu_list[selected_mcu_index];}
@@ -46,6 +47,7 @@ public:
 	const WStringList& get_prog_list() {return programmer_list;}
 	int get_mcu_index(){return selected_mcu_index;}
 	int get_prog_index(){return selected_programmer_index;}
+	bool get_keep_cpp(){return keep_cpp;}
 
 	void dock_output_dlg();
 
@@ -88,6 +90,7 @@ private:
 	int selected_mcu_index;
 	WStringList programmer_list;
 	int selected_programmer_index;
+	bool keep_cpp;
 
 	//std::wstring selected_mcu;
 	//std::wstring selected_programmer;

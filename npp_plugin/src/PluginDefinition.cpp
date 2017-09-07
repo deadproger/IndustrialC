@@ -249,12 +249,13 @@ int build_()
 	//avr-gcc -Os -mmcu=atmega168 -DF_CPU=16000000UL -o "<dir>/<file>.elf" "<dir>/<file>.cpp"
 	cmd.str(_T(""));cmd.clear();
 	cmd	<< _T("avr-gcc -Os -ffunction-sections -fdata-sections -fno-threadsafe-statics -mmcu=")
-		<< mcu_name.c_str() <<(" -DF_CPU=16000000UL -o \"") 
+		<< mcu_name.c_str() <<_T(" -DF_CPU=16000000UL -o \"") 
 		<< file.c_str() << _T(".elf\" \"") 
 		<< file.c_str() << _T(".cpp\"");
 	thePlugin.CreateChildProcess(&exit_code, cmd.str().c_str());
 
-	DeleteFile((file+std::wstring(_TEXT(".cpp"))).c_str());
+	if(!thePlugin.get_keep_cpp())
+		DeleteFile((file+std::wstring(_TEXT(".cpp"))).c_str());
 
 	if(0 != exit_code)
 	{

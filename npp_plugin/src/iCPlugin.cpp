@@ -493,6 +493,7 @@ void iCPlugin::SaveSettings()
 	WritePrivateProfileString(_T("Settings"), _T("mcu"), get_mcu_name().c_str(), szPath);
 	WritePrivateProfileString(_T("Settings"), _T("port"), get_selected_port().c_str(), szPath);
 	WritePrivateProfileString(_T("Settings"), _T("programmer"), get_prog_name().c_str(), szPath);
+	WritePrivateProfileString(_T("Settings"), _T("keep_cpp"), keep_cpp?_T("1"):_T("0"), szPath);
 }
 
 //=============================================================================
@@ -527,4 +528,13 @@ void iCPlugin::LoadSettings()
 		settings_buffer, SETTINGS_BUF_SIZE, szPath);
 	if(0 != dw)
 		select_programmer(get_index(programmer_list, settings_buffer));
+
+	//read next setting
+	dw = GetPrivateProfileString(_T("Settings"), _T("keep_cpp"), NULL,
+		settings_buffer, SETTINGS_BUF_SIZE, szPath);
+	if(0 != dw)
+	{
+		set_keep_cpp(_ttoi(settings_buffer));
+		//select_programmer(get_index(programmer_list, settings_buffer));
+	}
 }
