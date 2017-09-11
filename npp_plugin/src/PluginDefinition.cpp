@@ -260,9 +260,17 @@ int build_()
 	if(0 != exit_code)
 	{
 		thePlugin.write_to_output(_T("Build failed, terminating\r\n"));
-		return 1;;
+		return 1;
 	}
 
+	Sleep(200);
+
+	//Output avr-size
+	cmd.str(_T(""));cmd.clear();
+	cmd << _T("avr-size -C --mcu=")
+		<< mcu_name.c_str() <<_T(" \"")
+		<< file.c_str() << _T(".elf\"");
+	thePlugin.CreateChildProcess(&exit_code, cmd.str().c_str());
 	Sleep(200);
 
 	//Produce hex
