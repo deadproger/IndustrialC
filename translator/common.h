@@ -20,11 +20,13 @@ const int ERR_MSG_BUFFER_SIZE = 1024;
 const char START_STATE_NAME[] = "FS_START";
 const char STOP_STATE_NAME[] = "FS_STOP";
 
+//The comma operator and abcence of semicolons are for single-statement
+//"if/else" and "for" statements
 const char C_MACRO_ROUTINES[] = "\
 								\n\
-#define set_newfs(p, fs)    psw[p].fsp = fs; psw[p].T = SysTime_cur;\n\
-#define startp(p)	    psw[p].fsp = FS_START; psw[p].T = SysTime_cur;\n\
-#define stopp(p)	    psw[p].fsp = FS_STOP\n\
+#define set_newfs(p, fs)    psw[p].fsp = fs, psw[p].T = SysTime_cur\n\
+#define startp(p)			psw[p].fsp = FS_START, psw[p].T = SysTime_cur\n\
+#define stopp(p)			psw[p].fsp = FS_STOP\n\
 #define check_active(p)	    ((psw[p].fsp != FS_STOP)/* && (psw[p].fsp != FS_ERROR)*/)\n\
 #define check_passive(p)    ((psw[p].fsp == FS_STOP)/* || (psw[p].fsp == FS_ERROR)*/)\n\
 #define resetT(p)            psw[p].T = SysTime_cur;\n\

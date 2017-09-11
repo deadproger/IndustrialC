@@ -1,334 +1,244 @@
+#define F_CPU 16000000L
+
 #include "atmega128.ih"
 
 $ #include <avr/io.h>
 $ #include <util/delay.h>
 $ #include <stdint.h>
 $ #include <stdio.h>
+$ #include <string.h>
 
-#define LCD_RS_PORT 	PORTC
-#define LCD_RS_PIN 		PC0
-#define LCLK_PORT 		PORTC
-#define LCLK_PIN 		PC1
-#define DI_PORT 		PORTC
-#define	DI_PIN 			PC2
-#define DO_PORT 		PINC
-#define	DO_PIN 			PC3
-#define SCLK_PORT 		PORTC
-#define SCLK_PIN 		PC4
-#define LCD_E_PORT 		PORTC
-#define LCD_E_PIN 		PC5
+#include "globals.ih"
+#include "ui_subroutines.ih"
+#include "spi.ih"
 
-#define LCD_FUNC_SET  		 0b00100000	
-#define LCD_8_BIT 			 0b00010000	
-#define LCD_TWO_LINES 		 0b00001000	
-#define LCD_FONT_5x8		 0b00000100	
-#define LCD_ON_OFF_CTRL 	 0b00001000	
-#define LCD_ON				 0b00000100	
-#define LCD_CLEAR_CMD 		 0b00000001	
-#define LCD_ENTRY_MODE_SET 	 0b00000100	
-#define LCD_INCREMENT		 0b00000010	
-#define LCD_SET_DDRAM_ADDR	 0b10000000	
-#define LCD_SET_CGRAM_ADDR	 0x40		
-#define LCD_DEGREE_SYM_ADDR	 0			
-#define LCD_FIRST_POS_ADDR	 0			
-#define LCD_NINTH_POS_ADDR	 40	
-
-//AC-161A datasheet requires 39us for cmd and 43us for data to process instructions
-//These delays are adjusted for overhead and SREG session time to ensure 39/43us between LCD Executes
-#define LCD_DELAY_DATA_US  22
-#define LCD_DELAY_CMD_US  22
-
-const char degree_symbol[] = 
-{
-	0b00110,
-	0b01001,
-	0b01001,
-	0b00110,
-	0b00000,
-	0b00000,
-	0b00000,
-	0b00000,
-};
-
-char sreg_led;
-char sreg_lcd;
-char sreg_keyboard;
-
-char Normal_LCD_text[17]="                ";
-char Blink_LCD_text[17];
-$char* LCD_text = $Normal_LCD_text;
-
-void test_func(int a, char b[], char casd[666], int bawd, float asdasdww)
-{
-	casd[1] = '0';
-	casd[1] = '0';
-	casd[1] = '0';
-	casd[1] = '0';
-	casd[1] = '0';
-}
-
-void some_other_func(int soljme)
-{
-	
-}
+unsigned int number;
 
 //=============================================================================
-//Writes 16 bits via two daisy-chained 595 serial-in parallel-out shift registers
-//Reads 8 bits from the upper 165 parallel-in serial-out shift register
+//Процесс инициализации
 //=============================================================================
-void SREG_send_data()
-{
-	sreg_keyboard = 0;
-	char data;
-	data = sreg_led;
-	int i;
-	for(i=0;i<8;i++)//Write 8 LED bits, read 8 keyboard bits
-	{
-		sreg_keyboard <<= 1;
-		SCLK_PORT &= ~_BV(SCLK_PIN); //SCLK LOW
-		if(DO_PORT & _BV(DO_PIN)) //Read keyboard
-			sreg_keyboard |= 1;
-		if(data & 0x80) //Fetch LED bit and write it into DI
-			DI_PORT |= _BV(DI_PIN);
-		else
-			DI_PORT &= ~_BV(DI_PIN);
-		data <<= 1;
-		SCLK_PORT |= _BV(SCLK_PIN); //SCLK HIGH
-	}
-	
-	data = sreg_lcd;
-	for(i=0;i<8;i++)//Write 8 LCD bits
-	{
-		SCLK_PORT &= ~_BV(SCLK_PIN); //SCLK LOW
-		if(data & 0x80) //Fetch LCD bit and write it into DI
-			DI_PORT |= _BV(DI_PIN);
-		else
-			DI_PORT &= ~_BV(DI_PIN);
-		data <<= 1;
-		SCLK_PORT |= _BV(SCLK_PIN); //SCLK HIGH
-	}
-	
-	//Latch
-	LCLK_PORT &= ~_BV(LCLK_PIN);
-	LCLK_PORT |= _BV(LCLK_PIN);
-	
-	//LCD Execute
-	LCD_E_PORT |= _BV(LCD_E_PIN);
-	_delay_us(0.5);
-	LCD_E_PORT &= ~_BV(LCD_E_PIN);
-}
-
-//=============================================================================
-//Initializes AC-161A LCD display
-// 8-bit mode, two lines(last 8 symbols are treated as 2nd line), 5x8 font,
-// cursor off, blink off, shift off, increment mode
-//Writes degree symbol into CGRAM
-//=============================================================================
-void InitLCD()
-{
-	//LCD Initialization
-	_delay_ms(30);
-	LCD_RS_PORT &= ~_BV(LCD_RS_PIN); // RS low for commands
-	sreg_lcd = LCD_FUNC_SET | LCD_8_BIT | LCD_TWO_LINES | LCD_FONT_5x8	;
-	SREG_send_data();
-	_delay_us(LCD_DELAY_CMD_US);
-	
-	sreg_lcd = LCD_ON_OFF_CTRL | LCD_ON;
-	SREG_send_data();
-	_delay_us(LCD_DELAY_CMD_US);
-	
-	sreg_lcd = LCD_CLEAR_CMD;
-	SREG_send_data();
-	_delay_ms(2);
-	
-	sreg_lcd = LCD_ENTRY_MODE_SET | LCD_INCREMENT;
-	SREG_send_data();
-	_delay_us(LCD_DELAY_CMD_US);
-	
-	//Load degree symbol into CGRAM
-	LCD_RS_PORT &= ~_BV(LCD_RS_PIN); // RS low for commands
-	sreg_lcd = LCD_SET_CGRAM_ADDR + LCD_DEGREE_SYM_ADDR;//Set CGRAM address 00
-	SREG_send_data();
-	_delay_us(LCD_DELAY_CMD_US);
-	
-	int i;
-	for(i=0;i<8;i++)//Symbol has 8 rows, each row is presented by 5 lsbs in data byte
-	{
-		LCD_RS_PORT |= _BV(LCD_RS_PIN); // RS high for data
-		sreg_lcd = degree_symbol[i];
-		SREG_send_data();
-		_delay_us(LCD_DELAY_DATA_US);
-	}
-}
-
-//=============================================================================
-//Writes 16 characters from LCD_text to LCD
-//Writes LEDs and reads keyboard
-//=============================================================================
-void UpdateLCD()
-{
-		char text_pos;
-		text_pos = 0;
-	
-		//Send a character to LCD
-		LCD_RS_PORT &= ~_BV(LCD_RS_PIN); // RS low for commands
-		sreg_lcd = LCD_SET_DDRAM_ADDR + LCD_FIRST_POS_ADDR;//Set DDRAM address 00
-		SREG_send_data();
-		_delay_us(LCD_DELAY_CMD_US);
-		LCD_RS_PORT |= _BV(LCD_RS_PIN); // RS high for data
-		
-		int i;
-		for(i=0;i<8;i++)
-		{
-			sreg_lcd = $$LCD_text[$text_pos++]$$;
-			SREG_send_data();
-			_delay_us(LCD_DELAY_DATA_US);
-		}
-		
-		LCD_RS_PORT &= ~_BV(LCD_RS_PIN); // RS low for commands
-		sreg_lcd = LCD_SET_DDRAM_ADDR + LCD_NINTH_POS_ADDR;//Set DDRAM address 40
-		SREG_send_data();
-		_delay_us(LCD_DELAY_CMD_US);
-		LCD_RS_PORT |= _BV(LCD_RS_PIN); // RS high for data
-		
-		for(i=0;i<8;i++)
-		{
-			sreg_lcd = $$LCD_text[$text_pos++]$$;
-			SREG_send_data();
-			_delay_us(LCD_DELAY_DATA_US);
-		}
-}
-
-//bool A_button_pressed;
-//bool A_button_held;
-
-char button_up_pressed;
-char button_down_pressed;
-char button_A_pressed;
-char button_A_held;
-char button_B_pressed;
-char button_B_held;
-char button_C_pressed;
-char button_C_held;
-char button_Enter_pressed;
-char button_Enter_held;
-
-bool ledA_state;
-
-process Main : background
+process Initialization : background
 {
 	unsigned int counter;
 	state FS_START
 	{
+		//Настройка таймера 2 для выдачи ШИМ 2.5кГц, скважность 2
+		BUZZER_DDR |= _BV(BUZZER_PIN);
+		OCR2 = 50;
+		//делитель 1/64, режим CTC (сброс по сравнению)
+		TCCR2 = _BV(WGM21) | _BV(CS21) | _BV(CS20);
+		
 		sreg_led = 0;
 		sreg_lcd = 0;
-		
 		counter = 0;
 
-		DDRC = _BV(LCD_RS_PIN) | _BV(LCLK_PIN) | _BV(DI_PIN) /*| _BV(DO_PIN)*/ | _BV(SCLK_PIN) | _BV(LCD_E_PIN);//0b00110111; 
-		
-		SCLK_PORT |= _BV(SCLK_PIN); // Shift clock high
-		LCLK_PORT |= _BV(LCLK_PIN); // Latch clock high
-		LCD_RS_PORT |= _BV(LCD_RS_PIN); // Set LCD RS high (data)
-		LCD_E_PORT &= ~_BV(LCD_E_PIN); // Set LCD Execute low
+		UI_DDR = _BV(LCD_RS_PIN) | _BV(LCLK_PIN) | _BV(DI_PIN) | _BV(SCLK_PIN) | _BV(LCD_E_PIN);
+		SCLK_PORT |= _BV(SCLK_PIN); 
+		LCLK_PORT |= _BV(LCLK_PIN); 
+		LCD_RS_PORT |= _BV(LCD_RS_PIN); 
+		LCD_E_PORT &= ~_BV(LCD_E_PIN); 
 		
 		InitLCD();
 		
-		//A_button_pressed = false;
-		ledA_state = false;
+		//Init USART0
+		unsigned int ubrr = 8;
+		UBRR0H =  ubrr >> 8;
+		UBRR0L =  ubrr;
+		UCSR0B = _BV(TXEN0);
+		UCSR0C = _BV(UCSZ00) | _BV(UCSZ01);
 		
-		start process ShiftRegisters;
-		start process ButtonUp;
-		start process ButtonDown;
-		start process ButtonA;
-		start process ButtonB;
-		start process ButtonC;
-		start process ButtonEnter;
+		//Инициализация аппаратного SPI
+		SPI_DDR = _BV(SPI_SCK) | _BV(SPI_MOSI) | _BV(SPI_SS);//MOSI, SCK, SS на выход
+		SPSR |= _BV(SPI2X);//двойная скорость SPI
+		SPCR = _BV(SPE) | _BV(MSTR) | _BV(CPOL) | _BV(CPHA);
 		
-		to state Main;
-	}
-	state Main
-	{
-		int i;
-		for(i=0;i<16;i++)
-			$$LCD_text[$i]$$ = ' ';
-		sprintf($$LCD_text$$, "%u", counter);
+		//Настройка направления работы выводов CS, RESET и DRDY
+		DDRA = _BV(DD2_CS) | _BV(DD3_CS) | _BV(DD2_RESET) | _BV(DD3_RESET);//CS и RESET на выход
+		DDRE &= ~(_BV(DD2_DRDY) | _BV(DD3_DRDY)); //DRDY на вход
+		PORTA |= _BV(DD2_CS) | _BV(DD3_CS);//установка сигнала CS в 1	
 		
-		if(button_up_pressed)
-		{
-			counter++;
-			button_up_pressed = false;
-		}
+		//настройка внешних прерываний сигналов DRDY на срабатывание по нисходящему фронту
+		EICRB = _BV(ISC61) | _BV(ISC71);
 		
-		if(button_down_pressed)
-		{
-			counter--;
-			button_down_pressed = false;
-		}
+		//Инициализация АЦП DD2 (AD7705)
+		PORTA &= ~_BV(DD2_RESET);//Перезапуск устройства
+		_delay_ms(200);
+		PORTA |= _BV(DD2_RESET);
 		
-		if(button_Enter_pressed)
-		{
-			start process Blink;
-			counter = 9999;
-		}
+		_delay_ms(200);
 		
-		if(button_Enter_held)
-		{
-			stop process Blink;
-		}
+		//Инициализация АЦП и внутренняя калибровка канала 0
+		PORTA &= ~_BV(DD2_CS);
+		WriteByteSPI(ADC_WRITE | ADC_CLOCK_REG | ADC_CH0);//comm: write clock, ch0
+		WriteByteSPI(ADC_CLKDIV);//Задание тактовой частоты работы АЦП (4МГц/2)
+		WriteByteSPI(ADC_WRITE | ADC_SETUP_REG | ADC_CH0);//comm: write setup, ch0
+		WriteByteSPI(ADC_SELF_CALIB | ADC_BIPOLAR | ADC_GAIN_128);//Запуск внутренней калибровки, gain 128
+		PORTA |= _BV(DD2_CS);
+		for(;PINE & _BV(DD2_DRDY););//Ожидание спада сигнала DRDY
 		
-		if(ledA_state)
-			sreg_led |= _BV(0);
-		else
-			sreg_led &= ~_BV(0);
+		//Внутрення калибровка канала 1
+		PORTA &= ~_BV(DD2_CS);
+		WriteByteSPI(ADC_WRITE | ADC_SETUP_REG | ADC_CH1);//comm: write setup, ch1
+		WriteByteSPI(ADC_SELF_CALIB | ADC_BIPOLAR | ADC_GAIN_128);//Запуск внутренней калибровки, gain 128, буфер отключен
+		PORTA |= _BV(DD2_CS);
 		
-		//_delay_ms(40);
+		
+		//Инициализация АЦП DD3 (AD7705)
+		PORTA &= ~_BV(DD3_RESET);//Перезапуск устройства
+		_delay_ms(200);
+		PORTA |= _BV(DD3_RESET);
+		_delay_ms(200);
+		
+		//Инициализация АЦП и внутренняя калибровка канала 0
+		PORTA &= ~_BV(DD3_CS);
+		WriteByteSPI(ADC_WRITE | ADC_CLOCK_REG | ADC_CH0);//comm: write clock, ch0
+		WriteByteSPI(ADC_CLKDIV);//Задание тактовой частоты работы АЦП (4МГц/2)
+		WriteByteSPI(ADC_WRITE | ADC_SETUP_REG | ADC_CH0);//comm: write setup, ch0
+		WriteByteSPI(ADC_SELF_CALIB | ADC_BIPOLAR | ADC_GAIN_128);//Запуск внутренней калибровки, gain 128, буфер отключен
+		PORTA |= _BV(DD3_CS);
+		for(;PINE & _BV(DD3_DRDY););//Ожидание спада сигнала DRDY
+		
+		//Внутрення калибровка канала 1
+		PORTA &= ~_BV(DD3_CS);
+		WriteByteSPI(ADC_WRITE | ADC_SETUP_REG | ADC_CH1);//comm: write setup, ch1
+		WriteByteSPI(ADC_SELF_CALIB | ADC_UNIPOLAR | ADC_GAIN_2);//Запуск внутренней калибровки, gain 128, буфер отключен
+		PORTA |= _BV(DD3_CS);
+		
+		//Запуск процессов чтения АЦП и прерываний сигналов DRDY
+		//start process DD2_ADC_Read;
+		//start process DD3_ADC_Read;
+		//start hyperprocess DD2_DRDY_interrupt;
+		//start hyperprocess DD3_DRDY_interrupt;
+		
+		//start process ShiftRegisters;
+		//start process ButtonUp;
+		//start process ButtonDown;
+		//start process ButtonA;
+		//start process ButtonB;
+		//start process ButtonC;
+		//start process ButtonEnter;
+		//start process UI_Menu;
+		
+		//start process TestPrint;
+		
+		stop process;//остановка процесса инициализации
 	}
 }
 
-unsigned char blink_start_pos = 1;
-unsigned char blink_end_pos = 5;
-char blink_symbols;
-#define BLINK_PERIOD_MS 200
-process Blink : background
+/*
+process ADC_Test_output : background
 {
 	state FS_START
 	{
-		to state Hide;
+		float int_temp;
+		float portA_temp;
+		
+		stop hyperprocess DD3_DRDY_interrupt;
+		int_temp = dd3_adc_ch1;
+		start hyperprocess DD3_DRDY_interrupt;
+		
+		int_temp = ((int_temp*2500)/(65535.0*2.0) - 596)/2.0 + 25 - 4.72;
+		char int_temp_str[16];
+		dtostrf(int_temp, 5, 2, int_temp_str);
+		
+		stop hyperprocess DD2_DRDY_interrupt;
+		portA_temp = dd2_adc_ch0;
+		start hyperprocess DD2_DRDY_interrupt;
+		
+		portA_temp = ((portA_temp-32767)*2500*2)/(128*65535*0.041) + int_temp;
+		char portA_temp_str[16];
+		dtostrf(portA_temp, 5, 2, portA_temp_str);
+		
+		stop hyperprocess DD2_DRDY_interrupt;//Критическая секция отн-но прерываний DRDY
+		stop hyperprocess DD3_DRDY_interrupt;
+		$sprintf((char*)$print_buffer, "%s %u %u %s\n", $portA_temp_str, 32000, $dd3_adc_ch0, $int_temp_str);
+		start hyperprocess DD2_DRDY_interrupt;
+		start hyperprocess DD3_DRDY_interrupt;//Конец критической секции
+		
+		print_buffer_length = $$strlen((char*)$print_buffer)$$;
+		print_buffer_index = 0;
+		
+		start process Print;
+		start hyperprocess USART_DataRegisterEmpty_interrupt;
+		to state WaitUSART;
 	}
-	state Hide
+	
+	state WaitUSART
 	{
-		//Hide characters
-		int i;
-		for(i=blink_start_pos;i<blink_end_pos;i++)
+		if(Print passive)
+			to state Delay;
+	}
+	state Delay
+	{
+		timeout(500)
 		{
-			$$LCD_text[$i]$$ = ' ';
+			to state FS_START;
 		}
+	}
+}
+*/
+#include "adc.ih"
+
+
+#include "keyboard.ih"
+
+//=============================================================================
+//Процесс мигания участком текста ЖК-экрана
+//=============================================================================
+process Blink : background
+{
+	int i;
+	state FS_START
+	{
+		//копирование всего текста экрана
+		for(i=0;i<16;i++)
+			Blink_text[i] = LCD_text[i];
+			
+		to state Show;
+	}
+	state Hide // символы скрыты
+	{
+		//замена символов в заданном диапазоне на пробелы
+		for(i=blink_start_pos;i<=blink_end_pos;i++)
+			Blink_text[i] = ' ';
 		
 		timeout(BLINK_PERIOD_MS)
 		{
 			to state Show;
 		}
 	}
-	state Show
+	state Show // символы отображаются
 	{
+		//копирование актуальных символов в диапазоне
+		for(i=blink_start_pos;i<=blink_end_pos;i++)
+			Blink_text[i] = LCD_text[i];
+		
 		timeout(BLINK_PERIOD_MS)
 		{
+			sreg_led &= ~_BV(1);
 			to state Hide;
 		}
 	}
 }
 
+//=============================================================================
+//Процесс взаимодействия с платой индикации
+//Производит обновление ЖК-экрана и светодиодов, опрос клавиатуры
+//с заданным периодом (40мс/25Гц)
+//=============================================================================
 process ShiftRegisters : background
 {
 	state FS_START
 	{
-		UpdateLCD();
+		if(Blink active)
+			UpdateLCD(Blink_text);
+		else
+			UpdateLCD(LCD_text);
 		to state Wait;
 	}
 	state Wait
 	{
-		timeout(40)
+		timeout(UI_UPDATE_PERIOD_MS)
 		{
 			to state FS_START;
 		}
@@ -336,281 +246,330 @@ process ShiftRegisters : background
 }
 
 
-
-#define BUTTON_UP_BIT  		3
-#define BUTTON_DOWN_BIT  	4
-#define BUTTON_A_BIT		0
-#define BUTTON_B_BIT		1
-#define BUTTON_C_BIT		2
-#define BUTTON_ENTER_BIT	5
-
-#define BUTTON_HOLD_TIME_MS	1000
-#define BUTTON_SPD0_TIME_MS 200
-#define BUTTON_SPD1_TIME_MS 100
-#define BUTTON_SPD2_TIME_MS 20
-
 //=============================================================================
-//Up button control process
+//Процесс короткого звукового сигнала
 //=============================================================================
-process ButtonUp : background
+process ShortBuzz : background
 {
-	unsigned int hold_counter;
 	state FS_START
 	{
-		if(!(sreg_keyboard & _BV(BUTTON_UP_BIT)))
+		TCCR2 |= _BV(COM20);
+		to state Buzz;
+	}
+	state Buzz
+	{
+		timeout(SHORT_BUZZ_DURATION_MS)
 		{
-			hold_counter = 0;
-			button_up_pressed = true;
-			to state Pressed;
+			TCCR2 &= ~_BV(COM20);
+			stop process;
 		}
 	}
-	state Pressed
+}
+
+
+//=============================================================================
+//Процесс выбора порта дегазации
+//Обрабатывает события с клавиш выбора порта
+//По нажатию устанавливает текущий порт в меню пользовательского интерфейса
+//По длительному нажатию запускает или останавливает процесс дегазации в порту
+//=============================================================================
+process UI_PortSelection : background
+{
+	state FS_START
 	{
-		if(sreg_keyboard & _BV(BUTTON_UP_BIT))
+		if(button_A_pressed)
 		{
-			to state FS_START;
+			UI_port = PORT_A;
+			start process UI_Menu;
 		}
-		timeout(BUTTON_SPD0_TIME_MS)
+		if(button_B_pressed)
 		{
-			to state Held;
+			UI_port = PORT_B;
+			start process UI_Menu;
 		}
-	}
-	state Held
-	{
-		if(sreg_keyboard & _BV(BUTTON_UP_BIT))
+		if(button_C_pressed)
 		{
-			to state FS_START;
+			UI_port = PORT_C;
+			start process UI_Menu;
 		}
 		
-		timeout(BUTTON_SPD1_TIME_MS)
+		if(button_A_held)
 		{
-			button_up_pressed = true;
-			hold_counter++;
-			to state Held;
+			if(DegasA active)
+				stop process DegasA;
+			else
+				start process DegasA;
+		}
+		if(button_B_held)
+		{
+			if(DegasB active)
+				stop process DegasB;
+			else
+				start process DegasB;
+		}
+		if(button_C_held)
+		{
+			if(DegasC active)
+				stop process DegasC;
+			else
+				start process DegasC;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс обработки меню пользовательского интерфейса
+//=============================================================================
+process UI_Menu : background
+{	
+	unsigned int new_temp;//редактируемое значение температуры
+	unsigned int new_time;//редактируемое значение вермени
+
+	state FS_START
+	{
+		start process UI_PortSelection;
+		to state DisplayPortStatus;
+	}
+	
+	state DisplayPortStatus // Отображение состояния порта
+	{	
+		sprintf(LCD_text, "%c:Status       *", PORT_NAME[UI_port]);
+		if(button_up_pressed)
+			to state DisplayTemp;
+	}
+	
+	state DisplayTemp // Отображение заданной температуры дегазации в порту
+	{
+		sprintf(LCD_text, "%c:Temp.ust=%3u C", PORT_NAME[UI_port], TempValues[UI_port]);
+		LCD_text[14] = 0;
+		if(button_up_pressed)
+			to state DisplayTime;
+		if(button_down_pressed)
+			to state DisplayPortStatus;
+		if(button_Enter_pressed)
+		{
+			stop process UI_PortSelection;
+			blink_start_pos = 11;
+			blink_end_pos = 13;
+			start process Blink;
+			to state EditTemp;
+			new_temp = TempValues[UI_port];
+		}
+	}
+	
+	state DisplayTime // Отображение заданного времени дегазации в порту
+	{
+		sprintf(LCD_text, "%c:Time.dg=%3umin", PORT_NAME[UI_port], TimeValues[UI_port]);
+		if(button_up_pressed)
+			to state DisplayIntTemp;
+		if(button_down_pressed)
+			to state DisplayTemp;
+		if(button_Enter_pressed)
+		{
+			stop process UI_PortSelection;
+			blink_start_pos = 10;
+			blink_end_pos = 12;
+			start process Blink;
+			to state EditTime;
+			new_time = TimeValues[UI_port];
+		}
+	}
+	
+	state DisplayIntTemp // Отображение температур внутри станции
+	{
+		sprintf(LCD_text, "Int.Temperature*");
+		if(button_down_pressed)
+			to state DisplayTime;
+	}
+	
+	state EditTemp // Редактирование температуры дегазации порта
+	{
+		sprintf(LCD_text, "%c:Temp.ust=%3u C", PORT_NAME[UI_port], new_temp);
+		LCD_text[14] = 0;
+		if(button_Enter_pressed)
+		{
+			start process UI_PortSelection;
+			stop process Blink;
+			to state DisplayTemp;
+			TempValues[UI_port] = new_temp;
 		}
 		
-		if(hold_counter > BUTTON_SPD2_TIME_MS)
+		if(button_up_pressed)
 		{
-			hold_counter = 0;
-			to state LongHeld;
+			new_temp += STEP_TEMP;
+			if(new_temp > MAX_TEMP)
+				new_temp = MAX_TEMP;
+				
+			start process Blink;
+			to state EditTemp;
+		}
+		if(button_down_pressed)
+		{
+			new_temp -= STEP_TEMP;
+			if(new_temp < MIN_TEMP)
+				new_temp = MIN_TEMP;
+				
+			start process Blink;
+			to state EditTemp;
+		}
+			
+		timeout(EDIT_TIMEOUT_MS)
+		{
+			start process UI_PortSelection;
+			stop process Blink;
+			to state DisplayTemp;
 		}
 	}
-	state LongHeld
+	
+	state EditTime // Редактирование времени дегазации порта
 	{
-		if(sreg_keyboard & _BV(BUTTON_UP_BIT))
+		sprintf(LCD_text, "%c:Time.dg=%3umin", PORT_NAME[UI_port], new_time);
+		if(button_Enter_pressed)
 		{
-			to state FS_START;
-		}
-		timeout(10)
-		{
-			button_up_pressed = true;
-			to state LongHeld;
-		}
-	}
-}
-
-//=============================================================================
-//Down button control process
-//=============================================================================
-process ButtonDown : background
-{
-	unsigned int hold_counter;
-	state FS_START
-	{
-		if(!(sreg_keyboard & _BV(BUTTON_DOWN_BIT)))
-		{
-			hold_counter = 0;
-			button_down_pressed = true;
-			to state Pressed;
-		}
-	}
-	state Pressed
-	{
-		if(sreg_keyboard & _BV(BUTTON_DOWN_BIT))
-		{
-			to state FS_START;
-		}
-		timeout(BUTTON_SPD0_TIME_MS)
-		{
-			to state Held;
-		}
-	}
-	state Held
-	{
-		if(sreg_keyboard & _BV(BUTTON_DOWN_BIT))
-		{
-			to state FS_START;
+			start process UI_PortSelection;
+			stop process Blink;
+			to state DisplayTime;
+			TimeValues[UI_port] = new_time;
 		}
 		
-		timeout(BUTTON_SPD1_TIME_MS)
+		if(button_up_pressed)
 		{
-			button_down_pressed = true;
-			hold_counter++;
-			to state Held;
+			new_time += STEP_TIME;
+			if(new_time > MAX_TIME)
+				new_time = MAX_TIME;
+			start process Blink;
+			to state EditTime;
 		}
+		if(button_down_pressed)
+		{
+			new_time -= STEP_TIME;
+			if(new_time < MIN_TIME)
+				new_time = MIN_TIME;
+			start process Blink;
+			to state EditTime;
+		}
+			
+		timeout(EDIT_TIMEOUT_MS)
+		{
+			start process UI_PortSelection;
+			stop process Blink;
+			to state DisplayTime;
+		}
+	}
+	
+}
+
+
+//=============================================================================
+//Процесс дегазации в порту A
+//=============================================================================
+process DegasA : background 
+{
+	state FS_START 
+	{
+		sreg_led &= ~SREG_LED_A_RED;
+		sreg_led |= SREG_LED_A_GRN;
+	} 
+	state FS_STOP
+	{
+		sreg_led &= ~SREG_LED_A_GRN;
+		sreg_led |= SREG_LED_A_RED;
+	}
+}
+
+//=============================================================================
+//Процесс дегазации в порту B
+//=============================================================================
+process DegasB : background 
+{
+	state FS_START 
+	{
+		sreg_led &= ~SREG_LED_B_RED;
+		sreg_led |= SREG_LED_B_GRN;
+	} 
+	state FS_STOP
+	{
+		sreg_led &= ~SREG_LED_B_GRN;
+		sreg_led |= SREG_LED_B_RED;
+	}
+}
+
+//=============================================================================
+//Процесс дегазации в порту C
+//=============================================================================
+process DegasC : background 
+{
+	state FS_START 
+	{
+		sreg_led &= ~SREG_LED_C_RED;
+		sreg_led |= SREG_LED_C_GRN;
+	} 
+	state FS_STOP
+	{
+		sreg_led &= ~SREG_LED_C_GRN;
+		sreg_led |= SREG_LED_C_RED;
+	}
+}
+
+process some201709030522_1 : background
+{
+	state FS_START
+	{
+	}
+}
+
+process some201709030522_2 : background
+{
+	state FS_START
+	{
+	}
+}
+
+process some201709030522_3 : background
+{
+	state FS_START
+	{
+	}
+}
+
+process some201709030522_4 : background
+{
+	state FS_START
+	{
+	}
+}
+
+process some201709030522_5 : background
+{
+	state FS_START
+	{
+	}
+}
+
+/*
+process TestPrint : background
+{
+	state FS_START
+	{
+		$sprintf((char*)$print_buffer, "ADC: %u\n", $number);
+		//$ itoa( val, (char*)print_buffer, 10);
+		print_buffer_length = $$strlen((char*)$print_buffer)$$;
+		print_buffer_index = 0;
 		
-		if(hold_counter > BUTTON_SPD2_TIME_MS)
-		{
-			hold_counter = 0;
-			to state LongHeld;
-		}
+		//start process Print;
+		//start hyperprocess USART_DataRegisterEmpty_interrupt;
+		to state Delay;
 	}
-	state LongHeld
+	state Delay
 	{
-		if(sreg_keyboard & _BV(BUTTON_DOWN_BIT))
-		{
-			to state FS_START;
-		}
-		timeout(10)
-		{
-			button_down_pressed = true;
-			to state LongHeld;
-		}
-	}
-}
-
-//=============================================================================
-//A button control process
-//=============================================================================
-process ButtonA : background
-{
-	state FS_START
-	{
-		if(!(sreg_keyboard & _BV(BUTTON_A_BIT)))
-		{
-			button_A_pressed = true;
-			to state Pressed;
-		}
-	}
-	state Pressed
-	{
-		if(sreg_keyboard & _BV(BUTTON_A_BIT))
-		{
-			to state FS_START;
-		}
-		timeout(BUTTON_HOLD_TIME_MS)
-		{
-			button_A_held = true;
-			to state Held;
-		}
-	}
-	state Held
-	{
-		if(sreg_keyboard & _BV(BUTTON_A_BIT))
+		timeout(500)
 		{
 			to state FS_START;
 		}
 	}
 }
-
-//=============================================================================
-//B button control process
-//=============================================================================
-process ButtonB : background
-{
-	state FS_START
-	{
-		if(!(sreg_keyboard & _BV(BUTTON_B_BIT)))
-		{
-			button_B_pressed = true;
-			to state Pressed;
-		}
-	}
-	state Pressed
-	{
-		if(sreg_keyboard & _BV(BUTTON_B_BIT))
-		{
-			to state FS_START;
-		}
-		timeout(BUTTON_HOLD_TIME_MS)
-		{
-			button_B_held = true;
-			to state Held;
-		}
-	}
-	state Held
-	{
-		if(sreg_keyboard & _BV(BUTTON_B_BIT))
-		{
-			to state FS_START;
-		}
-	}
-}
-
-//=============================================================================
-//C button control process
-//=============================================================================
-process ButtonC : background
-{
-	state FS_START
-	{
-		if(!(sreg_keyboard & _BV(BUTTON_C_BIT)))
-		{
-			button_C_pressed = true;
-			to state Pressed;
-		}
-	}
-	state Pressed
-	{
-		if(sreg_keyboard & _BV(BUTTON_C_BIT))
-		{
-			to state FS_START;
-		}
-		timeout(BUTTON_HOLD_TIME_MS)
-		{
-			button_C_held = true;
-			to state Held;
-		}
-	}
-	state Held
-	{
-		if(sreg_keyboard & _BV(BUTTON_C_BIT))
-		{
-			to state FS_START;
-		}
-	}
-}
-
-//=============================================================================
-//Enter button control process
-//=============================================================================
-process ButtonEnter : background
-{
-	state FS_START
-	{
-		if(!(sreg_keyboard & _BV(BUTTON_ENTER_BIT)))
-		{
-			button_Enter_pressed = true;
-			to state Pressed;
-		}
-	}
-	state Pressed
-	{
-		if(sreg_keyboard & _BV(BUTTON_ENTER_BIT))
-		{
-			to state FS_START;
-		}
-		timeout(BUTTON_HOLD_TIME_MS)
-		{
-			button_Enter_held = true;
-			to state Held;
-		}
-	}
-	state Held
-	{
-		if(sreg_keyboard & _BV(BUTTON_ENTER_BIT))
-		{
-			to state FS_START;
-		}
-	}
-}
-
-
-
-
-
-
-
+*/
+//#include "print.ih"
 
 
 

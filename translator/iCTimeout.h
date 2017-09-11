@@ -8,10 +8,11 @@ class CodeGenContext;
 //=================================================================================================
 class iCTimeout : public iCStatement
 {
-	unsigned long period;
+	//unsigned long period;
+	iCExpression* period; // owns
 	iCBlockItemsList body;
 public:
-	iCTimeout(unsigned long period, const ParserContext& context) : period(period), iCNode(context) {}
+	iCTimeout(iCExpression* period, const ParserContext& context) : period(period), iCNode(context) {}
 	//iCTimeout(unsigned long period, const iCBlockItemsList& body, const ParserContext& context) : period(period), body(body) {}
 	virtual ~iCTimeout();
 

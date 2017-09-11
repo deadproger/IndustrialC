@@ -15,8 +15,6 @@ ParserContext* parser_context = NULL;
 //=================================================================================================
 void iCProgram::gen_code(CodeGenContext& context)
 {
-
-
 	//stub definitions
 	context.to_code_fmt("%s\n\n", C_STUB_DEFS);
 
@@ -26,13 +24,11 @@ void iCProgram::gen_code(CodeGenContext& context)
 	//macro routines
 	context.to_code_fmt("%s\n\n", C_MACRO_ROUTINES);
 
-
 	//global declarations and c code
 	for(iCDeclarationList::iterator i=mcu_decls.begin();i!=mcu_decls.end();i++)
 	{
 		(*i)->gen_code(context);
 	}
-
 
 	//variable declarations
 	for(std::list<iCVariable*>::iterator i=var_list.begin();i!=var_list.end();i++)
@@ -50,8 +46,8 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.to_code_fmt("\n");
 
 	//process names enumerator
-	std::ostringstream state_enums;
-	//std::ostringstream proc_decls;
+	//std::ostringstream state_enums;
+	//context.set_location(line_num, filename);
 	std::ostringstream proc_subroutines;
 	context.to_code_fmt("enum %s\n{\n", C_PROC_ENUM_NAME);
 	context.indent_depth++;
@@ -62,51 +58,48 @@ void iCProgram::gen_code(CodeGenContext& context)
 
 		//process name enumerator
 		context.indent();
-		context.to_code_fmt("%s,\n", proc_name.c_str());
-
-		//state names enumerators
-		unsigned int state_id = 3;
-		state_enums<<"enum "<<proc_name<<"_STATES"<<std::endl<<"{"<<std::endl;
-		for(StateList::const_iterator s=proc->states.begin();s!=proc->states.end();s++)
-		{
-			iCState& state = **s;
-			if(!state.special)
-			{
-				std::string state_name = proc_name + state.name;
-				state_enums<<'\t'<<state_name<<" = "<<state_id++<<","<<std::endl;
-			}
-
-		}
-		state_enums<<"};"<<std::endl<<std::endl;
-
-		//proc declarations
-		/*CodeGenContext proc_decl_context(proc_decls);
-		for(iCDeclarationList::const_iterator d=proc->decls.begin();d!=proc->decls.end();d++)
-		{
-			(*d)->gen_code(proc_decl_context);
-		}
-		proc_decls<<std::endl;*/
-
-		//process activate subroutines
-		//proc_subroutines<<PROC_SR_NAME(proc_name)<<"()\n{"<<std::endl;
-		//proc_subroutines<<"}"<<std::endl;
+		context.to_code_fmt("%s,\n", proc_name.c_str());	
 	}
 	context.indent();
 	context.to_code_fmt("%s,\n};\n\n", C_PROC_ENUM_NUM);
 	context.indent_depth--;
-
+	
 	//special state id constants
 	context.to_code_fmt("const unsigned int %s = 0;\n", STOP_STATE_NAME);
 	context.to_code_fmt("const unsigned int %s = 1;\n", START_STATE_NAME);
 	context.to_code_fmt("\n");
 
-	//dump the accumulated state enumerators into the code
-	context.to_code_fmt(state_enums.str().c_str());
+	context.code.flush();
+
+	for(iCProcessList::iterator i=procs.begin();i!=procs.end();i++)
+	{
+		iCProcess* proc = i->second;
+		const std::string& proc_name = proc->name;
+
+		if(2 <= proc->states.size())//proc has states other than FS_START
+		{
+			//state names enumerators
+			unsigned int state_id = 3;
+			//state_enums<<"enum "<<proc_name<<"_STATES"<<std::endl<<"{"<<std::endl;
+			context.to_code_fmt("enum %s_STATES\n{\n", proc_name.c_str());
+			for(StateList::const_iterator s=proc->states.begin();s!=proc->states.end();s++)
+			{
+				iCState& state = **s;
+				if(!state.special)
+				{
+					std::string state_name = proc_name + state.name;
+					//state_enums<<'\t'<<state_name<<" = "<<state_id++<<","<<std::endl;
+					context.to_code_fmt("\t%s=%d,\n", state_name.c_str(), state_id++);
+				}
+			}
+			//state_enums<<"};"<<std::endl<<std::endl;	
+			context.to_code_fmt("};\n\n");
+		}
+	}
 
 	//dump the process subroutines
 	//context.code<<proc_subroutines.str();
 	
-
 	//process struct array
 	context.to_code_fmt("typedef struct\n{\n");
 	context.indent_depth++;
@@ -167,7 +160,6 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.indent(); context.to_code_fmt("} //while loop\n");
 	context.indent_depth--;
 	context.indent(); context.to_code_fmt("} //main\n");
-
 }
 
 

@@ -776,11 +776,12 @@ prep_compound:	%empty // subroutine to prepare scope for compound statement
 					parser_context->open_scope("comp");
 				}
 
-timeout	:	TTIMEOUT TLPAREN TICONST TRPAREN
+timeout	:	TTIMEOUT TLPAREN expr TRPAREN
 			{
-			  $<timeout>$ = new iCTimeout(atoi($3->c_str()), *parser_context);
+			  //$<timeout>$ = new iCTimeout(atoi($3->c_str()), *parser_context);
+			  $<timeout>$ = new iCTimeout($3, *parser_context);
 			  parser_context->open_scope("timeout");
-			  delete $3;
+			  //delete $3;
 			}
 			TLBRACE block_items_list TRBRACE
 			{
