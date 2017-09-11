@@ -102,7 +102,7 @@ const int IC_TAB_SIZE = 4;
 "0x"[a-fA-F0-9]+		{SAVE_TOKEN; return THCONST;}
 "0b"[0-1]+				{SAVE_TOKEN; return TBCONST;}
 '(\\.|[^\\'])+'			{SAVE_TOKEN; return TSTRING;}
-\"[^"\\\n]*\"	 		{SAVE_TOKEN; return TSTRING;}
+\"(\\.|[^\\"])*\"	 	{SAVE_TOKEN; return TSTRING;}
 
 "("                     return TOKEN(TLPAREN);
 ")"                     return TOKEN(TRPAREN);

@@ -12,7 +12,10 @@ void iCTimeout::gen_code( CodeGenContext& context )
 
 	//timeout header
 	context.indent();
-	context.to_code_fmt("timeout(%s, %d)\n", context.process->name.c_str(), period);
+	//context.to_code_fmt("timeout(%s, %d)\n", context.process->name.c_str(), period);
+	context.to_code_fmt("timeout(%s, ", context.process->name.c_str());
+	period->gen_code(context);
+	context.to_code_fmt(")\n");
 	context.indent();
 	context.to_code_fmt("{\n");
 	context.indent_depth++;
@@ -39,4 +42,6 @@ iCTimeout::~iCTimeout()
 	{
 		delete *i;
 	}
+	if(NULL != period)
+		delete period;
 }
