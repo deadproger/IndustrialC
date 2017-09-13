@@ -2,6 +2,7 @@
 #include "iCScope.h"
 #include "CodeGenContext.h"
 #include "iCVariable.h"
+#include "iCCompoundStatement.h"
 
 iCFunction::iCFunction( //const iCStringList& type_specs_,
 						const std::string& name,
@@ -22,6 +23,10 @@ iCFunction::iCFunction( //const iCStringList& type_specs_,
 iCFunction::~iCFunction()
 {
 	for(std::list<iCVariable*>::iterator i=params.begin();i!=params.end();i++)
+	{
+		delete *i;
+	}
+	for(std::list<iCVariable*>::iterator i=local_vars.begin();i!=local_vars.end();i++)
 	{
 		delete *i;
 	}
@@ -75,7 +80,30 @@ void iCFunction::gen_code( CodeGenContext& context )
 	if(NULL != body)
 	{
 		context.to_code_fmt("\n");
-		body->gen_code(context);
+		context.set_location(line_num, filename);
+
+		//header
+		context.indent();
+		context.to_code_fmt("{\n");
+		context.indent_depth++;
+
+		for(std::list<iCVariable*>::iterator i=local_vars.begin();i!=local_vars.end();i++)
+		{
+			(*i)->gen_code(context);
+		}
+
+		iCBlockItemsList& items_list = reinterpret_cast<iCCompoundStatement*>(body)->get_block_items();//a crutch
+		for(iCBlockItemsList::iterator i=items_list.begin();i!=items_list.end();i++)
+		{
+			(*i)->gen_code(context);
+		}
+		//body->gen_code(context);
+
+		//footer
+		context.indent_depth--;
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("}");
 	}
 	else
 		context.to_code(";");

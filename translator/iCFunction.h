@@ -19,6 +19,7 @@ public:
 	std::string name;
 	std::string full_name;
 	std::list<iCVariable*> params;//owns
+	std::list<iCVariable*> local_vars;//owns
 	iCStatement *body;
 	const iCScope* scope;//doesn't own, scope where it was defined
 
@@ -33,6 +34,11 @@ public:
 	void set_params(const std::list<iCVariable*>& params_list)
 	{
 		params = params_list;
+	}
+
+	void add_variable(iCVariable* var) 
+	{	
+		local_vars.push_back(var);
 	}
 
 	virtual void gen_code(CodeGenContext& context);
