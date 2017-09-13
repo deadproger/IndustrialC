@@ -442,7 +442,7 @@ proc_def	:	TPROC TIDENTIFIER // 1 2
 					else
 					{
 						$<process>$ = new iCProcess(*$2, *parser_context);
-						parser_context->set_process($<process>$);
+						parser_context->set_process($<process>$);//entering process definition
 						parser_context->open_scope(*$2);
 					}
 					delete $2;
@@ -482,6 +482,8 @@ proc_def	:	TPROC TIDENTIFIER // 1 2
 						$$->add_states($8->states);
 						//$$->add_decls($8->decls);
 						parser_context->add_proc_to_scope($$->name);
+
+						parser_context->set_process(NULL);//leaving process definition
 						
 						delete $5;
 						delete $8;
@@ -584,14 +586,27 @@ state_block_item	:	block_item	{$$ = $1;}
 
 block_item	:	var_declaration 
 				{
+					//if in function - those are local variables
+					//otherwise - add 'em to the program - theses will become global vars in c code
 					std::list<iCVariable*>* vars = $1;
-					for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
+					if(NULL != parser_context->get_func())
 					{
-						ic_program->add_variable(*i);
+						iCFunction* func = parser_context->get_func();
+						for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
+						{
+							func->add_variable(*i);
+						}
+					}
+					else
+					{
+						std::list<iCVariable*>* vars = $1;
+						for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
+						{
+							ic_program->add_variable(*i);
+						}
 					}
 					delete vars;
 					$$ = NULL;
-					//$$ = $<block_item>1;
 				}
 			|	statement {$$ = $<block_item>1;}
 			|	c_code {$$ = $<block_item>1;}	
@@ -772,7 +787,9 @@ compound_statement:		prep_compound TLBRACE block_items_list TRBRACE // compound 
 
 prep_compound:	%empty // subroutine to prepare scope for compound statement
 				{
+					
 					$<statement>$ = new iCCompoundStatement(*parser_context);
+					
 					parser_context->open_scope("comp");
 				}
 
@@ -982,14 +999,27 @@ assignement_op : TASSGN
 /*                              D E C L A R A T I O N S                                          */     
 /*************************************************************************************************/
 
-func_definition			:	decl_specs func_declarator func_body // compound statement
+//=============================================================================
+//Function Declaration
+//Parameters are put in a preopened scope func_params_xx
+//Function body (a compound statement) has opens its own scope, nested within
+//the func_param_xx scope (scope names do not add up)
+//=============================================================================
+func_definition			:	decl_specs func_declarator
+							{
+								parser_context->set_func($<func>2);//entering function
+								$<func>$ = NULL;
+							}
+							func_body // compound statement
 							{
 								$$ = $2;
 								$$->set_type_specs(*$1);
-								$$->body = $3;	
+								$$->body = $4;	
 								delete $1;
 								if(!$$->params.empty())
 									parser_context->close_scope();
+
+								parser_context->set_func(NULL);//leaving function
 								//delete $2;
 								//$3;$5;
 							}
@@ -1073,28 +1103,19 @@ param_declarator		: decl_specs direct_declarator
 						  }
 						;
 
+//=============================================================================
+//Varibale Declaration
+//=============================================================================
 
 var_declaration			:	decl_specs init_declarator_list TSEMIC 
 							{
 								$$ = $2;
-
 								for(std::list<iCVariable*>::iterator i=$2->begin();i!=$2->end();i++)
 								{
 									iCVariable* var = *i;
 									var->set_type_specs(*$1);
 								}
-
-								/*for(iCStringList::iterator i=$2->begin();i!=$2->end();i++)
-								{
-									iCVariable* var = new iCVariable(*$1, *i, scope, *parser_context);
-									$$->push_back(var);
-									parser_context->add_var_to_scope(var);
-								}
 								delete $1;
-								delete $2;*/
-
-								delete $1;
-								
 								$3;//suppress unused value warning*/
 							}
 							;
