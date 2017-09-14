@@ -584,7 +584,12 @@ state_items_list	:	state_items_list state_block_item
 					;
 
 state_block_item	:	block_item	{$$ = $1;}
-					|	timeout {$$ = $<block_item>1;}
+					|	timeout 
+						{
+							//$$ = $<block_item>1;
+							$$ = NULL;
+							parser_context->modify_state()->set_timeout($1);
+						}
 					;
 
 block_item	:	var_declaration 

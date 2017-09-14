@@ -22,14 +22,35 @@ void iCStateTransition::second_pass()
 //=================================================================================================
 void iCStateTransition::gen_code(CodeGenContext& context)
 {
+	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 	context.indent();
+	
+	//add atomic block if in background loop
+	if(!context.in_ISR())
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
+		context.indent_depth++;
+		context.indent();
+	}
+
 	context.to_code_fmt("%s(%s, ", C_STRANS_MACRO, context.process->name.c_str());
 	if(START_STATE_NAME != state_name && STOP_STATE_NAME != state_name)
 	{
 		context.to_code_fmt(context.process->name.c_str());
 	}
 	context.to_code_fmt("%s);", state_name.c_str());
+
+	//atomic block footer
+	if(!context.in_ISR())
+	{
+		context.to_code_fmt("\n");
+		context.indent_depth--;
+		context.indent();
+		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
+	}
 }
 
 //=================================================================================================

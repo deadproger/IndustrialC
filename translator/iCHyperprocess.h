@@ -23,6 +23,7 @@ public:
 	iCHyperprocess(const std::string& activator, const ParserContext& context);
 	virtual ~iCHyperprocess();
 	virtual void gen_code(CodeGenContext& context);
+	void gen_timeout_code(CodeGenContext& context);
 
 	void add_proc(iCProcess* proc);
 

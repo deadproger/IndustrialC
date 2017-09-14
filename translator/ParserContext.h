@@ -19,7 +19,7 @@ class ParserContext
 {
 	const iCProgram* program;//does not own
 	iCProcess* process;//does not own
-	const iCState* state;
+	iCState* state;
 	iCFunction* func;//does not own
 
 	bool in_func;
@@ -52,13 +52,14 @@ public:
 
 	void set_program(const iCProgram* program) {this->program = program;}
 	void set_process(iCProcess* process) {this->process = process;}
-	void set_state(const iCState* state) {this->state = state;}
+	void set_state(iCState* state) {this->state = state;}
 	void set_func(iCFunction* func) {this->func = func;}
 
 	const iCProgram* get_program() const {ICASSERT(NULL != program); return program;}
 	const iCProcess* get_process() const {/*ICASSERT(NULL != process);*/ return process;}//removed assert because vars in functions are used outside processes
 	iCProcess* modify_process() {return process;}
 	const iCState* get_state() const {ICASSERT(NULL != state); return state;}
+	iCState* modify_state() {return state;}
 	iCFunction*  get_func() {return func;}
 
 	unsigned long line() const {return line_num;}
