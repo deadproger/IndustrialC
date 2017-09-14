@@ -22,6 +22,7 @@ void iCHyperprocess::gen_code( CodeGenContext& context )
 	{
 		context.to_code_fmt("ISR(%s)\n{\n", int_vector.c_str());
 		context.indent_depth++;
+		context.enter_ISR();
 	}
 
 	//processes
@@ -35,6 +36,20 @@ void iCHyperprocess::gen_code( CodeGenContext& context )
 	{
 		context.indent_depth--;
 		context.to_code_fmt("}\n\n");
+		context.leave_ISR();
+	}
+}
+
+
+void iCHyperprocess::gen_timeout_code( CodeGenContext& context )
+{
+	for(iCProcessList::iterator j=procs.begin();j!=procs.end();j++)
+	{
+		iCProcess* proc = j->second;
+		if(proc->has_timeouts())
+		{
+			proc->gen_timeout_code(context);
+		}
 	}
 }
 

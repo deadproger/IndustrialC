@@ -19,6 +19,8 @@ class CodeGenContext
 	void add_new_lines(int num = 1);
 	void place_line_marker(unsigned long line_num, const std::string& file);
 	void place_line_marker(unsigned long line_num);
+
+	bool _in_ISR;
 	
 public:
 
@@ -38,6 +40,7 @@ public:
 			code(code),
 			hps(hps),
 			cur_line_num(0),
+			_in_ISR(false),
 			indent_enabled(true){}
 	CodeGenContext(std::ostream& code)
 		:	process(NULL),
@@ -46,6 +49,7 @@ public:
 			code(code),
 			hps(NULL),
 			cur_line_num(0),
+			_in_ISR(false),
 			indent_enabled(true){}
 
 	//CodeGenContext does not own pointed objects
@@ -62,4 +66,8 @@ public:
 	std::ostream& code;
 
 	void indent(){ if(indent_enabled)code<<std::string(indent_depth, C_INDENT);}
+
+	void enter_ISR(){_in_ISR = true;}
+	void leave_ISR(){_in_ISR = false;}
+	bool in_ISR()const{return _in_ISR;}
 };

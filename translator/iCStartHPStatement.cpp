@@ -30,6 +30,7 @@ void iCStartHPStatement::gen_code( CodeGenContext& context )
 	if(NULL == hp) 
 		return;
 
+	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 	context.indent();
 	context.to_code_fmt("SET_BIT(%s, %s);\n", hp->int_ctrl_register.c_str(), hp->int_ctrl_bit.c_str());

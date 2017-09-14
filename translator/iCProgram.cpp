@@ -19,10 +19,18 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.to_code_fmt("%s\n\n", C_STUB_DEFS);
 
 	//routine definitions
-	context.to_code_fmt("unsigned long SysTime_cur = 0;\n\n");
+	context.to_code_fmt("volatile unsigned long %s = 0;\n\n", C_SYS_TIME_CUR_NAME);
 
 	//macro routines
 	context.to_code_fmt("%s\n\n", C_MACRO_ROUTINES);
+
+	//common background state function variable
+	//used in atomic state switching
+	context.to_code_fmt("%s %s;\n", C_STATE_FUNC_TYPE_NAME, C_COMMON_BKG_FSP_NAME);
+
+	//common background process time variable
+	//used in atomic timeout detection
+	context.to_code_fmt("unsigned long %s;\n", C_COMMON_BKG_PROC_TIME);
 
 	//global declarations and c code
 	for(iCDeclarationList::iterator i=mcu_decls.begin();i!=mcu_decls.end();i++)
@@ -65,8 +73,8 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.indent_depth--;
 	
 	//special state id constants
-	context.to_code_fmt("const unsigned int %s = 0;\n", STOP_STATE_NAME);
-	context.to_code_fmt("const unsigned int %s = 1;\n", START_STATE_NAME);
+	context.to_code_fmt("const %s %s = 0;\n", C_STATE_FUNC_TYPE_NAME, STOP_STATE_NAME);
+	context.to_code_fmt("const %s %s = 1;\n", C_STATE_FUNC_TYPE_NAME, START_STATE_NAME);
 	context.to_code_fmt("\n");
 
 	context.code.flush();
@@ -104,9 +112,9 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.to_code_fmt("typedef struct\n{\n");
 	context.indent_depth++;
 	context.indent();
-	context.to_code_fmt("unsigned int %s;\n", C_STATE_FUNC_ATTR_NAME);
+	context.to_code_fmt("volatile  %s %s;\n", C_STATE_FUNC_TYPE_NAME, C_STATE_FUNC_ATTR_NAME);
 	context.indent();
-	context.to_code_fmt("unsigned long T;\n}%s;\n", C_PROC_DATA_STRUCT_NAME);
+	context.to_code_fmt("volatile unsigned long T;\n}%s;\n", C_PROC_DATA_STRUCT_NAME);
 	context.to_code_fmt("%s %s[%s];\n\n", C_PROC_DATA_STRUCT_NAME, C_PROC_ARRAY_NAME, C_PROC_ENUM_NUM);
 	context.indent_depth--;
 
@@ -151,8 +159,35 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.indent(); context.to_code_fmt("while(1)\n");
 	context.indent(); context.to_code_fmt("{\n");
 	context.indent_depth++;
-	context.indent(); context.to_code_fmt("%s\n\n", C_SYS_TIME_UPDATE);
 
+	//System time update
+	//SysTime_cur = ic_ts_millis();
+	context.to_code_fmt("\n");
+	context.indent();
+	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
+	context.indent_depth++;
+	context.indent();
+	context.to_code_fmt("%s", C_SYS_TIME_UPDATE);
+	context.to_code_fmt("\n");
+	context.indent_depth--;
+	context.indent();
+	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
+	
+
+	//time service: timeout instances for isr-driven processes
+	for(iCHyperprocessMap::iterator i=hps.begin();i!=hps.end();i++)
+	{
+		iCHyperprocess* hp = i->second;
+		if(NULL != hp)
+		{
+			if("background" != hp->activator)
+			{
+				hp->gen_timeout_code(context);
+			}
+		}
+	}
+	
+	//code for background processes
 	hps["background"]->gen_code(context);
 
 	//program footer

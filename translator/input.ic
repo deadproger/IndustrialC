@@ -190,7 +190,46 @@ process ADC_Test_output : background
 	}
 }
 */
-#include "adc.ih"
+//#include "adc.ih"
+
+
+hyperprocess DD2_DRDY_interrupt
+{
+	vector = INT6_vect;
+	register = EIMSK;
+	bit = INT6;
+}
+
+process ISRProc_with_no_timeouts : DD2_DRDY_interrupt
+{
+	state FS_START
+	{
+	}
+}
+
+process DD2_ADC_Read : DD2_DRDY_interrupt
+{
+	state FS_START
+	{
+		timeout(500)
+		{
+			1;
+			to state State2;
+		}
+	}
+	
+	state State2
+	{
+	
+	}
+	state State3
+	{
+		timeout(1000)
+		{
+			to state FS_START;
+		}	
+	}
+}
 
 
 #include "keyboard.ih"

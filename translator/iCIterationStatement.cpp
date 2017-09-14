@@ -18,6 +18,7 @@ iCIterationStatement::iCIterationStatement(iCStatement* init,
 
 void iCIterationStatement::gen_code( CodeGenContext& context )
 {
+	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 
 	//header

@@ -15,6 +15,7 @@ std::string input_filename = "input.iprepr";
 std::string output_filename = "output.cpp";
 extern ParserContext* parser_context;
 extern bool had_errors;
+extern bool gen_line_markers;
 
 int main(int argc, char **argv)
 {
@@ -27,7 +28,11 @@ int main(int argc, char **argv)
 	input_filename = argv[argc-1];
 	for(int i=1;i<argc-1;i++)
 	{
-		if(std::string(argv[i]) == "-o" && i+1 < argc)
+		if("-no-line-markers" == std::string(argv[i]))
+		{
+			gen_line_markers = false;
+		}
+		else if("-o" == std::string(argv[i]) && i+1 < argc)
 		{
 			output_filename = argv[++i];
 		}
