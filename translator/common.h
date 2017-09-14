@@ -62,6 +62,8 @@ const char C_CHECK_PROC_STOPPED_MACRO[] = "check_stop";
 const char C_RESET_T_MACRO[] = "resetT";
 const char C_TIMEOUT_MACRO[] = "timeout";
 
+const char C_COMMENT_FRAME[] = "//=============================================================================";
+
 const char C_STUB_DEFS[] = "";/*"#include <ctime>\n\
 unsigned long millis()\n\
 {\n\

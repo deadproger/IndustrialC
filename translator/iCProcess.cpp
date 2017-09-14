@@ -11,6 +11,10 @@ void iCProcess::gen_code(CodeGenContext& context)
 	//update context
 	context.process = this;
 
+	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
+	context.to_code_fmt("//Process: %s\n", name.c_str());
+	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
+
 	context.set_location(line_num, filename);
 
 	//process header
