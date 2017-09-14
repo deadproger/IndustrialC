@@ -20,6 +20,7 @@ public:
 	virtual void second_pass() {}
 
 	void err_msg(const char* format, ...) const;
+	void warning_msg( const char* format, ... ) const;
 };
 
 //=================================================================================================

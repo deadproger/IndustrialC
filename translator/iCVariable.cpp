@@ -25,8 +25,14 @@ void iCVariable::gen_code( CodeGenContext& context )
 {
 	context.set_location(line_num, filename);
 	context.indent();
+	
+	/*
+	//Automatic volatile
 	if(used_in_isr)
+	{
 		context.to_code_fmt("volatile ");
+	}
+	*/
 	for(iCStringList::iterator i=type_specs.begin();i!=type_specs.end();i++)
 	{
 		context.to_code_fmt("%s ", (*i).c_str());
@@ -70,5 +76,22 @@ void iCVariable::set_type_specs( const iCStringList& _type_specs )
 	for(iCStringList::const_iterator i=_type_specs.begin();i!=_type_specs.end();i++)
 	{
 		type_specs.push_back(*i);
+	}
+}
+
+void iCVariable::second_pass()
+{
+	if(used_in_isr)
+	{
+		iCStringList::iterator findVolatile = std::find(type_specs.begin(),
+														  type_specs.end(),
+														  std::string("volatile"));
+		iCStringList::iterator findConst = std::find(type_specs.begin(),
+													   type_specs.end(),
+													   std::string("const"));
+		if(type_specs.end() == findVolatile && type_specs.end() == findConst)
+		{
+			warning_msg("variable \"%s\" is used in ISR but not qualified as volatile", name.c_str());
+		}
 	}
 }

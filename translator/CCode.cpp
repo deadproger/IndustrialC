@@ -81,13 +81,17 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 
 			const iCProcess* var_proc = parser_context.get_process();
 
+			
+			//Mark var as used referenced in ISR - used for automatic volatile
 			if(NULL != var_proc)
 			{
 				if(0 != var_proc->activator.compare("background"))
 				{
 					var->used_in_isr = true;
+					parser_context.add_to_second_pass(var);
 				}
 			}
+			
 		}
 		last_pos = pos = end_pos;
 	}
