@@ -25,4 +25,15 @@ void iCNode::err_msg( const char* format, ... ) const
 	va_end(args);
 	std::cout<<filename<<":"<<line_num/*<<":"<<col_num*/<<": error: "<<buffer<<std::endl;
 }
+
+void iCNode::warning_msg( const char* format, ... ) const
+{
+	//had_errors = true;
+	char buffer[ERR_MSG_BUFFER_SIZE];
+	va_list args;
+	va_start(args,format);
+	vsprintf(buffer,format, args);
+	va_end(args);
+	std::cout<<filename<<":"<<line_num/*<<":"<<col_num*/<<": warning: "<<buffer<<std::endl;
+}
 /*iCMCUIdentifier::iCMCUIdentifier( const std::string& name ): name(name){}*/

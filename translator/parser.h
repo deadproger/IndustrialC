@@ -134,6 +134,9 @@
 %token <string> TUNSGND			"unsigned"	
 %token <string> TBOOL			"bool"	
 %token <string> TCONST			"const"
+%token <string> TVOLATILE		"volatile"
+%token <string> TINLINE			"inline"
+
 %token <string> TIDENTIFIER		"identifier"
 %token <string> TICONST			"integer constant"
 %token <string> TDCONST			"double constant"
@@ -940,11 +943,18 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 						{
 							$$ = new iCIdentifier(*$1, var->scope, *parser_context);
 							const iCProcess* proc = parser_context->get_process();
+
+							
+							//Mark var as used referenced in ISR - used for automatic volatile
 							if(NULL != proc)//added because of functions - vars in functions don't belong to proc
+							{
 								if(0 != proc->activator.compare("background"))
 								{
 									var->used_in_isr = true;
+									parser_context->add_to_second_pass(var);
 								}
+							}
+							
 						}
 					}
 					delete $1;
@@ -1227,17 +1237,19 @@ initializer_list		:	initializer_list TCOMMA initializer
 /***********************************************************************************************************************/
 
 type_spec				:	TVOID	
-								|	TCHAR	
-								|	TINT		
-								|	TSHORT	
-								|	TLONG	
-								|	TFLT		
-								|	TDBL		
-								|	TSGND	
-								|	TUNSGND	
-								|	TBOOL
-								|	TCONST
-								;
+						|	TCHAR	
+						|	TINT		
+						|	TSHORT	
+						|	TLONG	
+						|	TFLT		
+						|	TDBL		
+						|	TSGND	
+						|	TUNSGND	
+						|	TBOOL
+						|	TCONST
+						|	TVOLATILE	
+						|	TINLINE		
+						;
 
 %%
 

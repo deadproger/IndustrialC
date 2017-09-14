@@ -92,7 +92,10 @@ const int IC_TAB_SIZE = 4;
 "signed"				SAVE_TOKEN; return TSGND	 ;
 "unsigned"				SAVE_TOKEN; return TUNSGND	 ;
 "bool"					SAVE_TOKEN; return TBOOL	 ;
+
 "const"					SAVE_TOKEN; return TCONST	 ;
+"volatile"				SAVE_TOKEN; return TVOLATILE ;
+"inline"				SAVE_TOKEN; return TINLINE   ;
 
 
 
