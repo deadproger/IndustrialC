@@ -7,25 +7,13 @@ $ #include <util/delay.h>
 $ #include <stdint.h>
 $ #include <stdio.h>
 $ #include <string.h>
+$ #include <stdlib.h>
 
 #include "globals.ih"
 #include "ui_subroutines.ih"
 #include "spi.ih"
 
 unsigned int number;
-
-
-void quadrupopel(int a)
-{
-	int c;
-	a = 5;
-	c = 10;
-	{
-		int b;
-		b = 12;	
-	}
-}
-
 
 //=============================================================================
 //Процесс инициализации
@@ -35,12 +23,43 @@ process Initialization : background
 	unsigned int counter;
 	state FS_START
 	{
+		//DEBUG
+		//TEST_DDR |= _BV(TEST_PIN);
+		//TEST_PORT &= ~_BV(TEST_PIN);
+	
+		//TODO: Load values from EEPROM
+		int i,j;
+		for(i=0;i<NUM_PORTS;i++)
+		{
+			port_zero_values[i] = 32767;
+			for(j=0;j<NUM_REG_PARAMS;j++)
+			{
+				port_reg_params[i][j] = 1.0;
+			}
+		}
+		
+		//Настройка вывода опорного сигнала сети на вход
+		MAINS_REF_DDR &= ~_BV(MAINS_REF_PIN);
+		
+		//Настройка выводов управления нагревателями
+		HEATER_DDR |= _BV(HEATER_A_PIN);
+		HEATER_PORT |= _BV(HEATER_A_PIN);
+		
+		//настройка внешнего прерывания INT5 на срабатывание по восходящему 
+		//фронту сигнала синхронизации сети
+		EICRB |= _BV(ISC50) | _BV(ISC51);
+	
 		//Настройка таймера 2 для выдачи ШИМ 2.5кГц, скважность 2
 		BUZZER_DDR |= _BV(BUZZER_PIN);
 		OCR2 = 50;
 		//делитель 1/64, режим CTC (сброс по сравнению)
 		TCCR2 = _BV(WGM21) | _BV(CS21) | _BV(CS20);
 		
+		start process LongBuzz;
+		set state Step2;
+	}
+	state Step2
+	{	
 		sreg_led = 0;
 		sreg_lcd = 0;
 		counter = 0;
@@ -53,6 +72,14 @@ process Initialization : background
 		
 		InitLCD();
 		
+		sprintf(LCD_text, "Initializing... ");
+		
+		start process ShiftRegisters;
+		
+		set state Step3;
+	}
+	state Step3
+	{	
 		//Init USART0
 		unsigned int ubrr = 8;
 		UBRR0H =  ubrr >> 8;
@@ -61,24 +88,23 @@ process Initialization : background
 		UCSR0C = _BV(UCSZ00) | _BV(UCSZ01);
 		
 		//Инициализация аппаратного SPI
-		SPI_DDR = _BV(SPI_SCK) | _BV(SPI_MOSI) | _BV(SPI_SS);//MOSI, SCK, SS на выход
+		SPI_DDR |= _BV(SPI_SCK) | _BV(SPI_MOSI) | _BV(SPI_SS);//MOSI, SCK, SS на выход
 		SPSR |= _BV(SPI2X);//двойная скорость SPI
 		SPCR = _BV(SPE) | _BV(MSTR) | _BV(CPOL) | _BV(CPHA);
 		
 		//Настройка направления работы выводов CS, RESET и DRDY
-		DDRA = _BV(DD2_CS) | _BV(DD3_CS) | _BV(DD2_RESET) | _BV(DD3_RESET);//CS и RESET на выход
+		DDRA |= _BV(DD2_CS) | _BV(DD3_CS) | _BV(DD2_RESET) | _BV(DD3_RESET);//CS и RESET на выход
 		DDRE &= ~(_BV(DD2_DRDY) | _BV(DD3_DRDY)); //DRDY на вход
 		PORTA |= _BV(DD2_CS) | _BV(DD3_CS);//установка сигнала CS в 1	
 		
 		//настройка внешних прерываний сигналов DRDY на срабатывание по нисходящему фронту
-		EICRB = _BV(ISC61) | _BV(ISC71);
+		EICRB |= _BV(ISC61) | _BV(ISC71);
 		
 		//Инициализация АЦП DD2 (AD7705)
 		PORTA &= ~_BV(DD2_RESET);//Перезапуск устройства
-		_delay_ms(200);
+		_delay_ms(1);
 		PORTA |= _BV(DD2_RESET);
-		
-		_delay_ms(200);
+		_delay_ms(1);//мин 100нс по документации
 		
 		//Инициализация АЦП и внутренняя калибровка канала 0
 		PORTA &= ~_BV(DD2_CS);
@@ -95,12 +121,11 @@ process Initialization : background
 		WriteByteSPI(ADC_SELF_CALIB | ADC_BIPOLAR | ADC_GAIN_128);//Запуск внутренней калибровки, gain 128, буфер отключен
 		PORTA |= _BV(DD2_CS);
 		
-		
 		//Инициализация АЦП DD3 (AD7705)
 		PORTA &= ~_BV(DD3_RESET);//Перезапуск устройства
-		_delay_ms(200);
+		_delay_ms(1);
 		PORTA |= _BV(DD3_RESET);
-		_delay_ms(200);
+		_delay_ms(1);//мин 100нс по документации
 		
 		//Инициализация АЦП и внутренняя калибровка канала 0
 		PORTA &= ~_BV(DD3_CS);
@@ -117,121 +142,251 @@ process Initialization : background
 		WriteByteSPI(ADC_SELF_CALIB | ADC_UNIPOLAR | ADC_GAIN_2);//Запуск внутренней калибровки, gain 128, буфер отключен
 		PORTA |= _BV(DD3_CS);
 		
-		//Запуск процессов чтения АЦП и прерываний сигналов DRDY
-		//start process DD2_ADC_Read;
-		//start process DD3_ADC_Read;
-		//start hyperprocess DD2_DRDY_interrupt;
-		//start hyperprocess DD3_DRDY_interrupt;
+		dd2_adc_ch0 = 0;
+		dd2_adc_ch1 = 0;
+		dd3_adc_ch0 = 0;
+		dd3_adc_ch1 = 0;
 		
-		//start process ShiftRegisters;
-		//start process ButtonUp;
-		//start process ButtonDown;
-		//start process ButtonA;
-		//start process ButtonB;
-		//start process ButtonC;
-		//start process ButtonEnter;
-		//start process UI_Menu;
+		start process DD2_ADC_Read;
+		start process DD3_ADC_Read;
+		start hyperprocess DD2_DRDY_interrupt;
+		start hyperprocess DD3_DRDY_interrupt;
 		
-		//start process TestPrint;
+		set state WaitDataCorrect;
 		
-		stop process;//остановка процесса инициализации
+		
+	}
+	state WaitDataCorrect
+	{
+		bool DataCorrect;
+		
+		stop hyperprocess DD2_DRDY_interrupt;
+		stop hyperprocess DD3_DRDY_interrupt;
+		DataCorrect = (0 != dd2_adc_ch0 && 0 != dd2_adc_ch1 && 0 != dd3_adc_ch0 && 0 != dd3_adc_ch1);
+		start hyperprocess DD2_DRDY_interrupt;
+		start hyperprocess DD3_DRDY_interrupt;
+		
+		if(DataCorrect)
+		{
+			start process ButtonUp;
+			start process ButtonDown;
+			start process ButtonsUpDownHoldDetect;
+			start process ButtonA;
+			start process ButtonB;
+			start process ButtonC;
+			start process ButtonEnter;
+			start process UI_Menu;
+			start process UI_Setup_Switching;
+			
+			start process PortA_Brezenham;
+			start hyperprocess MAINS_REF_interrupt;
+			
+			//start process TestPrint;
+			//start process ADC_Test_output;
+			start process CalcTempInt;
+			start process CalcTempPortA;
+			start process CalcTempPortB;
+			start process CalcTempPortC;
+			
+			//start process ADC_Test_output;
+			
+			stop process;//остановка процесса инициализации
+		}
+	}
+}
+
+process CalcTempInt : background
+{
+	state FS_START
+	{
+		//TEST_PORT |= _BV(TEST_PIN);//DEBUG
+		//Получение температуры внутри станции
+		stop hyperprocess DD3_DRDY_interrupt;//Критическая секция
+		internal_temp = dd3_adc_ch1;
+		start hyperprocess DD3_DRDY_interrupt;//Конец критической секции
+		//2500мВ - опорное напряжение АЦП в мВ
+		//65535 - максимум шкалы АЦП
+		//2.0 - коэффициент усиления для сигнала температуры внутри станции
+		//596мВ - номинальное напряжение с датчика температуры ИОН при 25°С
+		//2.0 - коэффициент изменения напряжения температурного датчика ИОН, мВ/°С
+		//25°С - температура, соответсвующая номинальному напряжению 596мВ на температурном выходе ИОН
+		//4.72 - калибровочное смещение
+		internal_temp = ((internal_temp*2500.0)/(65535.0*2.0) - 596.0)/2.0 + 25.0 + int_temp_calib_offset;
+		dtostrf(internal_temp, 5, 2, internal_temp_str);
+		//TEST_PORT &= ~_BV(TEST_PIN);//DEBUG
+	}
+}
+
+process CalcTempPortA : background
+{
+	state FS_START
+	{
+		set state CalcTemp;
+	}
+	state CalcTemp
+	{
+		//TEST_PORT |= _BV(TEST_PIN);//DEBUG
+	
+		//Получение значения температуры в порту A
+		stop hyperprocess DD2_DRDY_interrupt;//Критическая секция
+		port_temp[SP_PORT_A] = dd2_adc_ch0;
+		start hyperprocess DD2_DRDY_interrupt;//Конец критической секции
+		
+		if(port_temp[SP_PORT_A] < ADC_TC_OPEN_THRESHOLD)
+		{
+			//32767 - ноль шкалы АЦП
+			//2500 - опорное напряжение АЦП в мВ; Умножается на 2.0 дифференциальном режиме
+			//128 - коэффициент усиления в АЦП для сигнала с термопары
+			//65535 - максимум шкалы АЦП
+			//0.041 - коэффициент Зеебека для линейной модели термопары
+			port_temp[SP_PORT_A] = ((port_temp[SP_PORT_A]-32767.0)*2500.0*2.0)/(128.0*65535.0*0.041) + internal_temp;
+			dtostrf(port_temp[SP_PORT_A], 6, 2, port_temp_str[SP_PORT_A]);
+		}
+		else
+		{
+			set state BadData;
+		}
+		//TEST_PORT &= ~_BV(TEST_PIN);//DEBUG
+	}
+	state BadData
+	{
+		if(port_temp[SP_PORT_A] < ADC_TC_OPEN_THRESHOLD)
+			set state CalcTemp;
+		timeout(TC_OPEN_TIMEOUT)
+		{
+			sp_port_status[SP_PORT_C] = SP_PORT_ERROR_TC;
+			stop process DegasA;
+			stop process PortA_Brezenham;
+			stop process;
+			start process LongBuzz;
+		}
+	}
+}
+
+process CalcTempPortB : background
+{
+	state FS_START
+	{
+		set state CalcTemp;
+	}
+	state CalcTemp
+	{
+		//Получение значения температуры в порту B
+		stop hyperprocess DD2_DRDY_interrupt;//Критическая секция
+		port_temp[SP_PORT_B] = dd2_adc_ch1;
+		start hyperprocess DD2_DRDY_interrupt;//Конец критической секции
+		if(port_temp[SP_PORT_B] < ADC_TC_OPEN_THRESHOLD)
+		{
+			//32767 - ноль шкалы АЦП
+			//2500 - опорное напряжение АЦП в мВ; Умножается на 2.0 дифференциальном режиме
+			//128 - коэффициент усиления в АЦП для сигнала с термопары
+			//65535 - максимум шкалы АЦП
+			//0.041 - коэффициент Зеебека для линейной модели термопары
+			port_temp[SP_PORT_B] = ((port_temp[SP_PORT_B]-32767.0)*2500.0*2.0)/(128.0*65535.0*0.041) + internal_temp;
+			dtostrf(port_temp[SP_PORT_B], 6, 2, port_temp_str[SP_PORT_B]);
+		}
+		else
+		{
+			set state BadData;
+		}
+	}
+	state BadData
+	{
+		if(port_temp[SP_PORT_B] < ADC_TC_OPEN_THRESHOLD)
+			set state CalcTemp;
+		timeout(TC_OPEN_TIMEOUT)
+		{
+			sp_port_status[SP_PORT_B] = SP_PORT_ERROR_TC;
+			stop process DegasB;
+			stop process PortB_Brezenham;
+			stop process;
+			start process LongBuzz;
+		}
+	}
+}
+
+process CalcTempPortC : background
+{
+	state FS_START
+	{
+		set state CalcTemp;
+	}
+	state CalcTemp
+	{
+		//Получение значения температуры в порту C
+		stop hyperprocess DD3_DRDY_interrupt;//Критическая секция
+		port_temp[SP_PORT_C] = dd3_adc_ch0;
+		start hyperprocess DD3_DRDY_interrupt;//Конец критической секции
+		if(port_temp[SP_PORT_C] < ADC_TC_OPEN_THRESHOLD)
+		{
+			//32767 - ноль шкалы АЦП
+			//2500 - опорное напряжение АЦП в мВ; Умножается на 2.0 дифференциальном режиме
+			//128 - коэффициент усиления в АЦП для сигнала с термопары
+			//65535 - максимум шкалы АЦП
+			//0.041 - коэффициент Зеебека для линейной модели термопары
+			port_temp[SP_PORT_C] = ((port_temp[SP_PORT_C]-32767.0)*2500.0*2.0)/(128.0*65535.0*0.041) + internal_temp;
+			dtostrf(port_temp[SP_PORT_C], 6, 2, port_temp_str[SP_PORT_C]);
+		}
+		else
+		{
+			set state BadData;
+		}
+	}
+	state BadData
+	{
+		if(port_temp[SP_PORT_C] < ADC_TC_OPEN_THRESHOLD)
+			set state CalcTemp;
+		timeout(TC_OPEN_TIMEOUT)
+		{
+			sp_port_status[SP_PORT_C] = SP_PORT_ERROR_TC;
+			stop process DegasC;
+			stop process PortC_Brezenham;
+			stop process;
+			start process LongBuzz;
+		}
 	}
 }
 
 /*
+//=============================================================================
+//Процесс отладочного вывода значений температуры с АЦП
+//=============================================================================
 process ADC_Test_output : background
 {
 	state FS_START
 	{
-		float int_temp;
-		float portA_temp;
 		
-		stop hyperprocess DD3_DRDY_interrupt;
-		int_temp = dd3_adc_ch1;
-		start hyperprocess DD3_DRDY_interrupt;
-		
-		int_temp = ((int_temp*2500)/(65535.0*2.0) - 596)/2.0 + 25 - 4.72;
-		char int_temp_str[16];
-		dtostrf(int_temp, 5, 2, int_temp_str);
-		
-		stop hyperprocess DD2_DRDY_interrupt;
-		portA_temp = dd2_adc_ch0;
-		start hyperprocess DD2_DRDY_interrupt;
-		
-		portA_temp = ((portA_temp-32767)*2500*2)/(128*65535*0.041) + int_temp;
-		char portA_temp_str[16];
-		dtostrf(portA_temp, 5, 2, portA_temp_str);
-		
-		stop hyperprocess DD2_DRDY_interrupt;//Критическая секция отн-но прерываний DRDY
-		stop hyperprocess DD3_DRDY_interrupt;
-		$sprintf((char*)$print_buffer, "%s %u %u %s\n", $portA_temp_str, 32000, $dd3_adc_ch0, $int_temp_str);
-		start hyperprocess DD2_DRDY_interrupt;
+		//Получение значений температуры внутри станции и в порту C
+		stop hyperprocess DD3_DRDY_interrupt;//Критическая секция
+		stop hyperprocess DD2_DRDY_interrupt;//Критическая секция
+		$sprintf((char*)$print_buffer, "%u %u %u %u\n", $dd2_adc_ch0, $dd2_adc_ch1, $dd3_adc_ch0, $dd3_adc_ch1);
 		start hyperprocess DD3_DRDY_interrupt;//Конец критической секции
+		start hyperprocess DD2_DRDY_interrupt;//Конец критической секции
 		
 		print_buffer_length = $$strlen((char*)$print_buffer)$$;
 		print_buffer_index = 0;
 		
 		start process Print;
 		start hyperprocess USART_DataRegisterEmpty_interrupt;
-		to state WaitUSART;
+		set state WaitUSART;
 	}
 	
 	state WaitUSART
 	{
 		if(Print passive)
-			to state Delay;
+			set state Delay;
 	}
 	state Delay
 	{
 		timeout(500)
 		{
-			to state FS_START;
+			set state FS_START;
 		}
 	}
 }
 */
-//#include "adc.ih"
 
-
-hyperprocess DD2_DRDY_interrupt
-{
-	vector = INT6_vect;
-	register = EIMSK;
-	bit = INT6;
-}
-
-process ISRProc_with_no_timeouts : DD2_DRDY_interrupt
-{
-	state FS_START
-	{
-	}
-}
-
-process DD2_ADC_Read : DD2_DRDY_interrupt
-{
-	state FS_START
-	{
-		timeout(500)
-		{
-			1;
-			to state State2;
-		}
-	}
-	
-	state State2
-	{
-	
-	}
-	state State3
-	{
-		timeout(1000)
-		{
-			to state FS_START;
-		}	
-	}
-}
-
-
+#include "adc.ih"
 #include "keyboard.ih"
 
 //=============================================================================
@@ -243,10 +398,10 @@ process Blink : background
 	state FS_START
 	{
 		//копирование всего текста экрана
-		for(i=0;i<16;i++)
+		for(i=0;i<17;i++)
 			Blink_text[i] = LCD_text[i];
 			
-		to state Show;
+		set state Show;
 	}
 	state Hide // символы скрыты
 	{
@@ -256,7 +411,7 @@ process Blink : background
 		
 		timeout(BLINK_PERIOD_MS)
 		{
-			to state Show;
+			set state Show;
 		}
 	}
 	state Show // символы отображаются
@@ -268,7 +423,7 @@ process Blink : background
 		timeout(BLINK_PERIOD_MS)
 		{
 			sreg_led &= ~_BV(1);
-			to state Hide;
+			set state Hide;
 		}
 	}
 }
@@ -282,17 +437,44 @@ process ShiftRegisters : background
 {
 	state FS_START
 	{
+		//Обновление состояния светодиодов
+		sreg_led = 0;
+		if(SP_PORT_READY == sp_port_status[SP_PORT_A]){}
+		else if(SP_PORT_DEGAS == sp_port_status[SP_PORT_A])
+			sreg_led |= SREG_LED_A_GRN;
+		else if(SP_PORT_FINISHED == sp_port_status[SP_PORT_A])
+			sreg_led |= SREG_LED_A_GRN | SREG_LED_A_RED;
+		else if(SP_PORT_ERROR_TC == sp_port_status[SP_PORT_A] || SP_PORT_ERROR_HTR == sp_port_status[SP_PORT_A])
+			sreg_led |= SREG_LED_A_RED;
+			
+		if(SP_PORT_READY == sp_port_status[SP_PORT_B]){}
+		else if(SP_PORT_DEGAS == sp_port_status[SP_PORT_B])
+			sreg_led |= SREG_LED_B_GRN;
+		else if(SP_PORT_FINISHED == sp_port_status[SP_PORT_B])
+			sreg_led |= SREG_LED_B_GRN | SREG_LED_B_RED;
+		else if(SP_PORT_ERROR_TC == sp_port_status[SP_PORT_B] || SP_PORT_ERROR_HTR == sp_port_status[SP_PORT_B])
+			sreg_led |= SREG_LED_B_RED;
+			
+		if(SP_PORT_READY == sp_port_status[SP_PORT_C]){}
+		else if(SP_PORT_DEGAS == sp_port_status[SP_PORT_C])
+			sreg_led |= SREG_LED_C_GRN;
+		else if(SP_PORT_FINISHED == sp_port_status[SP_PORT_C])
+			sreg_led |= SREG_LED_C_GRN | SREG_LED_C_RED;
+		else if(SP_PORT_ERROR_TC == sp_port_status[SP_PORT_C] || SP_PORT_ERROR_HTR == sp_port_status[SP_PORT_C])
+			sreg_led |= SREG_LED_C_RED;
+	
+		//Обновление текста на ЖК-экране
 		if(Blink active)
 			UpdateLCD(Blink_text);
 		else
 			UpdateLCD(LCD_text);
-		to state Wait;
+		set state Wait;
 	}
 	state Wait
 	{
 		timeout(UI_UPDATE_PERIOD_MS)
 		{
-			to state FS_START;
+			set state FS_START;
 		}
 	}
 }
@@ -306,7 +488,7 @@ process ShortBuzz : background
 	state FS_START
 	{
 		TCCR2 |= _BV(COM20);
-		to state Buzz;
+		set state Buzz;
 	}
 	state Buzz
 	{
@@ -318,6 +500,53 @@ process ShortBuzz : background
 	}
 }
 
+//=============================================================================
+//Процесс длинного звукового сигнала
+//=============================================================================
+process LongBuzz : background
+{
+	state FS_START
+	{
+		TCCR2 |= _BV(COM20);
+		set state Buzz;
+	}
+	state Buzz
+	{
+		timeout(LONG_BUZZ_DURATION_MS)
+		{
+			TCCR2 &= ~_BV(COM20);
+			stop process;
+		}
+	}
+}
+
+unsigned char buzz_number;
+process Buzz : background
+{
+	unsigned char i;
+	state FS_START
+	{
+		i = 0;
+		set state StartBuzz;
+	}
+	state StartBuzz
+	{
+		if(i < buzz_number)
+		{
+			start process LongBuzz;
+			set state Buzz;
+		}
+		else
+			stop process;
+	}
+	state Buzz
+	{
+		timeout(LONG_BUZZ_DURATION_MS)
+		{
+			set state StartBuzz;
+		}
+	}
+}
 
 //=============================================================================
 //Процесс выбора порта дегазации
@@ -331,186 +560,102 @@ process UI_PortSelection : background
 	{
 		if(button_A_pressed)
 		{
-			UI_port = PORT_A;
-			start process UI_Menu;
+			UI_port = SP_PORT_A;
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
 		}
 		if(button_B_pressed)
 		{
-			UI_port = PORT_B;
-			start process UI_Menu;
+			UI_port = SP_PORT_B;
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
 		}
 		if(button_C_pressed)
 		{
-			UI_port = PORT_C;
-			start process UI_Menu;
+			UI_port = SP_PORT_C;
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
 		}
+		
 		
 		if(button_A_held)
 		{
 			if(DegasA active)
+			{
 				stop process DegasA;
+				sp_port_status[SP_PORT_A] = SP_PORT_READY;
+			}
 			else
+			{
 				start process DegasA;
+				sp_port_status[SP_PORT_A] = SP_PORT_DEGAS;
+			}
 		}
 		if(button_B_held)
 		{
 			if(DegasB active)
+			{
 				stop process DegasB;
+				sp_port_status[SP_PORT_B] = SP_PORT_READY;
+			}
 			else
+			{
 				start process DegasB;
+				sp_port_status[SP_PORT_B] = SP_PORT_DEGAS;
+			}
 		}
 		if(button_C_held)
 		{
 			if(DegasC active)
+			{
 				stop process DegasC;
+				sp_port_status[SP_PORT_C] = SP_PORT_READY;
+			}
 			else
+			{
 				start process DegasC;
+				sp_port_status[SP_PORT_C] = SP_PORT_DEGAS;
+			}
 		}
 	}
 }
 
-//=============================================================================
-//Процесс обработки меню пользовательского интерфейса
-//=============================================================================
-process UI_Menu : background
-{	
-	unsigned int new_temp;//редактируемое значение температуры
-	unsigned int new_time;//редактируемое значение вермени
 
+process UI_Setup_Switching : background
+{
 	state FS_START
 	{
-		start process UI_PortSelection;
-		to state DisplayPortStatus;
-	}
-	
-	state DisplayPortStatus // Отображение состояния порта
-	{	
-		sprintf(LCD_text, "%c:Status       *", PORT_NAME[UI_port]);
-		if(button_up_pressed)
-			to state DisplayTemp;
-	}
-	
-	state DisplayTemp // Отображение заданной температуры дегазации в порту
-	{
-		sprintf(LCD_text, "%c:Temp.ust=%3u C", PORT_NAME[UI_port], TempValues[UI_port]);
-		LCD_text[14] = 0;
-		if(button_up_pressed)
-			to state DisplayTime;
-		if(button_down_pressed)
-			to state DisplayPortStatus;
-		if(button_Enter_pressed)
-		{
-			stop process UI_PortSelection;
-			blink_start_pos = 11;
-			blink_end_pos = 13;
-			start process Blink;
-			to state EditTemp;
-			new_temp = TempValues[UI_port];
-		}
-	}
-	
-	state DisplayTime // Отображение заданного времени дегазации в порту
-	{
-		sprintf(LCD_text, "%c:Time.dg=%3umin", PORT_NAME[UI_port], TimeValues[UI_port]);
-		if(button_up_pressed)
-			to state DisplayIntTemp;
-		if(button_down_pressed)
-			to state DisplayTemp;
-		if(button_Enter_pressed)
-		{
-			stop process UI_PortSelection;
-			blink_start_pos = 10;
-			blink_end_pos = 12;
-			start process Blink;
-			to state EditTime;
-			new_time = TimeValues[UI_port];
-		}
-	}
-	
-	state DisplayIntTemp // Отображение температур внутри станции
-	{
-		sprintf(LCD_text, "Int.Temperature*");
-		if(button_down_pressed)
-			to state DisplayTime;
-	}
-	
-	state EditTemp // Редактирование температуры дегазации порта
-	{
-		sprintf(LCD_text, "%c:Temp.ust=%3u C", PORT_NAME[UI_port], new_temp);
-		LCD_text[14] = 0;
-		if(button_Enter_pressed)
-		{
-			start process UI_PortSelection;
-			stop process Blink;
-			to state DisplayTemp;
-			TempValues[UI_port] = new_temp;
-		}
+		if(UI_Setup_Menu active)
+			set state InSetup;
 		
-		if(button_up_pressed)
-		{
-			new_temp += STEP_TEMP;
-			if(new_temp > MAX_TEMP)
-				new_temp = MAX_TEMP;
-				
-			start process Blink;
-			to state EditTemp;
-		}
-		if(button_down_pressed)
-		{
-			new_temp -= STEP_TEMP;
-			if(new_temp < MIN_TEMP)
-				new_temp = MIN_TEMP;
-				
-			start process Blink;
-			to state EditTemp;
-		}
-			
-		timeout(EDIT_TIMEOUT_MS)
-		{
-			start process UI_PortSelection;
-			stop process Blink;
-			to state DisplayTemp;
-		}
+		else
+			set state InUI;
 	}
 	
-	state EditTime // Редактирование времени дегазации порта
+	state InUI
 	{
-		sprintf(LCD_text, "%c:Time.dg=%3umin", PORT_NAME[UI_port], new_time);
-		if(button_Enter_pressed)
+		if(setup_switch_combination)
 		{
-			start process UI_PortSelection;
-			stop process Blink;
-			to state DisplayTime;
-			TimeValues[UI_port] = new_time;
-		}
-		
-		if(button_up_pressed)
-		{
-			new_time += STEP_TIME;
-			if(new_time > MAX_TIME)
-				new_time = MAX_TIME;
-			start process Blink;
-			to state EditTime;
-		}
-		if(button_down_pressed)
-		{
-			new_time -= STEP_TIME;
-			if(new_time < MIN_TIME)
-				new_time = MIN_TIME;
-			start process Blink;
-			to state EditTime;
-		}
-			
-		timeout(EDIT_TIMEOUT_MS)
-		{
-			start process UI_PortSelection;
-			stop process Blink;
-			to state DisplayTime;
+			stop process UI_Menu;
+			start process UI_Setup_Menu;
+			set state InSetup;
 		}
 	}
 	
+	state InSetup
+	{
+		if(setup_switch_combination)
+		{
+			stop process UI_Setup_Menu;
+			start process UI_Menu;
+			set state InUI;
+		}
+	}
 }
 
+
+#include "ui_menu.ih"
+#include "ui_setup_menu.ih"
 
 //=============================================================================
 //Процесс дегазации в порту A
@@ -519,13 +664,13 @@ process DegasA : background
 {
 	state FS_START 
 	{
-		sreg_led &= ~SREG_LED_A_RED;
-		sreg_led |= SREG_LED_A_GRN;
+		//sreg_led &= ~SREG_LED_A_RED;
+		//sreg_led |= SREG_LED_A_GRN;
 	} 
 	state FS_STOP
 	{
-		sreg_led &= ~SREG_LED_A_GRN;
-		sreg_led |= SREG_LED_A_RED;
+		//sreg_led &= ~SREG_LED_A_GRN;
+		//sreg_led |= SREG_LED_A_RED;
 	}
 }
 
@@ -536,13 +681,13 @@ process DegasB : background
 {
 	state FS_START 
 	{
-		sreg_led &= ~SREG_LED_B_RED;
-		sreg_led |= SREG_LED_B_GRN;
+		//sreg_led &= ~SREG_LED_B_RED;
+		//sreg_led |= SREG_LED_B_GRN;
 	} 
 	state FS_STOP
 	{
-		sreg_led &= ~SREG_LED_B_GRN;
-		sreg_led |= SREG_LED_B_RED;
+		//sreg_led &= ~SREG_LED_B_GRN;
+		//sreg_led |= SREG_LED_B_RED;
 	}
 }
 
@@ -553,52 +698,39 @@ process DegasC : background
 {
 	state FS_START 
 	{
-		sreg_led &= ~SREG_LED_C_RED;
-		sreg_led |= SREG_LED_C_GRN;
+		//sreg_led &= ~SREG_LED_C_RED;
+		//sreg_led |= SREG_LED_C_GRN;
 	} 
 	state FS_STOP
 	{
-		sreg_led &= ~SREG_LED_C_GRN;
-		sreg_led |= SREG_LED_C_RED;
+		//sreg_led &= ~SREG_LED_C_GRN;
+		//sreg_led |= SREG_LED_C_RED;
 	}
 }
 
-process some201709030522_1 : background
+/*process TestSPI : background
 {
+	unsigned char data;
 	state FS_START
 	{
+		data = 0b00001001;
+		SPDR = data;
+		data = 0;//
+		set state WaitTransmit;
 	}
-}
-
-process some201709030522_2 : background
-{
-	state FS_START
+	state WaitTransmit
 	{
+		if(SPSR & _BV(SPIF)
+		{
+			set state Receive;
+		}
 	}
-}
-
-process some201709030522_3 : background
-{
-	state FS_START
+	state Receive
 	{
+		if(SPSR & )
 	}
-}
+}*/
 
-process some201709030522_4 : background
-{
-	state FS_START
-	{
-	}
-}
-
-process some201709030522_5 : background
-{
-	state FS_START
-	{
-	}
-}
-
-/*
 process TestPrint : background
 {
 	state FS_START
@@ -608,20 +740,87 @@ process TestPrint : background
 		print_buffer_length = $$strlen((char*)$print_buffer)$$;
 		print_buffer_index = 0;
 		
-		//start process Print;
-		//start hyperprocess USART_DataRegisterEmpty_interrupt;
-		to state Delay;
+		start process Print;
+		start hyperprocess USART_DataRegisterEmpty_interrupt;
+		set state Delay;
 	}
 	state Delay
 	{
 		timeout(500)
 		{
-			to state FS_START;
+			set state FS_START;
 		}
 	}
 }
-*/
-//#include "print.ih"
+
+//=============================================================================
+//Гиперпроцесс внешнего прерывания по восходящему фронту опорного сигнала сети
+//=============================================================================
+hyperprocess MAINS_REF_interrupt
+{
+	vector = INT5_vect;
+	register = EIMSK;
+	bit = INT5;
+}
+
+//=============================================================================
+//Процесс управления мощностью нагревателя порта A по алгоритму Брезенхема
+//Активируется внешним прерыванием по восходящем фронту сигнала синхронизации 
+//сети 100Гц, ширина импульса 760 мкс, центр импульса совпадает с моментом
+//пересечения нуля синусоидальным сигналом сети 220 В
+//На каждом шаге принимается решение о пропуске очередной полуволны
+// - значение мощности нагревателя задается числом от 0 до 1
+// - на каждом шаге к ошибке прибавляется заданная мощность
+// - если ошибка >= 1, пропускаем полуволну, от ошибки отнимается 1
+// - если ошибка < 1, полуволну не пропускаем
+//=============================================================================
+process PortA_Brezenham : MAINS_REF_interrupt
+{
+	volatile unsigned int error;
+	state FS_START
+	{
+		portA_power = HEATER_FULL_POWER * 1;
+		error = 0;
+		//HEATER_PORT &= ~_BV(HEATER_A_PIN);
+		set state Brezenham;
+	}
+	state Brezenham
+	{
+		error += portA_power;
+		if(error >= HEATER_FULL_POWER)
+		{
+			HEATER_PORT &= ~_BV(HEATER_A_PIN);//открытие тиристора - пропускаем полуволну
+			error -= HEATER_FULL_POWER;
+		}
+		else
+			HEATER_PORT |= _BV(HEATER_A_PIN);//закрытие тиристора - не пропускаем полуволну
+		//set state FS_START;
+	} 
+	state FS_STOP
+	{
+		HEATER_PORT |= _BV(HEATER_A_PIN);
+	}
+}
+
+process PortB_Brezenham : MAINS_REF_interrupt
+{
+	unsigned int error;
+	state FS_START
+	{
+		
+	}
+}
+
+process PortC_Brezenham : MAINS_REF_interrupt
+{
+	unsigned int error;
+	state FS_START
+	{
+		
+	}
+}
+
+#include "print.ih"
 
 
 

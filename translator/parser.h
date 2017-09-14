@@ -104,7 +104,6 @@
 /***********************************************/
 %token <token> TPROC			"process"
 %token <token> TSTATE			"state"
-%token <token> TTO				"to"
 %token <token> TSTART			"start"
 %token <token> TSTOP			"stop"
 %token <token> TTIMEOUT			"timeout"
@@ -620,7 +619,7 @@ block_item	:	var_declaration
 			|	c_code {$$ = $<block_item>1;}	
 			;
 			
-statement	:	TTO TSTATE TIDENTIFIER TSEMIC //state transition
+statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 				{
 					const iCProcess* proc = parser_context->get_process();
 					if(NULL == proc)

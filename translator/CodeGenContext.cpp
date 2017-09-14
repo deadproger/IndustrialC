@@ -6,37 +6,44 @@ void CodeGenContext::add_new_lines( int num /*= 1*/ )
 {
 	cur_line_num += num;
 
-	if(num > NEW_LINES_THRESHOLD)
-		place_line_marker(cur_line_num);
+	if(gen_line_markers)
+	{
+		if(num > NEW_LINES_THRESHOLD)
+			place_line_marker(cur_line_num);
+		else
+			for(int i=0;i<num;i++)
+				code<<std::endl;
+	}
 	else
-		for(int i=0;i<num;i++)
+	{
+		if(num > 0)
 			code<<std::endl;
+	}
+	
 }
 
 void CodeGenContext::place_line_marker( unsigned long line_num, const std::string& file )
 {
-	if(!gen_line_markers)
-		return;
 	cur_filename = file;
 	cur_line_num = line_num;
-	code<<std::endl<<"#line "<<line_num<<" \""<<file<<"\""<<std::endl;
+
+	if(gen_line_markers)
+	{
+		code<<std::endl<<"#line "<<line_num<<" \""<<file<<"\""<<std::endl;
+	}
 }
 
 void CodeGenContext::place_line_marker( unsigned long line_num )
 {
-	if(!gen_line_markers)
-		return;
 	cur_line_num = line_num;
-	code<<std::endl<<"#line "<<line_num<<std::endl;
+	if(gen_line_markers)
+	{
+		code<<std::endl<<"#line "<<line_num<<std::endl;
+	}
 }
 
 void CodeGenContext::set_location( unsigned long line_num, const std::string& file )
 {
-	if(!gen_line_markers)
-	{
-		//to_code_fmt("\n");
-		return;
-	}
 	if(file != cur_filename)
 	{
 		place_line_marker(line_num, file);
