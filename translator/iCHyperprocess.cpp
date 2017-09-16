@@ -9,6 +9,10 @@
 //=================================================================================================
 void iCHyperprocess::gen_code( CodeGenContext& context )
 {
+#ifdef ICDEBUG_TRACE
+	std::cout<<"iCHyperprocess::gen_code " << activator << "...";
+	std::cout.flush();
+#endif
 	if(activator.empty())
 	{
 		std::cout<<"Empty activator in hyperprocess"<<std::endl;
@@ -38,6 +42,10 @@ void iCHyperprocess::gen_code( CodeGenContext& context )
 		context.to_code_fmt("}\n\n");
 		context.leave_ISR();
 	}
+#ifdef ICDEBUG_TRACE
+	std::cout<<"done iCHyperprocess\n";
+	std::cout.flush();
+#endif
 }
 
 

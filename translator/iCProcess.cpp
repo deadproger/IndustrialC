@@ -8,6 +8,11 @@
 //=================================================================================================
 void iCProcess::gen_code(CodeGenContext& context)
 {
+#ifdef ICDEBUG_TRACE
+	std::cout<<"iCProcess::gen_code " << name << "...";
+	std::cout.flush();
+#endif
+
 	//update context
 	context.process = this;
 
@@ -65,6 +70,11 @@ void iCProcess::gen_code(CodeGenContext& context)
 
 	//update context
 	context.process = NULL;
+
+#ifdef ICDEBUG_TRACE
+	std::cout<<"done iCProcess\n";
+	std::cout.flush();
+#endif
 }
 
 

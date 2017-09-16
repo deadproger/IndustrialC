@@ -410,6 +410,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCAtomicBlock.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCAtomicBlock.h"
+					>
+				</File>
+				<File
 					RelativePath="..\iCCompoundStatement.cpp"
 					>
 				</File>

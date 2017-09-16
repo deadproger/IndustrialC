@@ -17,6 +17,8 @@ extern ParserContext* parser_context;
 extern bool had_errors;
 extern bool gen_line_markers;
 
+
+
 int main(int argc, char **argv)
 {
 	//Parse command line arguments
@@ -77,7 +79,7 @@ int main(int argc, char **argv)
 		CodeGenContext context(output_file, ic_program->get_hps());
 		std::cout<<"generating code..."<<std::endl;
 		ic_program->gen_code(context);
-
+		
 		output_file.close();
 	}
 	delete ic_program;

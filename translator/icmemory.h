@@ -5,6 +5,7 @@
 #include <new>
 
 #define ICDEBUG
+//#define ICDEBUG_TRACE
 
 //Pseudo assertion - prints a message to std::cout
 #ifdef ICDEBUG

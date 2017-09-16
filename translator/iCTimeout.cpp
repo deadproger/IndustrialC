@@ -37,16 +37,15 @@ void iCTimeout::gen_code( CodeGenContext& context )
 		context.indent();
 		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
 
-		//context.to_code_fmt("\n");
-		context.set_location(line_num, filename);
-
 		//timeout header
-		context.indent();
-		context.to_code_fmt("//Timeout\n");
+		
+		
+		context.set_location(line_num, filename);
 		context.indent();
 		context.to_code_fmt("if((%s - %s) >= ",C_SYS_TIME_CUR_NAME, C_COMMON_BKG_PROC_TIME);
 		period->gen_code(context);
-		context.to_code_fmt(")\n");
+		context.to_code_fmt(")");
+		context.to_code_fmt("//Timeout\n");
 	}
 
 	context.indent();

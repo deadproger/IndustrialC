@@ -23,6 +23,11 @@ iCVariable::iCVariable( const std::string& name,
 
 void iCVariable::gen_code( CodeGenContext& context )
 {
+#ifdef ICDEBUG_TRACE
+	std::cout<<"iCVariable::gen_code " << name << "...";
+	std::cout.flush();
+#endif
+
 	context.set_location(line_num, filename);
 	context.indent();
 	
@@ -56,6 +61,10 @@ void iCVariable::gen_code( CodeGenContext& context )
 	}
 
 	context.to_code_fmt(";\n");
+#ifdef ICDEBUG_TRACE
+	std::cout<<"done iCVariable\n";
+	std::cout.flush();
+#endif
 }
 
 iCVariable::~iCVariable()
@@ -94,4 +103,35 @@ void iCVariable::second_pass()
 			warning_msg("variable \"%s\" is used in ISR but not qualified as volatile", name.c_str());
 		}
 	}
+}
+
+void iCVariableDeclaration::gen_code( CodeGenContext& context )
+{
+	for(std::list<iCVariable*>::iterator i=vars.begin();i!=vars.end();i++)
+	{
+		iCVariable* var = *i;
+		if(NULL != var)
+			var->gen_code(context);
+	}
+}
+
+iCVariableDeclaration::iCVariableDeclaration()
+{
+
+}
+
+iCVariableDeclaration::~iCVariableDeclaration()
+{
+#ifdef ICDEBUG_TRACE
+	std::cout<<"iCVariableDeclaration::gen_code " << "...";
+	std::cout.flush();
+#endif
+	for(std::list<iCVariable*>::iterator i=vars.begin();i!=vars.end();i++)
+	{
+		delete *i;
+	}
+#ifdef ICDEBUG_TRACE
+	std::cout<<"done iCVariableDeclaration\n";
+	std::cout.flush();
+#endif
 }

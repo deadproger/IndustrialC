@@ -15,6 +15,13 @@ $ #include <stdlib.h>
 
 unsigned int number;
 
+void test_func()
+{
+	int a, b;
+	unsigned c=5, d=7;
+	a=b+c-d;
+}
+
 //=============================================================================
 //Процесс инициализации
 //=============================================================================
@@ -201,9 +208,17 @@ process CalcTempInt : background
 	{
 		//TEST_PORT |= _BV(TEST_PIN);//DEBUG
 		//Получение температуры внутри станции
+		/*
 		stop hyperprocess DD3_DRDY_interrupt;//Критическая секция
 		internal_temp = dd3_adc_ch1;
 		start hyperprocess DD3_DRDY_interrupt;//Конец критической секции
+		*/
+		
+		atomic
+		{
+			internal_temp = dd3_adc_ch1;
+		}
+		
 		//2500мВ - опорное напряжение АЦП в мВ
 		//65535 - максимум шкалы АЦП
 		//2.0 - коэффициент усиления для сигнала температуры внутри станции
