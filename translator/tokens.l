@@ -77,6 +77,7 @@ const int IC_TAB_SIZE = 4;
 "if"					return TOKEN(TIF			);
 "else"					return TOKEN(TELSE			);
 "for"					return TOKEN(TFOR			);
+"atomic"				return TOKEN(TATOMIC		);
 
 "true"					return TOKEN(TTRUE			);
 "false"					return TOKEN(TFALSE	 		);

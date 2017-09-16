@@ -9,6 +9,12 @@
 //=================================================================================================
 void iCState::gen_code(CodeGenContext& context)
 {
+#ifdef ICDEBUG_TRACE
+	std::cout<<"iCState::gen_code " << name << "...";
+	std::cout.flush();
+#endif
+
+
 	std::string state_name = special ? name : (context.process->name + name);
 
 	//update context
@@ -23,11 +29,9 @@ void iCState::gen_code(CodeGenContext& context)
 	context.to_code_fmt("{\n");
 	context.indent_depth++;
 
-	//push statement nodes in stack in reverse order
-	//if(!block_items.empty())
 	for(iCBlockItemsList::iterator i=block_items.begin();i!=block_items.end();i++)
 	{
-		//if(NULL != *i)
+		if(NULL != *i)
 			(*i)->gen_code(context);
 	}
 
@@ -49,10 +53,20 @@ void iCState::gen_code(CodeGenContext& context)
 
 	//update context
 	context.state = NULL;
+
+#ifdef ICDEBUG_TRACE
+	std::cout<<"done iCState\n";
+	std::cout.flush();
+#endif
 }
 
 void iCState::gen_timeout_code( CodeGenContext& context )
 {
+#ifdef ICDEBUG_TRACE
+	std::cout<<"iCState::gen_timeout_code " << name << "...";
+	std::cout.flush();
+#endif
+
 	std::string state_name = special ? name : (context.process->name + name);
 
 	//update context
@@ -82,6 +96,10 @@ void iCState::gen_timeout_code( CodeGenContext& context )
 
 	//update context
 	context.state = NULL;
+#ifdef ICDEBUG_TRACE
+	std::cout<<"done iCState\n";
+	std::cout.flush();
+#endif
 }
 
 

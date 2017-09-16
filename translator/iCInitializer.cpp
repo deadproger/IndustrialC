@@ -12,6 +12,10 @@ iCInitializer::~iCInitializer()
 
 void iCInitializer::gen_code( CodeGenContext& context )
 {
+#ifdef ICDEBUG_TRACE
+	std::cout<<"iCInitializer::gen_code " << "...";
+	std::cout.flush();
+#endif
 	context.set_location(line_num, filename);
 	
 	if(initializers.size() == 1)
@@ -30,5 +34,8 @@ void iCInitializer::gen_code( CodeGenContext& context )
 		}
 		context.to_code("}");
 	}
-	
+#ifdef ICDEBUG_TRACE
+	std::cout<<"done\n";
+	std::cout.flush();
+#endif
 }

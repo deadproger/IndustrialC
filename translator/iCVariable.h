@@ -30,3 +30,16 @@ public:
 	virtual void gen_code(CodeGenContext& context);
 	virtual void second_pass();
 };
+
+class iCVariableDeclaration : public iCDeclaration
+{
+	std::list<iCVariable*> vars;//owns
+public:
+	iCVariableDeclaration();
+	~iCVariableDeclaration();
+	void set_vars(const std::list<iCVariable*> var_list)
+	{
+		vars = var_list;
+	}
+	virtual void gen_code(CodeGenContext& context);
+};

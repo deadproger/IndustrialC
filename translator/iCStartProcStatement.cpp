@@ -27,12 +27,12 @@ void iCStartProcStatement::gen_code(CodeGenContext& context)
 		context.indent();
 		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
 		context.indent_depth++;
-		context.indent();
+		//context.indent();
 	}
 
 	context.set_location(line_num, filename);
 	context.indent();
-	context.to_code_fmt("%s(%s);\n", C_STARTPROC_MACRO, proc_name.c_str());
+	context.to_code_fmt("%s(%s);", C_STARTPROC_MACRO, proc_name.c_str());
 
 	//atomic block footer
 	if(!context.in_ISR())

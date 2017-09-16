@@ -26,16 +26,22 @@ iCFunction::~iCFunction()
 	{
 		delete *i;
 	}
+	/*
 	for(std::list<iCVariable*>::iterator i=local_vars.begin();i!=local_vars.end();i++)
 	{
 		delete *i;
 	}
+	*/
 	if(NULL != body)
 		delete body;
 }
 
 void iCFunction::gen_code( CodeGenContext& context )
 {
+#ifdef ICDEBUG_TRACE
+	std::cout<<"iCFunction::gen_code " << name << "...";
+	std::cout.flush();
+#endif
 	context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 	context.indent();
@@ -87,11 +93,13 @@ void iCFunction::gen_code( CodeGenContext& context )
 		context.indent();
 		context.to_code_fmt("{\n");
 		context.indent_depth++;
-
+		
+		/*
 		for(std::list<iCVariable*>::iterator i=local_vars.begin();i!=local_vars.end();i++)
 		{
 			(*i)->gen_code(context);
 		}
+		*/
 
 		iCBlockItemsList& items_list = reinterpret_cast<iCCompoundStatement*>(body)->get_block_items();//a crutch
 		for(iCBlockItemsList::iterator i=items_list.begin();i!=items_list.end();i++)
@@ -108,4 +116,9 @@ void iCFunction::gen_code( CodeGenContext& context )
 	}
 	else
 		context.to_code(";");
+
+#ifdef ICDEBUG_TRACE
+	std::cout<<"done iCFunction\n";
+	std::cout.flush();
+#endif
 }

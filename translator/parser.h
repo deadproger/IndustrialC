@@ -39,6 +39,7 @@
 	#include "iCInitializer.h"
 	#include "iCString.h"
 	#include "iCIterationStatement.h"
+	#include "iCAtomicBlock.h"
 
 	#include <stdio.h>
 	#include <stdarg.h> 
@@ -120,6 +121,8 @@
 %token <token> TIF				"if"
 %token <token> TELSE			"else"
 %token <token> TFOR				"for"
+%token <token> TATOMIC			"atomic"
+
 %token <token> TTRUE			"true"
 %token <token> TFALSE			"false"
 %token <string> TVOID			"void"		
@@ -544,6 +547,7 @@ state		:	TSTATE TIDENTIFIER
 					if(NULL != $5)
 						$$->set_items(*$5); 
 					parser_context->close_scope(); 
+					parser_context->set_state(NULL);
 					delete $5;
 					$1;$2;$4;$6;//suppress unused value warning
 				}
@@ -598,22 +602,31 @@ block_item	:	var_declaration
 					std::list<iCVariable*>* vars = $1;
 					if(NULL != parser_context->get_func())
 					{
+						/*
 						iCFunction* func = parser_context->get_func();
 						for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
 						{
 							func->add_variable(*i);
-						}
+						}*/
+						iCVariableDeclaration* decl = new iCVariableDeclaration;
+						decl->set_vars(*vars);
+						$$ = decl;
 					}
 					else
 					{
-						std::list<iCVariable*>* vars = $1;
+						//Here the declaration is a block item outside functions
+						//Means it is inside a state function
+						//The variable will be global in the generated code,
+						//but we need to at least simulate its non-static (local) behavior
+						//If it is initialized, we need to separate the initialization and
+						//put it in the code as an assignment expression
 						for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
 						{
 							ic_program->add_variable(*i);
 						}
+						$$ = NULL;
 					}
 					delete vars;
-					$$ = NULL;
 				}
 			|	statement {$$ = $<block_item>1;}
 			|	c_code {$$ = $<block_item>1;}	
@@ -755,6 +768,23 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 				{
 					$$ = new iCIterationStatement($3, $4, NULL, $6, *parser_context);
 					$1;$2;$5;
+				}
+			|	TATOMIC	statement
+				{
+					if(parser_context->get_process()->is_isr_driven())
+					{
+						if(NULL != $2)
+							delete $2;
+						$$ = NULL;
+						parser_context->err_msg("atomic block in interrupt-activated process");
+					}
+					else
+					{
+						iCAtomicBlock* atomic_block = new iCAtomicBlock;
+						atomic_block->set_body($2);
+						$$ = atomic_block;
+					}
+					$1;//supress unused value warning
 				}
 			
 			;

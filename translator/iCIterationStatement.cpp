@@ -18,6 +18,11 @@ iCIterationStatement::iCIterationStatement(iCStatement* init,
 
 void iCIterationStatement::gen_code( CodeGenContext& context )
 {
+#ifdef ICDEBUG_TRACE
+	std::cout<<"iCIterationStatement::gen_code ...";
+	std::cout.flush();
+#endif
+
 	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 
@@ -37,6 +42,11 @@ void iCIterationStatement::gen_code( CodeGenContext& context )
 
 	if(NULL != body)
 		body->gen_code(context);
+
+#ifdef ICDEBUG_TRACE
+	std::cout<<"done iCIterationStatement\n";
+	std::cout.flush();
+#endif
 
 }
 
