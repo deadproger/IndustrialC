@@ -45,4 +45,8 @@ public:
 	virtual void gen_code(CodeGenContext& context);
 	void gen_timeout_code(CodeGenContext& context);
 	bool has_timeouts()const{return _has_timeouts;}
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCVariable name: " + name;}
+#endif//DEBUG
 };

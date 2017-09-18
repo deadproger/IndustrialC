@@ -17,4 +17,8 @@ public:
 			initializers.push_back(initializer);
 	}
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCInitializer";}
+#endif//DEBUG
 };

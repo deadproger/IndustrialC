@@ -13,4 +13,8 @@ private:
 public:
 	iCCastExpression(const ParserContext& context) : iCNode(context){}
 	virtual void gen_code(CodeGenContext& context){}
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCCastExpression";}
+#endif//DEBUG
 };

@@ -39,5 +39,9 @@ public:
 	void set_isr_driven(){isr_driven = true;}
 	bool has_timeout(){return NULL != timeout;}
 	void gen_timeout_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCState name: " + name;}
+#endif//DEBUG
 };
 

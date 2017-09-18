@@ -33,6 +33,7 @@
 	#include "iCSubscriptExpression.h"
 	//#include "iCVariableDeclaration.h"
 	#include "iCVariable.h"
+	#include "iCVariableDeclaration.h"
 	#include "iCFunction.h"
 	#include "iCFunctionCall.h"
 	//#include "iCDeclarator.h"
@@ -224,18 +225,20 @@
 %type <string> 				mcu_declaration
 %type <str_list>			decl_specs			
 %type <var_list>			init_declarator_list		
-//%type <string>				init_declarator		
-%type <variable>				direct_declarator					
-%type <icinitializer>				initializer 
-%type <icinitializer>				initializer_list
+//%type <string>			init_declarator		
+%type <variable>			direct_declarator					
+%type <icinitializer>		initializer 
+%type <icinitializer>		initializer_list
 %type <string>				type_spec		
 %type <func>				func_definition
 %type <expr_list>			arg_expr_list
 %type <variable>			init_declarator
 %type <func>				func_declarator
-%type <var_list>				param_list
+%type <var_list>			param_list
 %type <var_list>			prep_param_scope
-%type <variable>				param_declarator
+%type <variable>			param_declarator
+%type <statement>			for_init_statement
+%type <token>				for_prep_scope
 
 
 
@@ -597,29 +600,18 @@ state_block_item	:	block_item	{$$ = $1;}
 
 block_item	:	var_declaration 
 				{
-					//if in function - those are local variables
-					//otherwise - add 'em to the program - theses will become global vars in c code
+					//if in function or state - those are local variables
 					std::list<iCVariable*>* vars = $1;
-					if(NULL != parser_context->get_func())
+					if(NULL != parser_context->get_func() || NULL != parser_context->get_state())
 					{
-						/*
-						iCFunction* func = parser_context->get_func();
-						for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
-						{
-							func->add_variable(*i);
-						}*/
-						iCVariableDeclaration* decl = new iCVariableDeclaration;
+						iCVariableDeclaration* decl = new iCVariableDeclaration(*parser_context);
 						decl->set_vars(*vars);
 						$$ = decl;
 					}
 					else
 					{
-						//Here the declaration is a block item outside functions
-						//Means it is inside a state function
-						//The variable will be global in the generated code,
-						//but we need to at least simulate its non-static (local) behavior
-						//If it is initialized, we need to separate the initialization and
-						//put it in the code as an assignment expression
+						//The declaration is a block item outside functions or states
+						//The variables will be global in the generated code
 						for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
 						{
 							ic_program->add_variable(*i);
@@ -759,18 +751,21 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					
 					$1;$2;$4;//suppress unused value warning
 				}
-			|	TFOR TLPAREN expression_statement expression_statement expr TRPAREN statement
+			|	TFOR for_prep_scope	TLPAREN for_init_statement expression_statement expr TRPAREN statement
 				{
-					$$ = new iCIterationStatement($3, $4, $5, $7, *parser_context);
-					$1;$2;$6;
+					$$ = new iCIterationStatement($4, $5, $6, $8, *parser_context);
+					parser_context->close_scope();
+					$1;$2;$3;$7;
 				}
-			|	TFOR TLPAREN expression_statement expression_statement TRPAREN statement
+			|	TFOR for_prep_scope TLPAREN for_init_statement expression_statement TRPAREN statement
 				{
-					$$ = new iCIterationStatement($3, $4, NULL, $6, *parser_context);
-					$1;$2;$5;
+					$$ = new iCIterationStatement($4, $5, NULL, $7, *parser_context);
+					parser_context->close_scope();
+					$1;$2;$3;$6;
 				}
 			|	TATOMIC	statement
 				{
+					//Atomic block with FORCEON executed in ISR would cause nested interrupts
 					if(parser_context->get_process()->is_isr_driven())
 					{
 						if(NULL != $2)
@@ -789,6 +784,23 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 			
 			;
 
+for_prep_scope		:	%empty
+						{
+							parser_context->open_scope("for");
+							$$ = 0;
+						}
+					;
+
+for_init_statement	:	expression_statement { $$ = $1; }
+					|	var_declaration 
+					{
+						iCVariableDeclaration* decl = new iCVariableDeclaration(*parser_context);
+						decl->set_vars(*$1);
+						$$ = decl;
+						delete $1;
+					}
+					;
+
 expression_statement: expr TSEMIC //expression statement
 					  {
 						  $$ = new iCExpressionStatement($1, *parser_context);
@@ -802,9 +814,9 @@ expression_statement: expr TSEMIC //expression statement
 						  $1;
 					  }
 
-compound_statement:		prep_compound TLBRACE block_items_list TRBRACE // compound statement
+compound_statement:		TLBRACE prep_compound block_items_list TRBRACE // compound statement
 						{
-							$$ = $1;
+							$$ = $2;
 							if(NULL != $3)
 							{
 								static_cast<iCCompoundStatement*>($<statement>$)->set_items(*$3);
@@ -812,13 +824,13 @@ compound_statement:		prep_compound TLBRACE block_items_list TRBRACE // compound 
 							}
 
 							parser_context->close_scope();
-							$2;$4;//suppress unused value warning
+							$1;$4;//suppress unused value warning
 						}
-					|	prep_compound TLBRACE TRBRACE // empty compound statement {}
+					|	TLBRACE prep_compound TRBRACE // empty compound statement {}
 						{
-							$$ = $1;
+							$$ = $2;
 							parser_context->close_scope();
-							$2;$3;
+							$1;$3;
 						}
 					;
 

@@ -14,4 +14,8 @@ public:
 	//iCInteger(int val, const ParserContext& context) : val(val), iCNode(context) {}
 	iCInteger(const std::string& str, const ParserContext& context);
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCInteger";}
+#endif//DEBUG
 };

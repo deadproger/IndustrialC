@@ -17,4 +17,8 @@ public:
 	iCAssignmentExpression(iCExpression* unary, const std::string& op, iCExpression* assgn, const ParserContext& context);
 	~iCAssignmentExpression();
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCAssignmentExpression";}
+#endif//DEBUG
 };

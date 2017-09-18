@@ -30,4 +30,8 @@ public:
 	virtual ~CCode();
 	void add_line(CCodeLine* line) {lines.push_back(line);}
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "CCode";}
+#endif//DEBUG
 };

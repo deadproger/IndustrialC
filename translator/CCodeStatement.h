@@ -14,4 +14,8 @@ public:
 	CCodeStatement(CCode* ccode, const ParserContext& context) : ccode_block(ccode), iCNode(context) {}
 	virtual ~CCodeStatement();
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "CCodeStatement";}
+#endif//DEBUG
 };
