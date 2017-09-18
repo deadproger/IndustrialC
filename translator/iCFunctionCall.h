@@ -18,9 +18,9 @@ public:
 	{
 		args = arguments;
 	}
-	/*void add_argument(iCAssignmentExpression* arg)
-	{
-		args.push_back(arg);
-	}*/
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCFunctionCall";}
+#endif//DEBUG
 };

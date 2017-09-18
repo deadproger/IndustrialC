@@ -22,4 +22,8 @@ public:
 	}
 
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCSelectionStatement";}
+#endif//DEBUG
 };

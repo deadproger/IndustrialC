@@ -14,4 +14,8 @@ public:
 	iCProcStatusCheck(const std::string& proc_name, bool active, const ParserContext& context);
 	virtual void gen_code(CodeGenContext& context);
 	void second_pass();
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCProcStatusCheck";}
+#endif//DEBUG
 };

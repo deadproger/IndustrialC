@@ -7,4 +7,8 @@ class iCMCUIdentifier : public iCIdentifier
 public:
 	iCMCUIdentifier(const std::string& name, const ParserContext& context);
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCMCUIdentifier";}
+#endif//DEBUG
 };

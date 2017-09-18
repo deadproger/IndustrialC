@@ -13,4 +13,8 @@ public:
 	iCDouble(double val, const ParserContext& context) : val(val), iCNode(context) {}
 	iCDouble(const std::string& str, const ParserContext& context);
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCDouble";}
+#endif//DEBUG
 };

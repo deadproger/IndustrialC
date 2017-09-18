@@ -17,4 +17,8 @@ public:
 	void set_body(iCStatement* body) { this->body = body; }
 
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCAtomicBlock";}
+#endif//DEBUG
 };

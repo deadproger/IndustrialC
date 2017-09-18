@@ -19,6 +19,10 @@ public:
 	virtual void gen_code(CodeGenContext& context) = 0;
 	virtual void second_pass() {}
 
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCNode";}
+#endif//DEBUG
+
 	void err_msg(const char* format, ...) const;
 	void warning_msg( const char* format, ... ) const;
 };
@@ -37,7 +41,7 @@ class iCBlockItem : public virtual iCNode {/*iCBlockItem(const ParserContext& co
 class iCProgramItem {};
 class iCProgramItemsList {};
 class iCExpression : public virtual iCNode  {/*iCExpression(const ParserContext& context):iCNode(context){}*/};
-class iCDeclaration : public iCBlockItem, public iCProgramItem {};
+class iCDeclaration : public iCBlockItem, public iCProgramItem, public iCStatement {};
 class iCHyperprocess;
 class iCProcess;
 class iCState;

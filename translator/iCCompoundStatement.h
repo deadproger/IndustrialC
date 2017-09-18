@@ -19,6 +19,11 @@ public:
 	virtual void gen_code(CodeGenContext& context);
 	virtual bool is_compound() {return true;}
 	iCBlockItemsList& get_block_items(){return block_items;}//a crutch
+
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCCompoundStatement";}
+#endif//DEBUG
 };
 
 /*

@@ -60,7 +60,7 @@ void iCVariable::gen_code( CodeGenContext& context )
 		decl_initializer->gen_code(context);
 	}
 
-	context.to_code_fmt(";\n");
+	context.to_code_fmt(";");
 #ifdef ICDEBUG_TRACE
 	std::cout<<"done iCVariable\n";
 	std::cout.flush();
@@ -105,33 +105,3 @@ void iCVariable::second_pass()
 	}
 }
 
-void iCVariableDeclaration::gen_code( CodeGenContext& context )
-{
-	for(std::list<iCVariable*>::iterator i=vars.begin();i!=vars.end();i++)
-	{
-		iCVariable* var = *i;
-		if(NULL != var)
-			var->gen_code(context);
-	}
-}
-
-iCVariableDeclaration::iCVariableDeclaration()
-{
-
-}
-
-iCVariableDeclaration::~iCVariableDeclaration()
-{
-#ifdef ICDEBUG_TRACE
-	std::cout<<"iCVariableDeclaration::gen_code " << "...";
-	std::cout.flush();
-#endif
-	for(std::list<iCVariable*>::iterator i=vars.begin();i!=vars.end();i++)
-	{
-		delete *i;
-	}
-#ifdef ICDEBUG_TRACE
-	std::cout<<"done iCVariableDeclaration\n";
-	std::cout.flush();
-#endif
-}

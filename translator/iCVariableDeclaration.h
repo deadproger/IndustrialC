@@ -1,24 +1,22 @@
 #pragma once
 
-/*
 #include "iCNode.h"
 class CodeGenContext;
+class iCVariable;
 class iCScope;
 
 class iCVariableDeclaration : public iCDeclaration
 {
-
+	std::list<iCVariable*> vars;//owns
 public:
-	iCStringList type_specs;
-	iCStringList var_names;
-	const iCScope* scope;
-
-	iCVariableDeclaration(const iCStringList& type_specs, const iCStringList& var_names, const iCScope* scope, const ParserContext& context)
-		:	type_specs(type_specs),
-			var_names(var_names),
-			scope(scope),
-			iCNode(context){}
+	iCVariableDeclaration(const ParserContext& context);
 	~iCVariableDeclaration();
-
+	void set_vars(const std::list<iCVariable*> var_list)
+	{
+		vars = var_list;
+	}
 	virtual void gen_code(CodeGenContext& context);
-};*/
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCVariableDeclaration";}
+#endif//DEBUG
+};

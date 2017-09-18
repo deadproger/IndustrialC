@@ -17,4 +17,8 @@ public:
 	virtual ~iCStateTransition() {}
 	virtual void gen_code(CodeGenContext& context);
 	virtual void second_pass();
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCStateTransition";}
+#endif//DEBUG
 };

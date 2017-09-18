@@ -17,4 +17,8 @@ public:
 	iCBinaryExpression(iCExpression* left, const std::string& op, iCExpression* right, const ParserContext& context) : left(left), op(op), right(right), iCNode(context) {}
 	~iCBinaryExpression();
 	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCBinaryExpression op: " + op;}
+#endif//DEBUG
 };
