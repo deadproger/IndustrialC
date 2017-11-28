@@ -759,6 +759,7 @@ vector SPM_READY_vect     ; /* Store Program Memory Read */
 /************************************************************************/
 $	#include <avr/io.h> 
 $	#include <avr/interrupt.h>
+$	#include <util/atomic.h>
 $	volatile unsigned long ovf_cnt = 0;
 $
 $	//industrialC time service millis() millisecond counter
