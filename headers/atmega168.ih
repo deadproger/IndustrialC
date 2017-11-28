@@ -774,7 +774,18 @@ $		//Timer has already overflown, but interrupt has yet to execute
 $		if ((TIFR0 & _BV(TOV0)) && (tcnt < 255))
 $			ovf++;
 $
-$		return (((ovf<<8) + tcnt)*1024)/(F_CPU/1000);
+$		//return (((ovf<<8) + tcnt)*1024)/(F_CPU/1000);
+$		unsigned long fract;
+$		const unsigned long mfcpu = F_CPU/1000;
+
+$		fract = ovf % mfcpu;
+$		fract <<= (8UL + 10UL);
+$		fract /= mfcpu;
+
+$		ovf /= mfcpu;
+$		ovf <<= (8UL + 10UL);
+$		ovf += fract;
+$		return ovf + (tcnt << 10UL) / mfcpu;
 $	}
 $	
 $	//industrialC time service uses timer0 overflow interrupt to track time
