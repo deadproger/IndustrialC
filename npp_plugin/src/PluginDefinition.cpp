@@ -184,12 +184,66 @@ int build_()
 	TCHAR* buffer = new TCHAR[MAX_PATH];
 
 	//Check file extension
-	::SendMessage(nppData._nppHandle, NPPM_GETEXTPART, MAX_PATH, (LPARAM)buffer);
+	::SendMessage(nppData._nppHandle, NPPM_GETEXTPART, MAX_PATH, (LPARAM)buffer);//Get selected file extension
 	if(0!=wcscmp(buffer, TEXT(".ic")))
 	{
-		::MessageBox(0, TEXT("Select an .ic file to build"), TEXT("Error"), MB_OK);
-		delete buffer;
-		return 1;
+		//Check:
+		//if one and only one .ic file opened - select that file for the build
+		//otherwise tell user they need to select .ic file
+
+		//Get number of files currently opened
+		int nb_open_files;
+		nb_open_files = ::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, (LPARAM)ALL_OPEN_FILES);
+
+		//Allocate filenames
+		TCHAR **opened_filenames = new TCHAR* [nb_open_files];
+		for(int i=0;i<nb_open_files;i++)
+			opened_filenames[i] = new TCHAR[MAX_PATH];
+
+		//Inquire filenames
+		::SendMessage(nppData._nppHandle, NPPM_GETOPENFILENAMES, (WPARAM)opened_filenames, (LPARAM)nb_open_files);
+
+		//Look for .ic files
+		int ic_file_index = 0;
+		int num_ic_files = 0;
+		for(int i=0;i<nb_open_files;i++)
+		{
+			//Get last 3 characters, compare them to ".ic"
+			TCHAR file_ext[4];
+			int filename_len = wcslen(opened_filenames[i]);
+			if(3 > filename_len)
+				continue;
+			wcsncpy(file_ext, opened_filenames[i] + filename_len - 3, 3);
+			file_ext[3] = 0;//Terminate extension
+			if(0==wcscmp(file_ext, TEXT(".ic")))//found .ic file
+			{
+				num_ic_files++;
+				ic_file_index = i;
+			}
+		}
+
+		if(1 == num_ic_files)
+		{	
+			//Set focus on the one .ic file (further code works with the file in focus)
+			::SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, MAIN_VIEW , (LPARAM)ic_file_index);
+		}
+		else
+		{
+			::MessageBox(0, TEXT("Select an .ic file to build"), TEXT("Error"), MB_OK);
+
+			//Deallocate filenames
+			for(int i=0;i<nb_open_files;i++)
+				delete opened_filenames[i];
+			delete opened_filenames;
+
+			delete buffer;
+			return 1;
+		}
+
+		//Deallocate filenames
+		for(int i=0;i<nb_open_files;i++)
+			delete opened_filenames[i];
+		delete opened_filenames;
 	}
 
 	::SendMessage(nppData._nppHandle, NPPM_GETNAMEPART, MAX_PATH, (LPARAM)buffer);
