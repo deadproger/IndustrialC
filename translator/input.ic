@@ -1,6 +1,6 @@
 #define F_CPU 16000000L
 
-#include "atmega128.ih"
+#include "../headers/atmega128.ih"
 
 $ #include <avr/io.h>
 $ #include <util/delay.h>
@@ -15,22 +15,6 @@ $ #include <stdlib.h>
 
 unsigned int number;
 
-void test_func()
-{
-	int a, b;
-	unsigned c=5, d=7;
-	a=b+c-d;
-	
-	for(int i=0;i<10;i++)
-	{
-		a+=b;;;;
-	}
-	
-	for(int i=0;i<10;i++)
-	{
-	}
-}
-
 //=============================================================================
 //Процесс инициализации
 //=============================================================================
@@ -40,15 +24,14 @@ process Initialization : background
 	state FS_START
 	{
 		//DEBUG
-		//TEST_DDR |= _BV(TEST_PIN);
-		//TEST_PORT &= ~_BV(TEST_PIN);
+		TEST_DDR |= _BV(TEST_PIN);
+		TEST_PORT &= ~_BV(TEST_PIN);
 	
 		//TODO: Load values from EEPROM
-		int i,j;
-		for(i=0;i<NUM_PORTS;i++)
+		for(int i=0;i<NUM_PORTS;i++)
 		{
 			port_zero_values[i] = 32767;
-			for(j=0;j<NUM_REG_PARAMS;j++)
+			for(int j=0;j<NUM_REG_PARAMS;j++)
 			{
 				port_reg_params[i][j] = 1.0;
 			}
@@ -175,12 +158,7 @@ process Initialization : background
 	state WaitDataCorrect
 	{
 		bool DataCorrect;
-		
-		stop hyperprocess DD2_DRDY_interrupt;
-		stop hyperprocess DD3_DRDY_interrupt;
-		DataCorrect = (0 != dd2_adc_ch0 && 0 != dd2_adc_ch1 && 0 != dd3_adc_ch0 && 0 != dd3_adc_ch1);
-		start hyperprocess DD2_DRDY_interrupt;
-		start hyperprocess DD3_DRDY_interrupt;
+		atomic DataCorrect = (0 != dd2_adc_ch0 && 0 != dd2_adc_ch1 && 0 != dd3_adc_ch0 && 0 != dd3_adc_ch1);
 		
 		if(DataCorrect)
 		{
@@ -211,33 +189,53 @@ process Initialization : background
 	}
 }
 
+	const unsigned long ADCREF_T_NOMINAL = 25;
+	const unsigned long ADCREF_T_NOMINAL_VOLTAGE_MV = 596;//596мВ - номинальное напряжение с датчика температуры ИОН при 25°С
+	const unsigned long ADCREF_T_RATE_MV_PER_DEG = 2;
+	unsigned long int_calib_offset = 309330;
+	//const unsigned long ADC_SCALE_MAX = 65535;//65535 - максимум шкалы АЦП
+	const unsigned long ADCREF_VOLTAGE_MV = 2500;//2500мВ - опорное напряжение АЦП в мВ
+	const unsigned long ADC_INT_TEMP_GAIN = 2;//2.0 - коэффициент усиления для сигнала температуры внутри станции
+	const unsigned long MULTIPLIER = 0xffff;
+	const unsigned long HALF_MULTIPLIER = MULTIPLIER >> 1;
+
 process CalcTempInt : background
 {
+	
+	
+	//2.0 - коэффициент изменения напряжения температурного датчика ИОН, мВ/°С
+	//25°С - температура, соответствующая номинальному напряжению 596мВ на температурном выходе ИОН
+	//4.72 - калибровочное смещение
+	
 	state FS_START
 	{
-		//TEST_PORT |= _BV(TEST_PIN);//DEBUG
-		//Получение температуры внутри станции
+		
 		/*
-		stop hyperprocess DD3_DRDY_interrupt;//Критическая секция
-		internal_temp = dd3_adc_ch1;
-		start hyperprocess DD3_DRDY_interrupt;//Конец критической секции
+		atomic internal_temp = dd3_adc_ch1;//Получение температуры внутри станции
+		TEST_PORT |= _BV(TEST_PIN);//DEBUG
+		internal_temp = ((internal_temp*2500.0)/(65535.0*2.0) - 596.0)/2.0 + 25.0 + int_temp_calib_offset;
+		TEST_PORT &= ~_BV(TEST_PIN);//DEBUG
+		dtostrf(internal_temp, 5, 2, internal_temp_str);
 		*/
 		
-		atomic
-		{
-			internal_temp = dd3_adc_ch1;
-		}
 		
-		//2500мВ - опорное напряжение АЦП в мВ
-		//65535 - максимум шкалы АЦП
-		//2.0 - коэффициент усиления для сигнала температуры внутри станции
-		//596мВ - номинальное напряжение с датчика температуры ИОН при 25°С
-		//2.0 - коэффициент изменения напряжения температурного датчика ИОН, мВ/°С
-		//25°С - температура, соответсвующая номинальному напряжению 596мВ на температурном выходе ИОН
-		//4.72 - калибровочное смещение
-		internal_temp = ((internal_temp*2500.0)/(65535.0*2.0) - 596.0)/2.0 + 25.0 + int_temp_calib_offset;
-		dtostrf(internal_temp, 5, 2, internal_temp_str);
-		//TEST_PORT &= ~_BV(TEST_PIN);//DEBUG
+		atomic internal_temp_xffff = dd3_adc_ch1;
+		internal_temp_xffff *= ADCREF_VOLTAGE_MV;
+		internal_temp_xffff /= ADCREF_T_RATE_MV_PER_DEG  * ADC_INT_TEMP_GAIN;
+		internal_temp_xffff += ADCREF_T_NOMINAL << 16;
+		internal_temp_xffff -= int_calib_offset;
+		internal_temp_xffff -= (ADCREF_T_NOMINAL_VOLTAGE_MV << 16) / ADCREF_T_RATE_MV_PER_DEG;
+		
+		unsigned long cents;
+		cents = internal_temp_xffff;
+		cents &= 0xffff;
+		cents *= 100;
+		cents >>= 16;
+		
+		sprintf(internal_temp_str, "%02lu.%02lu", internal_temp_xffff >> 16, cents);
+		
+		
+		
 	}
 }
 
@@ -252,19 +250,62 @@ process CalcTempPortA : background
 		//TEST_PORT |= _BV(TEST_PIN);//DEBUG
 	
 		//Получение значения температуры в порту A
-		stop hyperprocess DD2_DRDY_interrupt;//Критическая секция
-		port_temp[SP_PORT_A] = dd2_adc_ch0;
-		start hyperprocess DD2_DRDY_interrupt;//Конец критической секции
+		unsigned int port_temp_integer;
+		atomic port_temp[SP_PORT_A] = dd2_adc_ch0;
+		atomic port_temp_integer = dd2_adc_ch0;
 		
 		if(port_temp[SP_PORT_A] < ADC_TC_OPEN_THRESHOLD)
 		{
 			//32767 - ноль шкалы АЦП
-			//2500 - опорное напряжение АЦП в мВ; Умножается на 2.0 дифференциальном режиме
+			//2500 - опорное напряжение АЦП в мВ; Умножается на 2.0 в дифференциальном режиме
 			//128 - коэффициент усиления в АЦП для сигнала с термопары
 			//65535 - максимум шкалы АЦП
 			//0.041 - коэффициент Зеебека для линейной модели термопары
-			port_temp[SP_PORT_A] = ((port_temp[SP_PORT_A]-32767.0)*2500.0*2.0)/(128.0*65535.0*0.041) + internal_temp;
-			dtostrf(port_temp[SP_PORT_A], 6, 2, port_temp_str[SP_PORT_A]);
+			//port_temp[SP_PORT_A] = ((port_temp[SP_PORT_A]-32767.0)*2500.0*2.0)/(128.0*65535.0*0.041) + internal_temp;
+			//dtostrf(port_temp[SP_PORT_A], 6, 2, port_temp_str[SP_PORT_A]);
+			
+			const unsigned long K = 0.041*65536.0 + 0.5;
+			const unsigned long Zero = 32767;
+			//ADCREF_VOLTAGE_MV 2500
+			const unsigned long VScale = 2500 * 2;
+			const unsigned long gain = 128;
+			
+			unsigned long ZShift = Zero;
+			ZShift *= K;
+			ZShift <<= 4
+			ZShift >>= 16;// /65535
+			ZShift *= VScale;
+			ZShift /= gain;
+			ZShift >>= 4;
+			
+			unsigned long temp = port_temp[SP_PORT_A];
+			temp *= K;
+			temp <<= 4;
+			temp >>= 16;
+			temp *= VScale;
+			temp /= gain;
+			temp >>= 4;
+			temp += internal_temp_xffff;
+			temp -= ZShift;
+			
+			unsigned long cents;
+			cents = temp;
+			cents &= 0xffff;
+			cents *= 100;
+			cents >>= 16;
+			
+			//sprintf(port_temp_str[SP_PORT_A], "%02lu.%02lu", temp >> 16, cents);
+			sprintf(port_temp_str[SP_PORT_A], "%u", port_temp_integer);
+			
+			if(Print passive)
+			{
+				$sprintf((char*)$print_buffer, "K=%lu\n", $K);
+				//$ itoa( val, (char*)print_buffer, 10);
+				print_buffer_length = $$strlen((char*)$print_buffer)$$;
+				print_buffer_index = 0;
+				start process Print;
+				start hyperprocess USART_DataRegisterEmpty_interrupt;
+			}
 		}
 		else
 		{
@@ -296,13 +337,12 @@ process CalcTempPortB : background
 	state CalcTemp
 	{
 		//Получение значения температуры в порту B
-		stop hyperprocess DD2_DRDY_interrupt;//Критическая секция
-		port_temp[SP_PORT_B] = dd2_adc_ch1;
-		start hyperprocess DD2_DRDY_interrupt;//Конец критической секции
+		atomic port_temp[SP_PORT_B] = dd2_adc_ch1;
+	
 		if(port_temp[SP_PORT_B] < ADC_TC_OPEN_THRESHOLD)
 		{
 			//32767 - ноль шкалы АЦП
-			//2500 - опорное напряжение АЦП в мВ; Умножается на 2.0 дифференциальном режиме
+			//2500 - опорное напряжение АЦП в мВ; Умножается на 2.0 в дифференциальном режиме
 			//128 - коэффициент усиления в АЦП для сигнала с термопары
 			//65535 - максимум шкалы АЦП
 			//0.041 - коэффициент Зеебека для линейной модели термопары
@@ -338,13 +378,12 @@ process CalcTempPortC : background
 	state CalcTemp
 	{
 		//Получение значения температуры в порту C
-		stop hyperprocess DD3_DRDY_interrupt;//Критическая секция
-		port_temp[SP_PORT_C] = dd3_adc_ch0;
-		start hyperprocess DD3_DRDY_interrupt;//Конец критической секции
+		atomic port_temp[SP_PORT_C] = dd3_adc_ch0;
+		
 		if(port_temp[SP_PORT_C] < ADC_TC_OPEN_THRESHOLD)
 		{
 			//32767 - ноль шкалы АЦП
-			//2500 - опорное напряжение АЦП в мВ; Умножается на 2.0 дифференциальном режиме
+			//2500 - опорное напряжение АЦП в мВ; Умножается на 2.0 в дифференциальном режиме
 			//128 - коэффициент усиления в АЦП для сигнала с термопары
 			//65535 - максимум шкалы АЦП
 			//0.041 - коэффициент Зеебека для линейной модели термопары
@@ -371,45 +410,6 @@ process CalcTempPortC : background
 	}
 }
 
-/*
-//=============================================================================
-//Процесс отладочного вывода значений температуры с АЦП
-//=============================================================================
-process ADC_Test_output : background
-{
-	state FS_START
-	{
-		
-		//Получение значений температуры внутри станции и в порту C
-		stop hyperprocess DD3_DRDY_interrupt;//Критическая секция
-		stop hyperprocess DD2_DRDY_interrupt;//Критическая секция
-		$sprintf((char*)$print_buffer, "%u %u %u %u\n", $dd2_adc_ch0, $dd2_adc_ch1, $dd3_adc_ch0, $dd3_adc_ch1);
-		start hyperprocess DD3_DRDY_interrupt;//Конец критической секции
-		start hyperprocess DD2_DRDY_interrupt;//Конец критической секции
-		
-		print_buffer_length = $$strlen((char*)$print_buffer)$$;
-		print_buffer_index = 0;
-		
-		start process Print;
-		start hyperprocess USART_DataRegisterEmpty_interrupt;
-		set state WaitUSART;
-	}
-	
-	state WaitUSART
-	{
-		if(Print passive)
-			set state Delay;
-	}
-	state Delay
-	{
-		timeout(500)
-		{
-			set state FS_START;
-		}
-	}
-}
-*/
-
 #include "adc.ih"
 #include "keyboard.ih"
 
@@ -418,11 +418,10 @@ process ADC_Test_output : background
 //=============================================================================
 process Blink : background
 {
-	int i;
 	state FS_START
 	{
 		//копирование всего текста экрана
-		for(i=0;i<17;i++)
+		for(int i=0;i<17;i++)
 			Blink_text[i] = LCD_text[i];
 			
 		set state Show;
@@ -430,7 +429,7 @@ process Blink : background
 	state Hide // символы скрыты
 	{
 		//замена символов в заданном диапазоне на пробелы
-		for(i=blink_start_pos;i<=blink_end_pos;i++)
+		for(int i=blink_start_pos;i<=blink_end_pos;i++)
 			Blink_text[i] = ' ';
 		
 		timeout(BLINK_PERIOD_MS)
@@ -441,7 +440,7 @@ process Blink : background
 	state Show // символы отображаются
 	{
 		//копирование актуальных символов в диапазоне
-		for(i=blink_start_pos;i<=blink_end_pos;i++)
+		for(int i=blink_start_pos;i<=blink_end_pos;i++)
 			Blink_text[i] = LCD_text[i];
 		
 		timeout(BLINK_PERIOD_MS)
@@ -732,29 +731,6 @@ process DegasC : background
 	}
 }
 
-/*process TestSPI : background
-{
-	unsigned char data;
-	state FS_START
-	{
-		data = 0b00001001;
-		SPDR = data;
-		data = 0;//
-		set state WaitTransmit;
-	}
-	state WaitTransmit
-	{
-		if(SPSR & _BV(SPIF)
-		{
-			set state Receive;
-		}
-	}
-	state Receive
-	{
-		if(SPSR & )
-	}
-}*/
-
 process TestPrint : background
 {
 	state FS_START
@@ -810,7 +786,7 @@ process PortA_Brezenham : MAINS_REF_interrupt
 	}
 	state Brezenham
 	{
-		error += portA_power;
+		error += portA_power;//накопление ошибки
 		if(error >= HEATER_FULL_POWER)
 		{
 			HEATER_PORT &= ~_BV(HEATER_A_PIN);//открытие тиристора - пропускаем полуволну
@@ -828,7 +804,7 @@ process PortA_Brezenham : MAINS_REF_interrupt
 
 process PortB_Brezenham : MAINS_REF_interrupt
 {
-	unsigned int error;
+	volatile unsigned int error;
 	state FS_START
 	{
 		
@@ -837,7 +813,7 @@ process PortB_Brezenham : MAINS_REF_interrupt
 
 process PortC_Brezenham : MAINS_REF_interrupt
 {
-	unsigned int error;
+	volatile unsigned int error;
 	state FS_START
 	{
 		
