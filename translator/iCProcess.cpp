@@ -22,7 +22,10 @@ void iCProcess::gen_code(CodeGenContext& context)
 
 	context.set_location(line_num, filename);
 
-	//process header
+	//Process header
+	//If the process is in ISR, no critical section needed - switch directly on process state
+	//Otherwise atomically fetch the process state into a temporary variable
+	//and use it in switch
 	context.indent();
 	//context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME, name.c_str(), C_STATE_FUNC_ATTR_NAME);
 	if(context.in_ISR())
@@ -79,46 +82,42 @@ void iCProcess::gen_code(CodeGenContext& context)
 
 
 //=================================================================================================
-//Code generator for time service instance of the process - only states with timeouts, if any,
-//and timeout code only
+//Code generator for time service instance of the process - only states that have timeouts,
+//and only the timeout code form those states
 //=================================================================================================
 void iCProcess::gen_timeout_code( CodeGenContext& context )
 {
+	ICASSERT(!context.in_ISR())
+
 	//update context
 	context.process = this;
 
-	//context.set_location(line_num, filename);
+	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
+	context.to_code_fmt("//Process %s timeouts\n", name.c_str());
+	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
 
 	//process header
 	context.indent();
-	if(context.in_ISR())
-	{
-		//Example:
-		//switch(psw[PROC_NAME].fsp)
-		context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME,
-					name.c_str(), C_STATE_FUNC_ATTR_NAME);
-	}
-	else
-	{
-		//atomic fetching of the current state function
-		//Example:
-		//ATOMIC_BLOCK(ATOMIC_FORCEON){
-		//	ic_common_bkg_state = psw[PROC_NAME].fsp;
-		//}
-		//switch(ic_common_bkg_state)
-		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
-		context.indent_depth++;
-		context.indent();
-		context.to_code_fmt("%s = %s[%s].%s;\n",	C_COMMON_BKG_FSP_NAME,
-			C_PROC_ARRAY_NAME,
-			name.c_str(),
-			C_STATE_FUNC_ATTR_NAME);
-		context.indent_depth--;
-		context.indent();
-		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
-		context.indent();
-		context.to_code_fmt("switch(%s)\n", C_COMMON_BKG_FSP_NAME);
-	}
+	
+	//atomic fetching of the current state function
+	//Example:
+	//ATOMIC_BLOCK(ATOMIC_FORCEON){
+	//	ic_common_bkg_state = psw[PROC_NAME].fsp;
+	//}
+	//switch(ic_common_bkg_state)
+	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
+	context.indent_depth++;
+	context.indent();
+	context.to_code_fmt("%s = %s[%s].%s;\n",	C_COMMON_BKG_FSP_NAME,
+		C_PROC_ARRAY_NAME,
+		name.c_str(),
+		C_STATE_FUNC_ATTR_NAME);
+	context.indent_depth--;
+	context.indent();
+	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
+	context.indent();
+	context.to_code_fmt("switch(%s)\n", C_COMMON_BKG_FSP_NAME);
+
 	
 	context.indent();
 	context.to_code_fmt("{\n");
@@ -132,7 +131,6 @@ void iCProcess::gen_timeout_code( CodeGenContext& context )
 		{
 			state->gen_timeout_code(context);
 		}
-		//(*i)->gen_code(context);
 	}
 
 	//process footer
@@ -152,8 +150,6 @@ iCProcess::~iCProcess()
 	//std::cout<<"deleting process "<<name<<std::endl;
 	for(StateList::iterator i=states.begin();i!=states.end();i++)
 		delete *i;
-	/*for(iCDeclarationList::iterator i=decls.begin();i!=decls.end();i++)
-		delete *i;*/
 }
 
 //=================================================================================================
@@ -181,6 +177,9 @@ iCProcess::iCProcess( const std::string& name, const ParserContext& context ) :	
 	line_num = context.line();
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 void iCProcess::add_states( const StateList& states )
 {
 	this->states = states;

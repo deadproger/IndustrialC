@@ -43,9 +43,12 @@ void iCFunction::gen_code( CodeGenContext& context )
 	std::cout.flush();
 #endif
 	context.to_code_fmt("\n");
+	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
+	context.to_code_fmt("//Function: %s\n", name.c_str());
+	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
 	context.set_location(line_num, filename);
 	context.indent();
-
+	
 	//decl specs and name
 	for(iCStringList::iterator i=type_specs.begin();i!=type_specs.end();i++)
 	{
@@ -57,8 +60,6 @@ void iCFunction::gen_code( CodeGenContext& context )
 	context.to_code("(");
 	for(std::list<iCVariable*>::iterator i=params.begin();i!=params.end();i++)
 	{
-		//(*i)->gen_code(context);
-
 		if(params.begin() != i)
 			context.to_code(", ");
 
@@ -93,20 +94,12 @@ void iCFunction::gen_code( CodeGenContext& context )
 		context.indent();
 		context.to_code_fmt("{\n");
 		context.indent_depth++;
-		
-		/*
-		for(std::list<iCVariable*>::iterator i=local_vars.begin();i!=local_vars.end();i++)
-		{
-			(*i)->gen_code(context);
-		}
-		*/
 
 		iCBlockItemsList& items_list = reinterpret_cast<iCCompoundStatement*>(body)->get_block_items();//a crutch
 		for(iCBlockItemsList::iterator i=items_list.begin();i!=items_list.end();i++)
 		{
 			(*i)->gen_code(context);
 		}
-		//body->gen_code(context);
 
 		//footer
 		context.indent_depth--;
@@ -115,7 +108,9 @@ void iCFunction::gen_code( CodeGenContext& context )
 		context.to_code_fmt("}");
 	}
 	else
+	{
 		context.to_code(";");
+	}
 
 #ifdef ICDEBUG_TRACE
 	std::cout<<"done iCFunction\n";
