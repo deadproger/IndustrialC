@@ -31,12 +31,10 @@
 	#include "iCPrimaryExpression.h"
 	#include "iCUnaryExpression.h"
 	#include "iCSubscriptExpression.h"
-	//#include "iCVariableDeclaration.h"
 	#include "iCVariable.h"
 	#include "iCVariableDeclaration.h"
 	#include "iCFunction.h"
 	#include "iCFunctionCall.h"
-	//#include "iCDeclarator.h"
 	#include "iCInitializer.h"
 	#include "iCString.h"
 	#include "iCIterationStatement.h"
@@ -47,10 +45,7 @@
 	#include <typeinfo>
 	#include <set>
 	
-	
-
     iCProgram* ic_program = NULL; /* AST root */
-    //extern iCScope* current_scope;
 	extern ParserContext* parser_context;
 
     extern int ic_lex();
@@ -78,25 +73,17 @@
     iCStringList *str_list;
     int token;
 	std::list<iCVariable*>* var_list;
-    
 	iCHyperprocess* hyperprocess;
-
     iCDeclarationList* decl_list;
     iCProcessList* proc_list;
     iCDeclaration* declaration;
 	iCVariable* variable;
     iCIdentifierList* ident_list;
-
 	iCFunction* func;
 	std::vector<iCExpression*>* expr_list;
-
 	iCProgramItemsList* program_items_list;
 	iCProgramItem* program_item;
-
 	iCProcBody* proc_body;
-
-	//iCDeclarator* declarator;
-	//std::vector<iCDeclarator*>* declarator_list;
 	iCInitializer* icinitializer;
 	unsigned long line_num;
 }
@@ -193,7 +180,6 @@
 %token <string> TXOR_ASSGN		"^="		
 %token <string> TOR_ASSGN		"|="	
 
-
 /***********************************************/
 /*                   NODES                     */
 /***********************************************/
@@ -240,8 +226,6 @@
 %type <statement>			for_init_statement
 %type <token>				for_prep_scope
 
-
-
 /***********************************************/
 /*                  DESTRUCTORS                */
 /***********************************************/
@@ -271,16 +255,6 @@
 	delete $$;
 }<proc_body> 
 
-/*%destructor
-{
-	for(std::vector<iCExpression*>::iterator i=$$->begin();i!=$$->end();i++)
-	{
-		delete *i;
-	}
-	delete $$;
-}<expr_list>
-*/
-
 %destructor
 {
 	delete $$;
@@ -291,14 +265,12 @@
 	delete $$;
 } <*>
 
-
 /***********************************************/
 /*              MISC DEFINITIONS               */
 /***********************************************/
 %start program /*Start symbol*/
 %error-verbose /*Extended error reporting*/
 %define api.prefix {ic_}
-
 
 %nonassoc XIF
 %nonassoc TELSE
@@ -316,15 +288,10 @@
 
 %left TINC TDEC UMINUS TTILDE TEXCLAM
 
-
-
-
 /*************************************************************************************************/
 /*                                        GRAMMAR                                                */
 /*************************************************************************************************/
-
 %%
-
 program		:	{
 					ic_program = new iCProgram(*parser_context);
 					ic_program->add_hyperprocess(new iCHyperprocess("background", *parser_context));
@@ -348,13 +315,11 @@ program_item	:	var_declaration
 						ic_program->add_variable(*i);
 					}
 					delete $1;
-					//$$ = NULL;
-					//if(NULL!=$1)ic_program->add_declaration($1);
 				}
 				|	mcu_declaration	
 				{
-					//This code duplicated in direct_declarator - either add a check_scope function or use direct declarator for mcu definitions
-					//check if already defined in this scope
+					//This code is duplicated in direct_declarator - either add a check_scope function or use direct declarator for mcu definitions
+					//Check if already defined in this scope
 					const iCScope* var_scope = parser_context->get_var_scope(*$1);
 					const iCScope* mcu_decl_scope = parser_context->get_mcu_decl_scope(*$1);
 					const iCScope* func_scope = parser_context->get_func_scope(*$1);
@@ -485,7 +450,6 @@ proc_def	:	TPROC TIDENTIFIER // 1 2
 					}
 					else
 					{
-						
 						$$ = $<process>3;
 						$$->add_states($8->states);
 						//$$->add_decls($8->decls);
@@ -592,7 +556,6 @@ state_items_list	:	state_items_list state_block_item
 state_block_item	:	block_item	{$$ = $1;}
 					|	timeout 
 						{
-							//$$ = $<block_item>1;
 							$$ = NULL;
 							parser_context->modify_state()->set_timeout($1);
 						}
@@ -1058,7 +1021,7 @@ assignement_op : TASSGN
 //=============================================================================
 //Function Declaration
 //Parameters are put in a preopened scope func_params_xx
-//Function body (a compound statement) has opens its own scope, nested within
+//Function body (a compound statement) opens its own scope, nested within
 //the func_param_xx scope (scope names do not add up)
 //=============================================================================
 func_definition			:	decl_specs func_declarator
@@ -1160,7 +1123,7 @@ param_declarator		: decl_specs direct_declarator
 						;
 
 //=============================================================================
-//Varibale Declaration
+//Variable Declaration
 //=============================================================================
 
 var_declaration			:	decl_specs init_declarator_list TSEMIC 
@@ -1184,12 +1147,6 @@ mcu_declaration			:		TVECTOR		TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
 decl_specs				:	decl_specs type_spec {$1->push_back(*$2); delete $2; $$=$1;}
 						|	type_spec {$$ = new iCStringList; $$->push_back(*$1); delete $1;}
 						;
-
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
 
 init_declarator_list	:	init_declarator_list TCOMMA init_declarator 
 							{
@@ -1276,12 +1233,6 @@ initializer_list		:	initializer_list TCOMMA initializer
 							}
 						;
 
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-
 type_spec				:	TVOID	
 						|	TCHAR	
 						|	TINT		
@@ -1302,7 +1253,5 @@ type_spec				:	TVOID
 int ic_error(const char *s) 
 {
 	parser_context->err_msg(s);
-	//std::cout<<"ic_error"<<std::endl;
-	//exit(1);
 	return 0;
 }
