@@ -42,7 +42,8 @@ iCSubscriptExpression.cpp ^
 iCInitializer.cpp ^
 iCString.cpp ^
 iCIterationStatement.cpp ^
-iCAtomicBlock.cpp
+iCAtomicBlock.cpp ^
+iCReturnStatement.cpp
 @echo --------------------------------Done-------------------------------------
 
  
