@@ -442,6 +442,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCReturnStatement.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCReturnStatement.h"
+					>
+				</File>
+				<File
 					RelativePath="..\iCSelectionStatement.cpp"
 					>
 				</File>

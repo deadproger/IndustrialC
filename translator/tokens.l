@@ -97,7 +97,7 @@ const int IC_TAB_SIZE = 4;
 "volatile"				SAVE_TOKEN; return TVOLATILE ;
 "inline"				SAVE_TOKEN; return TINLINE   ;
 
-
+"return"				SAVE_TOKEN; return TRETURN	 ;
 
 [a-zA-Z_][a-zA-Z0-9_]*  SAVE_TOKEN; return TIDENTIFIER	;
 [0-9]+\.[0-9]*          SAVE_TOKEN; return TDCONST		;

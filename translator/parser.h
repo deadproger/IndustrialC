@@ -40,6 +40,8 @@
 	#include "iCIterationStatement.h"
 	#include "iCAtomicBlock.h"
 
+	#include "iCReturnStatement.h"
+
 	#include <stdio.h>
 	#include <stdarg.h> 
 	#include <typeinfo>
@@ -179,6 +181,8 @@
 %token <string> TAND_ASSGN		"&="		
 %token <string> TXOR_ASSGN		"^="		
 %token <string> TOR_ASSGN		"|="	
+
+%token <token> TRETURN			"return"
 
 /***********************************************/
 /*                   NODES                     */
@@ -744,6 +748,16 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					}
 					$1;//supress unused value warning
 				}
+			|	TRETURN expr TSEMIC
+			{
+				$$ = new iCReturnStatement($2, *parser_context);
+				$1;$3;//supress unused value warning
+			}
+			|	TRETURN TSEMIC
+			{
+				$$ = new iCReturnStatement(NULL, *parser_context);
+				$1;$2;//supress unused value warning
+			}
 			
 			;
 
