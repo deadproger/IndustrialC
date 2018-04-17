@@ -29,13 +29,7 @@ void iCStateTransition::gen_code(CodeGenContext& context)
 
 	//add atomic block if in background loop
 	if(need_atomic_block)
-	{
-		context.to_code_fmt("\n");
-		context.indent();
-		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
-		context.indent_depth++;
-		context.indent();
-	}
+		context.atomic_header();
 
 	context.to_code_fmt("%s(%s, ", C_STRANS_MACRO, context.process->name.c_str());
 	if(START_STATE_NAME != state_name && STOP_STATE_NAME != state_name)
@@ -46,12 +40,7 @@ void iCStateTransition::gen_code(CodeGenContext& context)
 
 	//atomic block footer
 	if(need_atomic_block)
-	{
-		context.to_code_fmt("\n");
-		context.indent_depth--;
-		context.indent();
-		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
-	}
+		context.atomic_footer();
 }
 
 //=================================================================================================

@@ -713,23 +713,23 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					}
 					else
 					{
-						iCAtomicBlock* atomic_block = new iCAtomicBlock;
+						iCAtomicBlock* atomic_block = new iCAtomicBlock(*parser_context);
 						atomic_block->set_body($2);
 						$$ = atomic_block;
 					}
-					$1;//supress unused value warning
+					$1;//suppress unused value warning
 				}
 			|	TRETURN expr TSEMIC
 			{
 				$$ = new iCReturnStatement($2, *parser_context);
 				delete $1;
-				$3;//supress unused value warning
+				$3;//suppress unused value warning
 			}
 			|	TRETURN TSEMIC
 			{
 				$$ = new iCReturnStatement(NULL, *parser_context);
 				delete $1;
-				$2;//supress unused value warning
+				$2;//suppress unused value warning
 			}
 			;
 
