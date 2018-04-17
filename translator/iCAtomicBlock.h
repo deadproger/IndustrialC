@@ -14,7 +14,7 @@ private:
 	iCStatement* body; // owns
 
 public:
-	iCAtomicBlock() : body(NULL) {}
+	iCAtomicBlock(const ParserContext& context) : iCNode(context), body(NULL) {}
 	virtual ~iCAtomicBlock();
 
 	void set_body(iCStatement* body) { this->body = body; }

@@ -14,20 +14,12 @@ void iCTimeout::gen_code( CodeGenContext& context )
 	if(need_atomic_block)
 	{
 		//atomically fetch the process's time
-		context.to_code_fmt("\n");
-		context.indent();
-		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
-		context.indent_depth++;
-		context.indent();
-
+		context.atomic_header();
 		context.to_code_fmt("%s = %s[%s].%s;",	C_COMMON_BKG_PROC_TIME,
 												C_PROC_ARRAY_NAME,
 												context.process->name.c_str(),
 												C_STATE_TIME_ATTR_NAME);
-		context.to_code_fmt("\n");
-		context.indent_depth--;
-		context.indent();
-		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
+		context.atomic_footer();
 	}
 
 	//timeout header

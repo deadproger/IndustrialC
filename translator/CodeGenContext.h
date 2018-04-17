@@ -34,6 +34,9 @@ public:
 	void to_code(const std::string& str);
 	void to_code_string(const std::string& str);
 
+	void atomic_header();
+	void atomic_footer();
+
 	CodeGenContext(std::ostream& code, const iCHyperprocessMap* hps)
 		:	process(NULL),
 			state(NULL),

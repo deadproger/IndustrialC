@@ -113,3 +113,28 @@ void CodeGenContext::to_code_string( const std::string& str )
 	cur_line_num += std::count(str.begin(), str.end(), '\n');
 	code<<str;
 }
+
+//=================================================================================================
+//Prints atomic block header to the code
+//"ATOMIC_BLOCK(ATOMIC_FORCEON){"
+//=================================================================================================
+void CodeGenContext::atomic_header()
+{
+	to_code_fmt("\n");
+	indent();
+	to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
+	indent_depth++;
+	indent();
+}
+
+//=================================================================================================
+//Prints atomic block footer in the code
+//}
+//=================================================================================================
+void CodeGenContext::atomic_footer()
+{
+	to_code_fmt("\n");
+	indent_depth--;
+	indent();
+	to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
+}
