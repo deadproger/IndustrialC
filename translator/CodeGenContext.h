@@ -27,6 +27,7 @@ public:
 	std::string filename() const { return cur_filename; }
 	unsigned long line() const { return cur_line_num; }
 
+	//Adds newlines or line markers to sync C compiler output with industrialC lines and filenames
 	void set_location(unsigned long line_num, const std::string& file);
 	
 	void to_code_fmt(const char* format, ...);
@@ -52,7 +53,7 @@ public:
 			_in_ISR(false),
 			indent_enabled(true){}
 
-	//CodeGenContext does not own pointed objects
+	//CodeGenContext does not own these pointed objects
 	iCProcess* process; //current process
 	iCState* state; //current state
 	const iCHyperprocessMap* hps;

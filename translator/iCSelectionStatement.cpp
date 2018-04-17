@@ -1,6 +1,9 @@
 #include "iCSelectionStatement.h"
 #include "CodeGenContext.h"
 
+//=================================================================================================
+//
+//=================================================================================================
 iCSelectionStatement::iCSelectionStatement( const ParserContext& context )
 	: iCNode(context),
 	  body(NULL),
@@ -9,6 +12,9 @@ iCSelectionStatement::iCSelectionStatement( const ParserContext& context )
 	
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 void iCSelectionStatement::gen_code( CodeGenContext& context )
 {
 	//context.to_code_fmt("\n");
@@ -38,6 +44,9 @@ void iCSelectionStatement::gen_code( CodeGenContext& context )
 
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 iCSelectionStatement::~iCSelectionStatement()
 {	
 	delete expr;

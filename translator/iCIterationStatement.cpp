@@ -2,6 +2,9 @@
 #include "CodeGenContext.h"
 #include "ParserContext.h"
 
+//=================================================================================================
+//
+//=================================================================================================
 iCIterationStatement::iCIterationStatement(iCStatement* init,
 										   iCStatement* condition,
 										   iCExpression* increment,
@@ -16,6 +19,9 @@ iCIterationStatement::iCIterationStatement(iCStatement* init,
 	line_num = init->line_num;
 }
 
+//=================================================================================================
+//Code generator
+//=================================================================================================
 void iCIterationStatement::gen_code( CodeGenContext& context )
 {
 #ifdef ICDEBUG_TRACE
@@ -23,7 +29,6 @@ void iCIterationStatement::gen_code( CodeGenContext& context )
 	std::cout.flush();
 #endif
 
-	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 
 	//header
@@ -50,6 +55,9 @@ void iCIterationStatement::gen_code( CodeGenContext& context )
 
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 iCIterationStatement::~iCIterationStatement()
 {	
 	if(NULL != init)

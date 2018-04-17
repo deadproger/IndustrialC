@@ -2,12 +2,18 @@
 #include "CodeGenContext.h"
 #include "ParserContext.h"
 
+//=================================================================================================
+//
+//=================================================================================================
 iCAtomicBlock::~iCAtomicBlock()
 {
 	if(NULL != body)
 		delete body;
 }
 
+//=================================================================================================
+//Code generator
+//=================================================================================================
 void iCAtomicBlock::gen_code( CodeGenContext& context )
 {
 	if(context.in_ISR())//atomic blocks inside ISR would cause nested interrupts

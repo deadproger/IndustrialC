@@ -16,11 +16,10 @@ const int ERR_MSG_BUFFER_SIZE = 1024;
 //=================================================================================================
 //Code generation templates
 //=================================================================================================
-
 const char START_STATE_NAME[] = "FS_START";
 const char STOP_STATE_NAME[] = "FS_STOP";
 
-//The comma operator and abcence of semicolons are for single-statement
+//The comma operator and absence of semicolons are for single-statement
 //"if/else" and "for" statements
 const char C_MACRO_ROUTINES[] = "\
 								\n\
@@ -64,10 +63,4 @@ const char C_TIMEOUT_MACRO[] = "timeout";
 
 const char C_COMMENT_FRAME[] = "//=============================================================================";
 
-const char C_STUB_DEFS[] = "";/*"#include <ctime>\n\
-unsigned long millis()\n\
-{\n\
-	const long double sysTime = time(0);\n\
-	const long double sysTimeMS = sysTime*1000.0;\n\
-	return (unsigned long) sysTimeMS;\n\
-}";*/
+const char C_STUB_DEFS[] = "";

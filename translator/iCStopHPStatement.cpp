@@ -9,11 +9,14 @@
 //=================================================================================================
 void iCStopHPStatement::second_pass()
 {
+	//Check the hyperprocess's been defined
 	hp = program->get_hp(hp_name);
 	if(NULL == hp)
 	{
 		err_msg("undefined hyperprocess %s", hp_name.c_str());
 	}
+
+	//Check it's not bacground hp
 	if(0 == hp_name.compare("background"))
 	{
 		err_msg("stop action not defined for background hyperprocess");

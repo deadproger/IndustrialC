@@ -10,15 +10,17 @@
 //=================================================================================================
 void iCStartHPStatement::second_pass()
 {
-	//retrieve the hyperprocess
-	hp = program->get_hp(hp_name);
+	//Check the hyperprocess's been defined somewhere in the program
+	hp = program->get_hp(hp_name);//retrieve the hyperprocess
 	if(NULL == hp)
 	{
 		err_msg("undefined hyperprocess %s", hp_name.c_str());
 	}
+
+	//check it's not background hp
 	if(0 == hp_name.compare("background"))
 	{
-		err_msg("stop action not defined for background hyperprocess");
+		err_msg("start action not defined for background hyperprocess");
 	}
 }
 

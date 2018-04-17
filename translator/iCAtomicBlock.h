@@ -5,6 +5,9 @@
 class ParserContext;
 class CodeGenContext;
 
+//=================================================================================================
+//Atomic block (critical section) statement
+//=================================================================================================
 class iCAtomicBlock : public iCStatement
 {
 private:

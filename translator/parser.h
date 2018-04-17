@@ -39,7 +39,6 @@
 	#include "iCString.h"
 	#include "iCIterationStatement.h"
 	#include "iCAtomicBlock.h"
-
 	#include "iCReturnStatement.h"
 
 	#include <stdio.h>
@@ -128,6 +127,7 @@
 %token <string> TCONST			"const"
 %token <string> TVOLATILE		"volatile"
 %token <string> TINLINE			"inline"
+%token <string> TRETURN			"return"
 
 %token <string> TIDENTIFIER		"identifier"
 %token <string> TICONST			"integer constant"
@@ -182,7 +182,6 @@
 %token <string> TXOR_ASSGN		"^="		
 %token <string> TOR_ASSGN		"|="	
 
-%token <token> TRETURN			"return"
 
 /***********************************************/
 /*                   NODES                     */
@@ -322,17 +321,7 @@ program_item	:	var_declaration
 				}
 				|	mcu_declaration	
 				{
-					//This code is duplicated in direct_declarator - either add a check_scope function or use direct declarator for mcu definitions
-					//Check if already defined in this scope
-					const iCScope* var_scope = parser_context->get_var_scope(*$1);
-					const iCScope* mcu_decl_scope = parser_context->get_mcu_decl_scope(*$1);
-					const iCScope* func_scope = parser_context->get_func_scope(*$1);
-					if(NULL != var_scope || NULL != mcu_decl_scope || NULL != func_scope)
-					{
-						const iCScope* scope = (NULL != var_scope)?var_scope:((NULL != mcu_decl_scope)?mcu_decl_scope:func_scope);
-						parser_context->err_msg("symbol redefinition: %s aready defined in %s",
-							$1->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
-					}
+					parser_context->check_identifier_defined(*$1);
 
 					//no need to generate the declaration object
 					//just add it to scope
@@ -361,7 +350,6 @@ c_code		:	TCCODELINE
 				}
 			/*|	TCCODEEXPR*/
 			;
-
 
 hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 					{
@@ -397,11 +385,13 @@ hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 						delete $11;
 						delete $15;
 
-						//TASSGN
+						//TASSGNs
 						delete $6;
 						delete $10;
 						delete $14;
-						$1;$4;$5;$8;$9;$12;$13;$16;$17;//suppress unused value warning
+
+						//suppress unused value warning
+						$1;$4;$5;$8;$9;$12;$13;$16;$17;
 					}
 				;
 
@@ -447,7 +437,6 @@ proc_def	:	TPROC TIDENTIFIER // 1 2
 							delete *i;
 						for(iCDeclarationList::iterator i=$8->decls.begin();i!=$8->decls.end();i++)
 							delete *i;
-
 						delete $5;
 						delete $8;
 						$$ = NULL;
@@ -456,18 +445,14 @@ proc_def	:	TPROC TIDENTIFIER // 1 2
 					{
 						$$ = $<process>3;
 						$$->add_states($8->states);
-						//$$->add_decls($8->decls);
 						parser_context->add_proc_to_scope($$->name);
-
 						parser_context->set_process(NULL);//leaving process definition
-						
 						delete $5;
 						delete $8;
 					}
 					$1;$4;$7;$9;//suppress unused value warning
 				}
 			;	
-
 		
 proc_body	: proc_body state {$1->states.push_back($2); $$=$1;}
 			| proc_body var_declaration 
@@ -479,7 +464,6 @@ proc_body	: proc_body state {$1->states.push_back($2); $$=$1;}
 				}
 				delete vars;
 				$$ = $1;
-				//$1->decls.push_back($2); $$=$1;
 			}
 			| state {$$ = new iCProcBody(); $$->states.push_back($1); }
 			| var_declaration 
@@ -490,7 +474,6 @@ proc_body	: proc_body state {$1->states.push_back($2); $$=$1;}
 					ic_program->add_variable(*i);
 				}
 				delete vars;
-				//$$ = NULL;
 				$$ = new iCProcBody(); //$$->decls.push_back($1);
 			}
 			| proc_body c_code{if(NULL!=$2)$1->decls.push_back($2);	$$=$1;}
@@ -567,24 +550,11 @@ state_block_item	:	block_item	{$$ = $1;}
 
 block_item	:	var_declaration 
 				{
-					//if in function or state - those are local variables
+					ICASSERT(NULL != parser_context->get_func() || NULL != parser_context->get_state());
 					std::list<iCVariable*>* vars = $1;
-					if(NULL != parser_context->get_func() || NULL != parser_context->get_state())
-					{
-						iCVariableDeclaration* decl = new iCVariableDeclaration(*parser_context);
-						decl->set_vars(*vars);
-						$$ = decl;
-					}
-					else
-					{
-						//The declaration is a block item outside functions or states
-						//The variables will be global in the generated code
-						for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
-						{
-							ic_program->add_variable(*i);
-						}
-						$$ = NULL;
-					}
+					iCVariableDeclaration* decl = new iCVariableDeclaration(*parser_context);
+					decl->set_vars(*vars);
+					$$ = decl;
 					delete vars;
 				}
 			|	statement {$$ = $<block_item>1;}
@@ -604,7 +574,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 						$$ = new iCStateTransition(*$3, *parser_context); 
 						parser_context->add_to_second_pass($$); // to check if state was defined
 					}
-				  
+
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}			
@@ -661,11 +631,6 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 			|	expression_statement
 				{
 					$$ = $1;
-					/*
-					$$ = new iCExpressionStatement($1, *parser_context);
-					$$->line_num = parser_context->line();
-					$2;//suppress unused value warning
-					*/
 				}					
 			|	TSTART THYPERPROCESS TIDENTIFIER TSEMIC //hyperprocess control - start
 				{
@@ -751,14 +716,15 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 			|	TRETURN expr TSEMIC
 			{
 				$$ = new iCReturnStatement($2, *parser_context);
-				$1;$3;//supress unused value warning
+				delete $1;
+				$3;//supress unused value warning
 			}
 			|	TRETURN TSEMIC
 			{
 				$$ = new iCReturnStatement(NULL, *parser_context);
-				$1;$2;//supress unused value warning
+				delete $1;
+				$2;//supress unused value warning
 			}
-			
 			;
 
 for_prep_scope		:	%empty
@@ -770,12 +736,12 @@ for_prep_scope		:	%empty
 
 for_init_statement	:	expression_statement { $$ = $1; }
 					|	var_declaration 
-					{
-						iCVariableDeclaration* decl = new iCVariableDeclaration(*parser_context);
-						decl->set_vars(*$1);
-						$$ = decl;
-						delete $1;
-					}
+						{
+							iCVariableDeclaration* decl = new iCVariableDeclaration(*parser_context);
+							decl->set_vars(*$1);
+							$$ = decl;
+							delete $1;
+						}
 					;
 
 expression_statement: expr TSEMIC //expression statement
@@ -784,7 +750,7 @@ expression_statement: expr TSEMIC //expression statement
 						  $$->line_num = parser_context->line();
 						  $2;//suppress unused value warning
 					  }
-					  | TSEMIC
+					| TSEMIC
 					  {
 						  $$ = new iCExpressionStatement(NULL, *parser_context);
 						  $$->line_num = parser_context->line();
@@ -811,20 +777,17 @@ compound_statement:		TLBRACE prep_compound block_items_list TRBRACE // compound 
 						}
 					;
 
-prep_compound:	%empty // subroutine to prepare scope for compound statement
+prep_compound:	%empty // subrule to prepare scope for compound statement
 				{
 					
 					$<statement>$ = new iCCompoundStatement(*parser_context);
-					
 					parser_context->open_scope("comp");
 				}
 
 timeout	:	TTIMEOUT TLPAREN expr TRPAREN
 			{
-			  //$<timeout>$ = new iCTimeout(atoi($3->c_str()), *parser_context);
 			  $<timeout>$ = new iCTimeout($3, *parser_context);
 			  parser_context->open_scope("timeout");
-			  //delete $3;
 			}
 			TLBRACE block_items_list TRBRACE
 			{
@@ -850,11 +813,9 @@ block_items_list	:	block_items_list block_item
 						}
 					;
 			
-
 /*************************************************************************************************/     
 /*                                 E X P R E S S I O N S                                         */     
 /*************************************************************************************************/
-
 expr 		: assignment_expr 
 	 		;
 	 
@@ -915,8 +876,7 @@ postfix_expr : primary_expr
 					 iCFunctionCall* func_call = new iCFunctionCall(*$1, *parser_context);
 					 func_call->set_args(*$3);
 					 $$ = func_call;
-					 /*for(std::vector<iCExpression*>::iterator i=$3->begin();i!=$3->end();i++)
-						 delete *i;*/
+					 
 					 delete $1;
 					 delete $3;
 					 $2;$4;
@@ -967,9 +927,8 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 							$$ = new iCIdentifier(*$1, var->scope, *parser_context);
 							const iCProcess* proc = parser_context->get_process();
 
-							
-							//Mark var as used referenced in ISR - used for automatic volatile
-							if(NULL != proc)//added because of functions - vars in functions don't belong to proc
+							//Mark var as used in ISR - used for volatile checks
+							if(NULL != proc)//added because of functions - vars in functions don't belong to any proc
 							{
 								if(0 != proc->activator.compare("background"))
 								{
@@ -977,7 +936,6 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 									parser_context->add_to_second_pass(var);
 								}
 							}
-							
 						}
 					}
 					delete $1;
@@ -1002,7 +960,7 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 					$$ = new CCodeLine(*$1, *parser_context);
 					delete $1;
 				}
-				/* add hyperprocess control - check*/
+				/* add hyperprocess active/inactive check*/
 			 |	TSTRING
 				{
 					$$ = new iCString(*$1, *parser_context);
@@ -1037,6 +995,22 @@ assignement_op : TASSGN
 //Parameters are put in a preopened scope func_params_xx
 //Function body (a compound statement) opens its own scope, nested within
 //the func_param_xx scope (scope names do not add up)
+//				 global scope
+//				 {
+//					 func name defined here
+//					 param scope
+//					 {
+//						 params defined here
+//						 func body scope
+//						 {
+//							 
+//						 }
+//					 }
+//				 }
+//
+// ! Func declaration (prototype) is treated as a definition
+// ! Need to allow declarations and definitions with redefinition (body != NULL)
+// ! and undefined (body == NULL on second pass) checks
 //=============================================================================
 func_definition			:	decl_specs func_declarator
 							{
@@ -1045,16 +1019,17 @@ func_definition			:	decl_specs func_declarator
 							}
 							func_body // compound statement
 							{
-								$$ = $2;
+								$$ = $2;//func declarator
 								$$->set_type_specs(*$1);
-								$$->body = $4;	
-								delete $1;
+								$$->body = $4;//func_body	
+								delete $1;//decl_specs
+
+								//if there were params, they had a scope opened (in prep_param_scope rule)
+								//that needs to be closed
 								if(!$$->params.empty())
 									parser_context->close_scope();
 
 								parser_context->set_func(NULL);//leaving function
-								//delete $2;
-								//$3;$5;
 							}
 						;
 
@@ -1062,53 +1037,34 @@ func_body				:	compound_statement { $$ = $1; }
 						|	TSEMIC { $$ = NULL; $1; }
 						;
 
-func_declarator			: TIDENTIFIER TLPAREN TRPAREN
+func_declarator			: TIDENTIFIER TLPAREN TRPAREN //function with empty parentheses - no params
 						  {
-							  //check if already defined in this scope
-							  const iCScope* var_scope = parser_context->get_var_scope(*$1);
-							  const iCScope* mcu_decl_scope = parser_context->get_mcu_decl_scope(*$1);
-							  const iCScope* func_scope = parser_context->get_func_scope(*$1);
-							  if(NULL != var_scope || NULL != mcu_decl_scope || NULL != func_scope)
-							  {
-								  const iCScope* scope = (NULL != var_scope)?var_scope:((NULL != mcu_decl_scope)?mcu_decl_scope:func_scope);
-								  parser_context->err_msg("symbol redefinition: %s aready defined in %s",
-									  $1->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
-							  }
+							  parser_context->check_identifier_defined(*$1);
 
+							  //Create the function object and add it to scope
 							  const iCScope* scope = parser_context->get_current_scope();
 							  $$ = new iCFunction(*$1, scope, *parser_context);
 							  parser_context->add_func_to_scope(*$1);
 							  delete $1;
 
-							  //$$ = $1;
 							  $2;$3;
 						  }
-						| TIDENTIFIER TLPAREN param_list TRPAREN
-						{
-							//check if already defined in this scope
-							const iCScope* var_scope = parser_context->get_var_scope(*$1);
-							const iCScope* mcu_decl_scope = parser_context->get_mcu_decl_scope(*$1);
-							const iCScope* func_scope = parser_context->get_func_scope(*$1);
-							if(NULL != var_scope || NULL != mcu_decl_scope || NULL != func_scope)
-							{
-								const iCScope* scope = (NULL != var_scope)?var_scope:((NULL != mcu_decl_scope)?mcu_decl_scope:func_scope);
-								parser_context->err_msg("symbol redefinition: %s aready defined in %s",
-									$1->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
-							}
-
-							const iCScope* scope = parser_context->get_current_scope();
-							$$ = new iCFunction(*$1, scope, *parser_context);
-							parser_context->add_func_to_scope(*$1);
-
-							$$->set_params(*$3);
-
-							delete $1;
-							delete $3;
-							$2;$4;
-						}
+						| TIDENTIFIER TLPAREN param_list TRPAREN //function name with params list in parentheses
+						  {
+							  parser_context->check_identifier_defined(*$1);
+							
+							  //Create the function object, add it to scope and set its params
+							  const iCScope* scope = parser_context->get_current_scope();
+							  $$ = new iCFunction(*$1, scope, *parser_context);
+							  parser_context->add_func_to_scope(*$1);
+							  $$->set_params(*$3);
+							  delete $1;
+							  delete $3;
+							  $2;$4;
+						  }
 						;
 
-prep_param_scope		: %empty
+prep_param_scope		: %empty //dummy rule to preopen the parameters scope
 						  {
 							  $<var_list>$ = new std::list<iCVariable*>;
 							  parser_context->open_scope("func_params");
@@ -1172,7 +1128,6 @@ init_declarator_list	:	init_declarator_list TCOMMA init_declarator
 							{
 								$$ = new std::list<iCVariable*>;
 								$$->push_back($1);
-								//delete $1;
 							}
 						;
 
@@ -1187,16 +1142,7 @@ init_declarator			:	direct_declarator {$$ = $1;}
 
 direct_declarator			:	TIDENTIFIER 
 							{
-								//check if already defined in this scope
-								const iCScope* var_scope = parser_context->get_var_scope(*$1);
-								const iCScope* mcu_decl_scope = parser_context->get_mcu_decl_scope(*$1);
-								const iCScope* func_scope = parser_context->get_func_scope(*$1);
-								if(NULL != var_scope || NULL != mcu_decl_scope || NULL != func_scope)
-								{
-									const iCScope* scope = (NULL != var_scope)?var_scope:((NULL != mcu_decl_scope)?mcu_decl_scope:func_scope);
-									parser_context->err_msg("symbol redefinition: %s aready defined in %s",
-										$1->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
-								}
+								parser_context->check_identifier_defined(*$1);
 
 								const iCScope* scope = parser_context->get_current_scope();
 								$$ = new iCVariable(*$1, scope, *parser_context);
@@ -1269,3 +1215,4 @@ int ic_error(const char *s)
 	parser_context->err_msg(s);
 	return 0;
 }
+

@@ -6,6 +6,9 @@ class iCScope;
 class iCCompoundStatement;
 class iCVariable;
 
+//=================================================================================================
+//C function definition
+//=================================================================================================
 class iCFunction : public iCDeclaration
 {
 public:
@@ -19,9 +22,8 @@ public:
 	std::string name;
 	std::string full_name;
 	std::list<iCVariable*> params;//owns
-	//std::list<iCVariable*> local_vars;//owns
-	iCStatement *body;
-	const iCScope* scope;//doesn't own, scope where it was defined
+	iCStatement *body; //owns
+	const iCScope* scope;//doesn't own, scope where the func was defined
 
 	void set_type_specs(const iCStringList& type_specs_)
 	{
@@ -35,13 +37,6 @@ public:
 	{
 		params = params_list;
 	}
-
-	/*
-	void add_variable(iCVariable* var) 
-	{	
-		local_vars.push_back(var);
-	}
-	*/
 
 	virtual void gen_code(CodeGenContext& context);
 

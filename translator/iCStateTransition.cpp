@@ -3,13 +3,12 @@
 #include "iCProcess.h"
 #include "ParserContext.h"
 
-
 //=================================================================================================
 //Semantic checks
 //=================================================================================================
 void iCStateTransition::second_pass()
 {
-	//check that state was defined
+	//check that state has been defined
 	ICASSERT(NULL != process);
 	if(!process->has_state(state_name))
 	{

@@ -15,5 +15,5 @@ public:
 	iCIdentifier(const std::string& name, const iCScope* scope, const ParserContext& context);
 
 	virtual void gen_code(CodeGenContext& context);
-	const std::string get_name();
+	const std::string get_scoped_name();
 };

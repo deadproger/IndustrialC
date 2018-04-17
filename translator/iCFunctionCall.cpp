@@ -2,6 +2,9 @@
 #include "CodeGenContext.h"
 #include "ParserContext.h"
 
+//=================================================================================================
+//
+//=================================================================================================
 iCFunctionCall::~iCFunctionCall()
 {
 	for(std::vector<iCExpression*>::iterator i=args.begin();i!=args.end();i++)
@@ -10,6 +13,9 @@ iCFunctionCall::~iCFunctionCall()
 	}
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 void iCFunctionCall::gen_code( CodeGenContext& context )
 {
 	context.set_location(line_num, filename);

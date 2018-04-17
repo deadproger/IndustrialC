@@ -2,6 +2,9 @@
 #include "CodeGenContext.h"
 #include "ParserContext.h"
 
+//=================================================================================================
+//
+//=================================================================================================
 iCMCUIdentifier::iCMCUIdentifier( const std::string& name, const ParserContext& context )
 	: iCIdentifier(name, NULL, context),
 	  iCNode(context)
@@ -9,6 +12,9 @@ iCMCUIdentifier::iCMCUIdentifier( const std::string& name, const ParserContext& 
 
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 void iCMCUIdentifier::gen_code( CodeGenContext& context )
 {
 	context.set_location(line_num, filename);

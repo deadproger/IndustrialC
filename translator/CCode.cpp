@@ -76,13 +76,11 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 		{
 			//codegen the variable into the stream (kind'a crutchy)
 			ParserContext pc;
-			//iCIdentifier var_id(var_name, var->scope, pc);
 			text_stream<<var->full_name;
 
 			const iCProcess* var_proc = parser_context.get_process();
-
 			
-			//Mark var as used referenced in ISR - used for automatic volatile
+			//Mark var as referenced in ISR - used for volatile checks
 			if(NULL != var_proc)
 			{
 				if(0 != var_proc->activator.compare("background"))
@@ -91,7 +89,6 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 					parser_context.add_to_second_pass(var);
 				}
 			}
-			
 		}
 		last_pos = pos = end_pos;
 	}

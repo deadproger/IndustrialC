@@ -233,6 +233,9 @@ void ParserContext::err_msg( const char* format, ... )
 	std::cout<<file_name()<<":"<<line()/*<<":"<<column()*/<<": error: "<<buffer<<std::endl;
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 iCVariable* ParserContext::get_var( const std::string& identifier ) const
 {
 	iCScope* scope = current_scope;
@@ -253,4 +256,20 @@ iCVariable* ParserContext::get_var( const std::string& identifier ) const
 	}
 
 	return NULL;
+}
+
+//=================================================================================================
+//
+//=================================================================================================
+void ParserContext::check_identifier_defined( const std::string& identifier )
+{
+	const iCScope* var_scope = get_var_scope(identifier);
+	const iCScope* mcu_decl_scope = get_mcu_decl_scope(identifier);									
+	const iCScope* func_scope = get_func_scope(identifier);
+	if(NULL != var_scope || NULL != mcu_decl_scope || NULL != func_scope)
+	{
+		const iCScope* scope = (NULL != var_scope)?var_scope:((NULL != mcu_decl_scope)?mcu_decl_scope:func_scope);
+		err_msg("symbol redefinition: %s already defined in %s",
+			identifier.c_str(), scope->name.empty()?"this scope":scope->name.c_str());
+	}
 }

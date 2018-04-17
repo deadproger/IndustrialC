@@ -8,7 +8,7 @@
 //=================================================================================================
 void iCStartProcStatement::second_pass()
 {
-	//check that process was defined
+	//check that process has been defined
 	if(!program->proc_defined(proc_name))
 	{
 		err_msg("undefined process %s", proc_name.c_str());

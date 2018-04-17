@@ -32,7 +32,6 @@ inline void* ic_mem_new(std::size_t sz)
 }
 inline void ic_mem_delete(void* ptr)
 {
-	//std::cout<<"deallocating "<<ptr<<std::endl;
 	if(NULL == ptr) 
 	{
 		std::cout<<"deleting NULL"<<std::endl;

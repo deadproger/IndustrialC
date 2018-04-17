@@ -4,6 +4,9 @@
 class ParserContext;
 class CodeGenContext;
 
+//=================================================================================================
+//C compound statement - something enclosed in braces
+//=================================================================================================
 class iCCompoundStatement : public iCStatement
 {
 protected:
@@ -25,13 +28,3 @@ public:
 	virtual const std::string& identify() const { return "iCCompoundStatement";}
 #endif//DEBUG
 };
-
-/*
-class iCFunctionBody : public iCCompoundStatement
-{
-public:
-	iCFunctionBody(const ParserContext& context);
-	virtual ~iCFunctionBody();
-	virtual void gen_code(CodeGenContext& context);
-};
-*/

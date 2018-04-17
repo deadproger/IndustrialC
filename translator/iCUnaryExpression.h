@@ -6,7 +6,7 @@ class CodeGenContext;
 class iCUnaryExpression : public iCExpression
 {
 private:
-	iCExpression* expr;
+	iCExpression* expr;//owns
 	std::string op;
 public:
 	iCUnaryExpression(const std::string& op, iCExpression* expr, const ParserContext& context) : op(op), expr(expr), iCNode(context) {}
