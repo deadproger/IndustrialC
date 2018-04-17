@@ -19,7 +19,11 @@ class iCProcess : public iCNode, public iCProgramItem
 {
 	bool isr_driven;
 	bool _has_timeouts;
+	bool isr_referenced;
 public:
+	void mark_isr_referenced() const {const_cast<iCProcess*>(this)->isr_referenced = true;}//hack
+	bool is_isr_referenced()const{return isr_referenced;}
+
     std::string name; 
 	std::string activator;
     StateList states;

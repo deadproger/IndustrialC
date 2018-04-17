@@ -424,6 +424,10 @@ proc_def	:	TPROC TIDENTIFIER // 1 2
 					{
 						$<process>3->set_hp(*$5);
 					}
+					if($<process>3->is_isr_driven())
+					{
+						parser_context->enter_isr();
+					}
 				}
 				TLBRACE proc_body TRBRACE // 7 8 9 
 				{
@@ -447,9 +451,11 @@ proc_def	:	TPROC TIDENTIFIER // 1 2
 						$$->add_states($8->states);
 						parser_context->add_proc_to_scope($$->name);
 						parser_context->set_process(NULL);//leaving process definition
+						
 						delete $5;
 						delete $8;
 					}
+					parser_context->leave_isr();
 					$1;$4;$7;$9;//suppress unused value warning
 				}
 			;	
@@ -784,18 +790,25 @@ prep_compound:	%empty // subrule to prepare scope for compound statement
 					parser_context->open_scope("comp");
 				}
 
-timeout	:	TTIMEOUT TLPAREN expr TRPAREN
+timeout	:	TTIMEOUT // 1
 			{
-			  $<timeout>$ = new iCTimeout($3, *parser_context);
+				parser_context->enter_timeout();	
+			}
+			TLPAREN expr TRPAREN // 3 4 5
+			{
+			  $<timeout>$ = new iCTimeout($4, *parser_context);
 			  parser_context->open_scope("timeout");
 			}
-			TLBRACE block_items_list TRBRACE
+			TLBRACE block_items_list TRBRACE // 7 8 9
 			{
-			  $$ = $<timeout>5;
+			  $$ = $<timeout>6;
 			  parser_context->close_scope();
-			  $$->set_items(*$7);
-			  delete $7;
-			  $1;$2;$4;$6;$8;//suppress unused value warning
+			  $$->set_items(*$8);
+			  delete $8;
+
+			  parser_context->leave_timeout();
+
+			  $1;$3;$5;$7;$9;//suppress unused value warning
 			}
 		;
 
@@ -906,14 +919,14 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 			 | TDCONST {$$ = new iCDouble(*$1, *parser_context); delete $1;}
 			 | THCONST {$$ = new iCInteger(*$1, *parser_context); delete $1;}
 			 | TBCONST {$$ = new iCInteger(*$1, *parser_context); delete $1;}
-			 |	TIDENTIFIER // can either be a variable or an mcu declaration
+			 | TIDENTIFIER // can either be a variable or an mcu declaration
 				{
 					const iCScope* scope = parser_context->get_mcu_decl_scope(*$1);
-					if(NULL != scope) // mcu declaration exists
+					if(NULL != scope) // mcu declaration
 					{
 						$$ = new iCMCUIdentifier(*$1, *parser_context);
 					}
-					else
+					else // variable
 					{
 						iCVariable* var = parser_context->get_var(*$1);
 						
@@ -980,34 +993,16 @@ assignement_op : TASSGN
 			   | TXOR_ASSGN	 
 			   | TOR_ASSGN	 
 			   ;
-			 
-/*unary_op : TMINUS 
-		 | TTILDE 
-		 | TEXCLAM
-		 ;*/
 
 /*************************************************************************************************/     
 /*                              D E C L A R A T I O N S                                          */     
 /*************************************************************************************************/
 
 //=============================================================================
-//Function Declaration
+//Function Definition
 //Parameters are put in a preopened scope func_params_xx
 //Function body (a compound statement) opens its own scope, nested within
 //the func_param_xx scope (scope names do not add up)
-//				 global scope
-//				 {
-//					 func name defined here
-//					 param scope
-//					 {
-//						 params defined here
-//						 func body scope
-//						 {
-//							 
-//						 }
-//					 }
-//				 }
-//
 // ! Func declaration (prototype) is treated as a definition
 // ! Need to allow declarations and definitions with redefinition (body != NULL)
 // ! and undefined (body == NULL on second pass) checks

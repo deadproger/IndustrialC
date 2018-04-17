@@ -32,10 +32,29 @@ void iCStartHPStatement::gen_code( CodeGenContext& context )
 	if(NULL == hp) 
 		return;
 
+	//add atomic block if in background loop
+	if(!context.in_ISR())
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
+		context.indent_depth++;
+		context.indent();
+	}
+
 	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 	context.indent();
 	context.to_code_fmt("SET_BIT(%s, %s);\n", hp->int_ctrl_register.c_str(), hp->int_ctrl_bit.c_str());
+
+	//atomic block footer
+	if(!context.in_ISR())
+	{
+		context.to_code_fmt("\n");
+		context.indent_depth--;
+		context.indent();
+		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
+	}
 }
 
 //=================================================================================================
