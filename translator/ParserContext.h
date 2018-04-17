@@ -22,7 +22,9 @@ class ParserContext
 	iCState* state;
 	iCFunction* func;//does not own
 
-	bool in_func;
+	//bool in_func;
+	bool _in_isr;
+	bool _in_timeout;
 
 	//Location info
 	unsigned long line_num;
@@ -35,6 +37,14 @@ class ParserContext
 	iCScope* current_scope;
 
 public:
+
+	//used for critical section placement decisions
+	bool in_isr() const {return _in_isr && !_in_timeout;}
+	bool enter_isr() {_in_isr = true; /*std::cout<<filename<<":"<<line_num<<"isr->"<<std::endl;*/}
+	bool leave_isr() {if(_in_isr){_in_isr = false; /*std::cout<<filename<<":"<<line_num<<"isr<-"<<std::endl;*/}}
+	bool enter_timeout() {_in_timeout = true; /*std::cout<<filename<<":"<<line_num<<"timeout->"<<std::endl;*/}
+	bool leave_timeout() {_in_timeout = false; /*std::cout<<filename<<":"<<line_num<<"timeout<-"<<std::endl;*/}
+
 	//var_declaration needs to know if we are inside function to decide whether
 	//the vars should be made local or global 
 	bool in_function()const{return NULL != func;}

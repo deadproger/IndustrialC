@@ -24,10 +24,6 @@ void iCProgram::gen_code(CodeGenContext& context)
 	//macro routines
 	context.to_code_fmt("%s\n\n", C_MACRO_ROUTINES);
 
-	//common background state function variable
-	//used in atomic state switching
-	context.to_code_fmt("%s %s;\n", C_STATE_FUNC_TYPE_NAME, C_COMMON_BKG_FSP_NAME);
-
 	//common background process time variable
 	//used in atomic timeout detection
 	context.to_code_fmt("unsigned long %s;\n", C_COMMON_BKG_PROC_TIME);
@@ -320,3 +316,10 @@ void iCProgram::second_pass()
 	}*/
 }
 
+const iCProcess* iCProgram::find_proc( const std::string& proc_name )const
+{
+	iCProcessList::const_iterator proc = procs.find(proc_name);
+	if(procs.end() == proc)
+		return NULL;
+	else return proc->second;
+}

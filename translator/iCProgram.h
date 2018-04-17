@@ -46,6 +46,7 @@ public:
 	const iCHyperprocessMap* get_hps() const {return &hps;} 
 	const iCHyperprocess* get_hp(const std::string& hp_name) const;
 	bool proc_defined(const std::string& proc_name) const;
+	const iCProcess* find_proc(const std::string& proc_name)const;
 
 	virtual void gen_code(CodeGenContext& context);
 	virtual void second_pass();

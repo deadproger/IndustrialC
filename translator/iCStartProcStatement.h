@@ -10,9 +10,11 @@ class iCProgram;
 //=================================================================================================
 class iCStartProcStatement : public iCStatement
 {
+	bool in_isr;
 public:
 	std::string proc_name; 
 	const iCProgram* program; // does not own
+	const iCProcess* proc; // does not own
 	iCStartProcStatement(const std::string& proc_name, const ParserContext& context);
 	virtual ~iCStartProcStatement(){}
 	virtual void gen_code(CodeGenContext& context);

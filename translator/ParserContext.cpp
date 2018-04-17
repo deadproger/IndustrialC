@@ -13,7 +13,9 @@ ParserContext::ParserContext()
 		start_col(1),
 		root_scope(NULL),
 		current_scope(NULL),
-		func(NULL)
+		func(NULL),
+		_in_isr(false),
+		_in_timeout(false)
 {
 	current_scope = root_scope = new iCScope("program");
 }

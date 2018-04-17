@@ -25,8 +25,10 @@ void iCStateTransition::gen_code(CodeGenContext& context)
 	context.set_location(line_num, filename);
 	context.indent();
 	
+	bool need_atomic_block = !context.in_ISR() && (process->is_isr_driven() || process->is_isr_referenced());
+
 	//add atomic block if in background loop
-	if(!context.in_ISR())
+	if(need_atomic_block)
 	{
 		context.to_code_fmt("\n");
 		context.indent();
@@ -43,7 +45,7 @@ void iCStateTransition::gen_code(CodeGenContext& context)
 	context.to_code_fmt("%s);", state_name.c_str());
 
 	//atomic block footer
-	if(!context.in_ISR())
+	if(need_atomic_block)
 	{
 		context.to_code_fmt("\n");
 		context.indent_depth--;

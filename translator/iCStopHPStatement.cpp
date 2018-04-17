@@ -32,27 +32,27 @@ void iCStopHPStatement::gen_code( CodeGenContext& context )
 		return;
 
 	//add atomic block if in background loop
-	/*if(!context.in_ISR())
+	if(!context.in_ISR())
 	{
 		context.to_code_fmt("\n");
 		context.indent();
 		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
 		context.indent_depth++;
 		context.indent();
-	}*/
+	}
 
 	context.set_location(line_num, filename);
 	context.indent();
 	context.to_code_fmt("CLR_BIT(%s, %s);\n", hp->int_ctrl_register.c_str(), hp->int_ctrl_bit.c_str());
 
 	//atomic block footer
-	/*if(!context.in_ISR())
+	if(!context.in_ISR())
 	{
 		context.to_code_fmt("\n");
 		context.indent_depth--;
 		context.indent();
 		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
-	}*/
+	}
 }
 
 //=================================================================================================

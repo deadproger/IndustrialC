@@ -27,35 +27,8 @@ void iCProcess::gen_code(CodeGenContext& context)
 	//Otherwise atomically fetch the process state into a temporary variable
 	//and use it in switch
 	context.indent();
-	//context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME, name.c_str(), C_STATE_FUNC_ATTR_NAME);
-	if(context.in_ISR())
-	{
-		//Example:
-		//switch(psw[PROC_NAME].fsp)
-		context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME,
-			name.c_str(), C_STATE_FUNC_ATTR_NAME);
-	}
-	else
-	{
-		//atomic fetching of the current state function
-		//Example:
-		//ATOMIC_BLOCK(ATOMIC_FORCEON){
-		//	ic_common_bkg_state = psw[PROC_NAME].fsp;
-		//}
-		//switch(ic_common_bkg_state)
-		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
-		context.indent_depth++;
-		context.indent();
-		context.to_code_fmt("%s = %s[%s].%s;\n",	C_COMMON_BKG_FSP_NAME,
-			C_PROC_ARRAY_NAME,
-			name.c_str(),
-			C_STATE_FUNC_ATTR_NAME);
-		context.indent_depth--;
-		context.indent();
-		context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
-		context.indent();
-		context.to_code_fmt("switch(%s)\n", C_COMMON_BKG_FSP_NAME);
-	}
+	context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME, name.c_str(), C_STATE_FUNC_ATTR_NAME);
+	
 	context.indent();
 	context.to_code_fmt("{\n");
 	context.indent_depth++;
@@ -98,27 +71,7 @@ void iCProcess::gen_timeout_code( CodeGenContext& context )
 
 	//process header
 	context.indent();
-	
-	//atomic fetching of the current state function
-	//Example:
-	//ATOMIC_BLOCK(ATOMIC_FORCEON){
-	//	ic_common_bkg_state = psw[PROC_NAME].fsp;
-	//}
-	//switch(ic_common_bkg_state)
-	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
-	context.indent_depth++;
-	context.indent();
-	context.to_code_fmt("%s = %s[%s].%s;\n",	C_COMMON_BKG_FSP_NAME,
-		C_PROC_ARRAY_NAME,
-		name.c_str(),
-		C_STATE_FUNC_ATTR_NAME);
-	context.indent_depth--;
-	context.indent();
-	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
-	context.indent();
-	context.to_code_fmt("switch(%s)\n", C_COMMON_BKG_FSP_NAME);
-
-	
+	context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME, name.c_str(), C_STATE_FUNC_ATTR_NAME);
 	context.indent();
 	context.to_code_fmt("{\n");
 	context.indent_depth++;
@@ -172,7 +125,8 @@ iCProcess::iCProcess( const std::string& name, const ParserContext& context ) :	
 	stop_state(NULL),
 	isr_driven(false),
 	_has_timeouts(false),
-	iCNode(context)
+	iCNode(context),
+	isr_referenced(false)
 {
 	line_num = context.line();
 }

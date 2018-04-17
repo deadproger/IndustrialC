@@ -49,7 +49,6 @@ const char C_PROC_ARRAY_NAME[] = "psw";
 const char C_STATE_FUNC_ATTR_NAME[] = "fsp";
 const char C_STATE_TIME_ATTR_NAME[] = "T";
 const char C_STATE_FUNC_TYPE_NAME[] = "FSP_TYPE";
-const char C_COMMON_BKG_FSP_NAME[] = "ic_common_bkg_state";
 const char C_COMMON_BKG_PROC_TIME[] = "ic_common_bkg_proc_time";
 const char C_STRANS_MACRO[] = "set_newfs";
 const char C_PROC_DATA_STRUCT_NAME[] = "S_PROC_DATA_STRUCT";
