@@ -2,6 +2,9 @@
 
 #include "iCIdentifier.h"
 
+//=================================================================================================
+//MCU-specific declaration: interrupt vector, register or bit
+//=================================================================================================
 class iCMCUIdentifier : public iCIdentifier
 {
 public:

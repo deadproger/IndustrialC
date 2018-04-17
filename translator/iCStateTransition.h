@@ -6,7 +6,7 @@ class iCProcess;
 class ParserContext;
 
 //=================================================================================================
-//State transition
+//IndustrialC "set state state_name;" statement
 //=================================================================================================
 class iCStateTransition : public iCStatement 
 {

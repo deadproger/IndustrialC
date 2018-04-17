@@ -5,6 +5,9 @@ class CodeGenContext;
 class ParserContext;
 class iCProgram;
 
+//=================================================================================================
+//IndustrialC "stop hyperprocess hp_name;" statement
+//=================================================================================================
 class iCStopHPStatement : public iCStatement
 {
 public:

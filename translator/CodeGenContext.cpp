@@ -2,6 +2,10 @@
 
 bool gen_line_markers = true;
 
+//=================================================================================================
+//Adds num newlines to the code
+//If the lines are too many (num > NEW_LINES_THRESHOLD) - use line marker instead to avoid big gaps
+//=================================================================================================
 void CodeGenContext::add_new_lines( int num /*= 1*/ )
 {
 	cur_line_num += num;
@@ -22,6 +26,9 @@ void CodeGenContext::add_new_lines( int num /*= 1*/ )
 	
 }
 
+//=================================================================================================
+//Adds a line marker with filename and line number to sync C compiler output
+//=================================================================================================
 void CodeGenContext::place_line_marker( unsigned long line_num, const std::string& file )
 {
 	cur_filename = file;
@@ -33,6 +40,9 @@ void CodeGenContext::place_line_marker( unsigned long line_num, const std::strin
 	}
 }
 
+//=================================================================================================
+//Adds a line marker with only the line number
+//=================================================================================================
 void CodeGenContext::place_line_marker( unsigned long line_num )
 {
 	cur_line_num = line_num;
@@ -42,6 +52,9 @@ void CodeGenContext::place_line_marker( unsigned long line_num )
 	}
 }
 
+//=================================================================================================
+//Adds line/filename markers or shifts the code with newlines to sync C compiler output
+//=================================================================================================
 void CodeGenContext::set_location( unsigned long line_num, const std::string& file )
 {
 	if(file != cur_filename)
@@ -61,6 +74,10 @@ void CodeGenContext::set_location( unsigned long line_num, const std::string& fi
 	}
 }
 
+//=================================================================================================
+//Prints a C format string to the code
+//Updates current line number
+//=================================================================================================
 void CodeGenContext::to_code_fmt( const char* format, ... )
 {
 	char buffer[CODEGEN_BUFFER_SIZE];
@@ -76,11 +93,20 @@ void CodeGenContext::to_code_fmt( const char* format, ... )
 	code<<buffer;
 }
 
+//=================================================================================================
+//Prints a C++ string to the code
+//Does not keep track of newlines in the output - str must not contain any newlines
+//=================================================================================================
 void CodeGenContext::to_code( const std::string& str )
 {
+	ICASSERT(0 == std::count(str.begin(), str.end(), '\n'));
 	code<<str;
 }
 
+//=================================================================================================
+//Prints a C++ string to the code
+//Updates current line number
+//=================================================================================================
 void CodeGenContext::to_code_string( const std::string& str )
 {
 	//keep track of newlines

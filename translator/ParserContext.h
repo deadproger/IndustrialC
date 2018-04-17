@@ -26,8 +26,6 @@ class ParserContext
 
 	//Location info
 	unsigned long line_num;
-	/*unsigned long prev_start_col;
-	unsigned long prev_end_col;*/
 	unsigned long start_col;
 	unsigned long end_col;
 	
@@ -36,14 +34,12 @@ class ParserContext
 	iCScope* root_scope;
 	iCScope* current_scope;
 
-	//
-	//void save_col_to_prev() {prev_start_col = start_col; prev_end_col = end_col;}
-
 public:
-
+	//var_declaration needs to know if we are inside function to decide whether
+	//the vars should be made local or global 
 	bool in_function()const{return NULL != func;}
-	//void enter_function(){in_func = true;}
-	//void leave_function(){in_func = false;}
+	void set_func(iCFunction* func) {this->func = func;}
+	iCFunction*  get_func() {return func;}
 
 	std::set<iCNode*> second_pass_nodes; //does not own
 
@@ -53,15 +49,13 @@ public:
 	void set_program(const iCProgram* program) {this->program = program;}
 	void set_process(iCProcess* process) {this->process = process;}
 	void set_state(iCState* state) {this->state = state;}
-	void set_func(iCFunction* func) {this->func = func;}
-
+	
 	const iCProgram* get_program() const {ICASSERT(NULL != program); return program;}
 	const iCProcess* get_process() const {/*ICASSERT(NULL != process);*/ return process;}//removed assert because vars in functions are used outside processes
 	iCProcess* modify_process() {return process;}
 	const iCState* get_state() const {ICASSERT(NULL != state); return state;}
 	iCState* modify_state() {return state;}
-	iCFunction*  get_func() {return func;}
-
+	
 	unsigned long line() const {return line_num;}
 	unsigned long column() const {return start_col;}
 
@@ -106,4 +100,6 @@ public:
 	const iCScope* get_current_scope()const{return current_scope;}
 
 	iCVariable* get_var(const std::string& identifier)const;
+
+	void check_identifier_defined(const std::string& identifier);
 };

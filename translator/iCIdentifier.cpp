@@ -18,7 +18,10 @@ void iCIdentifier::gen_code(CodeGenContext& context)
 	context.to_code_fmt(name.c_str());
 }
 
-const std::string iCIdentifier::get_name()
+//=================================================================================================
+//Returns identifier name with scope prefix
+//=================================================================================================
+const std::string iCIdentifier::get_scoped_name()
 {
 	if(NULL != scope)
 		if(!scope->name.empty())
@@ -26,5 +29,8 @@ const std::string iCIdentifier::get_name()
 	return name;
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 iCIdentifier::iCIdentifier( const std::string& name, const iCScope* scope, const ParserContext& context ) 
 : name(name), scope(scope), iCNode(context) {}

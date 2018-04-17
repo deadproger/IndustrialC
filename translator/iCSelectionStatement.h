@@ -5,14 +5,16 @@
 class ParserContext;
 class CodeGenContext;
 
+//=================================================================================================
+//C "if/else" statement
+//=================================================================================================
 class iCSelectionStatement : public iCStatement
 {
-	//iCBlockItemsList block_items;
 	
 public:
-	iCStatement *body;
-	iCStatement *else_body;
-	iCExpression *expr;
+	iCStatement *body; // owns
+	iCStatement *else_body; // owns
+	iCExpression *expr; // owns
 	iCSelectionStatement(const ParserContext& context);
 	virtual ~iCSelectionStatement();
 	void set_expression(iCExpression* expression)

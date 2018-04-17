@@ -5,6 +5,9 @@ class CodeGenContext;
 class ParserContext;
 class iCProgram;
 
+//=================================================================================================
+//Process active/inactive check expression
+//=================================================================================================
 class iCProcStatusCheck : public iCExpression
 {
 public:

@@ -5,13 +5,13 @@
 class CodeGenContext;
 
 //=================================================================================================
-//Subscript(array indexing) expression class 
+//Subscript(array indexing) expression 
 //=================================================================================================
 class iCSubscriptExpression : public iCExpression
 {
 private:
-	iCExpression* postfix_expr;
-	iCExpression* constant_expr;
+	iCExpression* postfix_expr;//owns
+	iCExpression* constant_expr;//owns
 public:
 	iCSubscriptExpression(iCExpression* postfix,
 						  iCExpression* constant,

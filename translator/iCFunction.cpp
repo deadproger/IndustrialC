@@ -4,12 +4,10 @@
 #include "iCVariable.h"
 #include "iCCompoundStatement.h"
 
-iCFunction::iCFunction( //const iCStringList& type_specs_,
-						const std::string& name,
+iCFunction::iCFunction( const std::string& name,
 						const iCScope* scope,
 						const ParserContext& context )
-	:	//type_specs(type_specs),
-		name(name),
+	:	name(name),
 		scope(scope),
 		iCNode(context),
 		body(NULL)
@@ -26,22 +24,21 @@ iCFunction::~iCFunction()
 	{
 		delete *i;
 	}
-	/*
-	for(std::list<iCVariable*>::iterator i=local_vars.begin();i!=local_vars.end();i++)
-	{
-		delete *i;
-	}
-	*/
+	
 	if(NULL != body)
 		delete body;
 }
 
+//=================================================================================================
+//Code generator
+//=================================================================================================
 void iCFunction::gen_code( CodeGenContext& context )
 {
 #ifdef ICDEBUG_TRACE
 	std::cout<<"iCFunction::gen_code " << name << "...";
 	std::cout.flush();
 #endif
+
 	context.to_code_fmt("\n");
 	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
 	context.to_code_fmt("//Function: %s\n", name.c_str());

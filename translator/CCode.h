@@ -23,8 +23,8 @@ public:
 //=================================================================================================
 class CCode : public iCDeclaration, public iCExpression
 {
-	CCodeLinesList lines;
-	const iCScope* scope;
+	CCodeLinesList lines; // owns
+	const iCScope* scope; // does not own
 public:
 	CCode( ParserContext& parser_context);
 	virtual ~CCode();

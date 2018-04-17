@@ -18,7 +18,7 @@ public:
 	std::string full_name;
 	const iCScope* scope;//doesn't own, scope where it was defined
 	std::list<const iCProcess*> procs_use; // list of processes that reference this variable
-	bool used_in_isr;//tells if var is reference from ISRs - used for automatic volatile
+	bool used_in_isr;//tells if var is reference from ISRs - used for volatile checks
 
 	iCInitializer* decl_initializer;//owns, can be NULL, initializers form a tree
 	std::vector<iCExpression*> array_dimensions;//owns, dimensions can be NULL
