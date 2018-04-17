@@ -14,15 +14,10 @@ protected:
 public:
 	iCCompoundStatement(const ParserContext& context);
 	virtual ~iCCompoundStatement();
-	void set_items(const iCBlockItemsList& items)
-	{
-		block_items = items;
-	}
-
+	void set_items(const iCBlockItemsList& items) { block_items = items; }
 	virtual void gen_code(CodeGenContext& context);
 	virtual bool is_compound() {return true;}
 	iCBlockItemsList& get_block_items(){return block_items;}//a crutch
-
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCCompoundStatement";}

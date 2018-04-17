@@ -7,7 +7,6 @@
 //=================================================================================================
 void iCExpressionStatement::gen_code(CodeGenContext& context)
 {
-	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 	if(NULL != expr)
 	{
@@ -24,4 +23,12 @@ iCExpressionStatement::~iCExpressionStatement()
 {
 	if(NULL != expr)
 		delete expr;
+}
+
+//=================================================================================================
+//
+//=================================================================================================
+iCExpressionStatement::iCExpressionStatement( iCExpression* expr, const ParserContext& context ) : expr(expr), iCNode(context)
+{
+	line_num = context.line();
 }

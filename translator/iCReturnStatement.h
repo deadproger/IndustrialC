@@ -9,9 +9,7 @@ class CodeGenContext;
 //=================================================================================================
 class iCReturnStatement : public iCStatement
 {
-private:
 	iCExpression* expr; // owns
-
 public:
 	iCReturnStatement(iCExpression* expr, const ParserContext& context);
 	virtual ~iCReturnStatement();

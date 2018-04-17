@@ -16,5 +16,8 @@ void iCInteger::gen_code(CodeGenContext& context)
 //=================================================================================================
 iCInteger::iCInteger( const std::string& str, const ParserContext& context )
 	:	val(str),
-		iCNode(context){}
+		iCNode(context)
+{
+
+}
 

@@ -44,7 +44,7 @@ void iCIterationStatement::gen_code( CodeGenContext& context )
 	context.to_code_fmt(")");
 	context.enable_indentation();//restore indentation
 
-
+	//body
 	if(NULL != body)
 		body->gen_code(context);
 
@@ -60,12 +60,8 @@ void iCIterationStatement::gen_code( CodeGenContext& context )
 //=================================================================================================
 iCIterationStatement::~iCIterationStatement()
 {	
-	if(NULL != init)
-		delete init;
-	if(NULL != condition)
-		delete condition;
-	if(NULL != increment)
-		delete increment;
-	if(NULL != body)
-		delete body;
+	if(NULL != init) delete init;
+	if(NULL != condition) delete condition;
+	if(NULL != increment) delete increment;
+	if(NULL != body) delete body;
 }

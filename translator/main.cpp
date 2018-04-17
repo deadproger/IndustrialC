@@ -17,8 +17,6 @@ extern ParserContext* parser_context;
 extern bool had_errors;
 extern bool gen_line_markers;
 
-
-
 int main(int argc, char **argv)
 {
 	//Parse command line arguments
@@ -29,16 +27,10 @@ int main(int argc, char **argv)
 	}
 	input_filename = argv[argc-1];
 	for(int i=1;i<argc-1;i++)
-	{
 		if("-no-line-markers" == std::string(argv[i]))
-		{
 			gen_line_markers = false;
-		}
 		else if("-o" == std::string(argv[i]) && i+1 < argc)
-		{
 			output_filename = argv[++i];
-		}
-	}
 
 	// open a file handle to a particular file:
 	FILE *myfile = fopen(input_filename.c_str(), "r");
@@ -50,17 +42,10 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	// set flex to read from it instead of defaulting to STDIN:
-	ic_in = myfile;
-
+	ic_in = myfile;// set flex to read from it instead of defaulting to STDIN:
 	std::cout<<"parsing..."<<std::endl;
-
-	//create parser context; 
-	parser_context = new ParserContext;
-
-	//parse
-    int parse_result = ic_parse();
-
+	parser_context = new ParserContext;//create parser context; 
+    int parse_result = ic_parse();//parse
 	fclose(myfile);
 
 	if((IC_RETURN_ERROR != parse_result) && (!had_errors))

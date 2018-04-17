@@ -2,10 +2,16 @@
 #include "iCNode.h"
 class CodeGenContext;
 
+//=================================================================================================
+//iCInitializer
+//Represents var initializers, like in "int a = b + c - d*2" - everything after '=' is the initializer
+//as well as array initializers, like " = {1,2,3,4}"
+//and multidimensional array initializers, like " = {{1,2}, {3,4}}"
+//In general case initializers form a tree
+//=================================================================================================
 class iCInitializer : public iCExpression
 {
-private:
-	 std::vector<iCExpression*> initializers;//some of these could be iCInitializer instances themselves
+	std::vector<iCExpression*> initializers;//sub-initializers(issues), some of these could be iCInitializer instances themselves
 public:
 	iCInitializer(const ParserContext& context)
 		: iCNode(context)

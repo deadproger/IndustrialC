@@ -20,17 +20,12 @@ public:
 
 	iCState(const std::string& name, const ParserContext& context);
 	virtual ~iCState();
-
 	void set_timeout(iCTimeout* timeout_statement)
 	{
 		if(NULL != timeout)
-		{
 			err_msg("timeout redefinition in state %s", name.c_str());
-		}
 		else
-		{
 			timeout = timeout_statement;
-		}
 	}
 
 	virtual void gen_code(CodeGenContext& context);

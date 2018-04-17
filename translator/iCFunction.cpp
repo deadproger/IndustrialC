@@ -62,7 +62,6 @@ void iCFunction::gen_code( CodeGenContext& context )
 
 		//Special code generator for function parameter
 		//no indentation, no initializer, semicolon or newline at the end
-		//Should probably do this some other way..
 		iCVariable* var = *i;
 		context.set_location(var->line_num, var->filename);
 		for(iCStringList::iterator i=var->type_specs.begin();i!=var->type_specs.end();i++)
@@ -86,28 +85,21 @@ void iCFunction::gen_code( CodeGenContext& context )
 	{
 		context.to_code_fmt("\n");
 		context.set_location(line_num, filename);
-
-		//header
 		context.indent();
 		context.to_code_fmt("{\n");
 		context.indent_depth++;
 
 		iCBlockItemsList& items_list = reinterpret_cast<iCCompoundStatement*>(body)->get_block_items();//a crutch
 		for(iCBlockItemsList::iterator i=items_list.begin();i!=items_list.end();i++)
-		{
 			(*i)->gen_code(context);
-		}
 
-		//footer
 		context.indent_depth--;
 		context.to_code_fmt("\n");
 		context.indent();
 		context.to_code_fmt("}");
 	}
 	else
-	{
 		context.to_code(";");
-	}
 
 #ifdef ICDEBUG_TRACE
 	std::cout<<"done iCFunction\n";

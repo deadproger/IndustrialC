@@ -8,9 +8,7 @@
 void iCSubscriptExpression::gen_code(CodeGenContext& context)
 {	
 	if(NULL == postfix_expr || NULL == constant_expr) 
-	{
 		std::cout<<"Error: NULL expression in subscript"<<std::endl;
-	}
 
 	context.set_location(line_num, filename);
 	postfix_expr->gen_code(context);

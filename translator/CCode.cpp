@@ -7,6 +7,8 @@
 #include "iCVariable.h"
 #include "iCProcess.h"
 
+//all the characters allowed in variable names
+//used for iC variables extraction
 const std::string ID_CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
 
 //=================================================================================================
@@ -33,7 +35,8 @@ void CCode::gen_code(CodeGenContext& context)
 }
 
 //=================================================================================================
-//Constructor
+//C code line Constructor
+//Replaces iC variables with their proper names in resulting C code
 //=================================================================================================
 CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) : iCNode(parser_context)
 {
@@ -47,40 +50,29 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 	std::ostringstream text_stream;
 	size_t pos = 0;
 	size_t last_pos = 0;
-
 	while((pos = this->text.find_first_of("$", last_pos)) != std::string::npos)
 	{
-
-		//dump clean substring to the stream
-		text_stream<<this->text.substr(last_pos, pos - last_pos);
-
-		pos++;//skip the dollar
+		text_stream<<this->text.substr(last_pos, pos - last_pos); //dump clean substring to the stream
+		pos++; //skip the dollar
 
 		//extract variable name
 		size_t end_pos = this->text.find_first_not_of(ID_CHARACTERS, pos);
 		std::string var_name = this->text.substr(pos, end_pos - pos);
 
 		//look up the var name in current scope 
-		//const iCScope* var_scope = parser_context.get_var_scope(var_name);
 		iCVariable* var = parser_context.get_var(var_name);
-
 		if(NULL == var) // variable not defined in this scope
 		{
-			//report error
 			parser_context.err_msg("undefined iC variable %s in c code section", var_name.c_str());
-
-			//dump the var name anyway
-			text_stream<<var_name;
+			text_stream<<var_name;//dump the var name anyway
 		}
 		else
 		{
-			//codegen the variable into the stream (kind'a crutchy)
-			ParserContext pc;
+			//codegen the variable into the stream
 			text_stream<<var->full_name;
-
-			const iCProcess* var_proc = parser_context.get_process();
 			
 			//Mark var as referenced in ISR - used for volatile checks
+			const iCProcess* var_proc = parser_context.get_process();
 			if(NULL != var_proc)
 			{
 				if(0 != var_proc->activator.compare("background"))
@@ -95,9 +87,7 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 
 	//dump the rest of the code
 	if(last_pos != std::string::npos)
-	{
 		text_stream<<this->text.substr(last_pos, this->text.length() - last_pos);//dump clean substring to the stream
-	}
 
 	this->text = text_stream.str();
 }

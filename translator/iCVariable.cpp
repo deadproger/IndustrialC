@@ -3,7 +3,9 @@
 #include "CodeGenContext.h"
 #include "iCInitializer.h"
 
-
+//=================================================================================================
+//
+//=================================================================================================
 iCVariable::iCVariable( const std::string& name,
 						const iCScope* scope,
 						const ParserContext& context )
@@ -13,14 +15,12 @@ iCVariable::iCVariable( const std::string& name,
 		used_in_isr(false),
 		decl_initializer(NULL)
 {
-
-	/*for(iCStringList::const_iterator i=type_specs_.begin();i!=type_specs_.end();i++)
-	{
-		type_specs.push_back(*i);
-	}*/
 	full_name = scope->name + "_" + name;
 }
 
+//=================================================================================================
+//Code generator
+//=================================================================================================
 void iCVariable::gen_code( CodeGenContext& context )
 {
 #ifdef ICDEBUG_TRACE
@@ -31,17 +31,8 @@ void iCVariable::gen_code( CodeGenContext& context )
 	context.set_location(line_num, filename);
 	context.indent();
 	
-	/*
-	//Automatic volatile
-	if(used_in_isr)
-	{
-		context.to_code_fmt("volatile ");
-	}
-	*/
 	for(iCStringList::iterator i=type_specs.begin();i!=type_specs.end();i++)
-	{
 		context.to_code_fmt("%s ", (*i).c_str());
-	}
 
 	context.to_code_fmt(full_name.c_str());
 
@@ -67,6 +58,9 @@ void iCVariable::gen_code( CodeGenContext& context )
 #endif
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 iCVariable::~iCVariable()
 {
 	if(NULL != decl_initializer)
@@ -80,6 +74,9 @@ iCVariable::~iCVariable()
 	}
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 void iCVariable::set_type_specs( const iCStringList& _type_specs )
 {
 	for(iCStringList::const_iterator i=_type_specs.begin();i!=_type_specs.end();i++)
@@ -88,20 +85,18 @@ void iCVariable::set_type_specs( const iCStringList& _type_specs )
 	}
 }
 
+//=================================================================================================
+//Semantic check
+//If var is used in ISR, not defined as constant and not qualified as volatile - gens a warning
+//=================================================================================================
 void iCVariable::second_pass()
 {
 	if(used_in_isr)
 	{
-		iCStringList::iterator findVolatile = std::find(type_specs.begin(),
-														  type_specs.end(),
-														  std::string("volatile"));
-		iCStringList::iterator findConst = std::find(type_specs.begin(),
-													   type_specs.end(),
-													   std::string("const"));
+		iCStringList::iterator findVolatile = std::find(type_specs.begin(), type_specs.end(), std::string("volatile"));
+		iCStringList::iterator findConst = std::find(type_specs.begin(), type_specs.end(), std::string("const"));
 		if(type_specs.end() == findVolatile && type_specs.end() == findConst)
-		{
 			warning_msg("variable \"%s\" is used in ISR but not qualified as volatile", name.c_str());
-		}
 	}
 }
 

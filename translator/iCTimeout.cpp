@@ -11,6 +11,7 @@ void iCTimeout::gen_code( CodeGenContext& context )
 	ICASSERT(!context.in_ISR());
 	bool need_atomic_block = context.process->is_isr_driven() || context.process->is_isr_referenced();
 
+	//if process time can be modified from ISR, copy it atomically and use the copy
 	if(need_atomic_block)
 	{
 		//atomically fetch the process's time

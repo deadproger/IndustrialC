@@ -288,7 +288,6 @@
 %left TLSHIFT TRSHIFT
 %left TPLUS TMINUS
 %left TMUL TDIV TPERC
-
 %left TINC TDEC UMINUS TTILDE TEXCLAM
 
 /*************************************************************************************************/
@@ -322,24 +321,13 @@ program_item	:	var_declaration
 				|	mcu_declaration	
 				{
 					parser_context->check_identifier_defined(*$1);
-
-					//no need to generate the declaration object
-					//just add it to scope
 					parser_context->add_mcu_decl_to_scope(*$1); 
 					delete $1;	
 				}
 				|	proc_def		{if(NULL!=$1)ic_program->add_process($1);		}
 				|	hp_definition	{if(NULL!=$1)ic_program->add_hyperprocess($1);	}
 				|	c_code			{if(NULL!=$1)ic_program->add_mcu_declaration($1);	}
-				/*|	TCCODEEXPR 
-				{
-					//$$ = new CCodeLine(*$1, *parser_context);
-					//delete $1;
-				}*/
-				|	func_definition		
-					{
-						ic_program->add_function($1);
-					}
+				|	func_definition	{ic_program->add_function($1); }
 				;
 
 c_code		:	TCCODELINE 
@@ -348,16 +336,13 @@ c_code		:	TCCODELINE
 					$$->add_line(new CCodeLine(*$1, *parser_context)); 
 					delete $1;
 				}
-			/*|	TCCODEEXPR*/
 			;
 
 hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 					{
-						//check hyperprocess redefinition
-						if(ic_program->hp_defined(*$2))
-						{
+						if(ic_program->hp_defined(*$2)) //check hyperprocess redefinition
 							parser_context->err_msg("hyperprocess redefinition: %s already defined", $2->c_str());
-						}
+
 						$<hyperprocess>$ = new iCHyperprocess(*$2, *parser_context);
 						delete $2;
 					}
@@ -367,28 +352,18 @@ hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 					TBIT		TASSGN TIDENTIFIER TSEMIC // 13 14 15 16
 					TRBRACE	// 17
 					{
-						if(NULL == parser_context->get_mcu_decl_scope(*$7)){
+						if(NULL == parser_context->get_mcu_decl_scope(*$7))
 							parser_context->err_msg("undefined interrupt vector: %s ", $7->c_str());
-						}
-						if(NULL == parser_context->get_mcu_decl_scope(*$11)){
+						if(NULL == parser_context->get_mcu_decl_scope(*$11))
 							parser_context->err_msg("undefined mcu register: %s ", $11->c_str());
-						}
-						if(NULL == parser_context->get_mcu_decl_scope(*$15)){
+						if(NULL == parser_context->get_mcu_decl_scope(*$15))
 							parser_context->err_msg("undefined register bit: %s ", $15->c_str());
-						}
 
 						$$ = $<hyperprocess>3;
 						$$->set_params(*$7, *$11, *$15);
 
-						//params
-						delete $7;
-						delete $11;
-						delete $15;
-
-						//TASSGNs
-						delete $6;
-						delete $10;
-						delete $14;
+						delete $7; delete $11; delete $15;//params
+						delete $6; delete $10; delete $14;//TASSGNs
 
 						//suppress unused value warning
 						$1;$4;$5;$8;$9;$12;$13;$16;$17;
@@ -566,7 +541,24 @@ block_item	:	var_declaration
 			|	statement {$$ = $<block_item>1;}
 			|	c_code {$$ = $<block_item>1;}	
 			;
+
+block_items_list	:	block_items_list block_item 
+						{
+							if(NULL != $2)
+								$1->push_back($2); 
+							$$=$1;
+						}
+					|	block_item 
+						{
+							$$ = new iCBlockItemsList; 
+							if(NULL != $1)
+								$$->push_back($1);
+						}
+					;
 			
+/*************************************************************************************************/     
+/*                                 S T A T E M E N T S                                           */     
+/*************************************************************************************************/
 statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 				{
 					const iCProcess* proc = parser_context->get_process();
@@ -580,7 +572,6 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 						$$ = new iCStateTransition(*$3, *parser_context); 
 						parser_context->add_to_second_pass($$); // to check if state was defined
 					}
-
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}			
@@ -597,7 +588,6 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 						$$ = new iCStartProcStatement(*$3, *parser_context); 
 						parser_context->add_to_second_pass($$); // to check if process was defined
 					}
-					
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}	
@@ -614,7 +604,6 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 						$$ = new iCStopProcStatement(*$3, *parser_context); 
 						parser_context->add_to_second_pass($$); // to check if process was defined
 					}
-					
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}	
@@ -631,13 +620,9 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 						$$ = new iCStopProcStatement(proc->name, *parser_context); 
 						parser_context->add_to_second_pass($$);
 					}
-					
 					$1;$2;$3;//suppress unused value warning
 				}
-			|	expression_statement
-				{
-					$$ = $1;
-				}					
+			|	expression_statement //default action is $$ = $1;			
 			|	TSTART THYPERPROCESS TIDENTIFIER TSEMIC //hyperprocess control - start
 				{
 					$$ = new iCStartHPStatement(*$3, *parser_context); 
@@ -665,30 +650,14 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 						$$ = new iCStopHPStatement(proc->activator, *parser_context); 
 						parser_context->add_to_second_pass($$); // required for it to work
 					}
-					
 					$1;$2;$3;//suppress unused value warning
 				}
-			|	compound_statement
-				{
-					$$ = $1;
-				}
-			|	TIF TLPAREN expr TRPAREN statement TELSE statement
-				{
-					$<statement>$ = new iCSelectionStatement(*parser_context);
-					static_cast<iCSelectionStatement*>($<statement>$)->body = $5;
-					static_cast<iCSelectionStatement*>($<statement>$)->else_body = $7;
-					static_cast<iCSelectionStatement*>($<statement>$)->set_expression($3);
-
-					$1;$2;$4;$6;$7;//suppress unused value warning
-				}
-			|	TIF TLPAREN expr TRPAREN statement %prec XIF
-				{
-					$<statement>$ = new iCSelectionStatement(*parser_context);
-					static_cast<iCSelectionStatement*>($<statement>$)->body = $5;
-					static_cast<iCSelectionStatement*>($<statement>$)->set_expression($3);
-					
-					$1;$2;$4;//suppress unused value warning
-				}
+			|	compound_statement //default action is $$ = $1;
+			|	TIF TLPAREN expr TRPAREN statement TELSE statement { $<statement>$ = new iCSelectionStatement(*parser_context, $5, $7, $3); $1;$2;$4;$6;	}
+			|	TIF TLPAREN expr TRPAREN statement %prec XIF { $<statement>$ = new iCSelectionStatement(*parser_context, $5, NULL, $3); $1;$2;$4; }
+				
+				//the for loop needs a preopened scope for variables declared in its init statement
+				//for_prep_scope opens a separate scope that wraps the whole for statement
 			|	TFOR for_prep_scope	TLPAREN for_init_statement expression_statement expr TRPAREN statement
 				{
 					$$ = new iCIterationStatement($4, $5, $6, $8, *parser_context);
@@ -719,28 +688,15 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					}
 					$1;//suppress unused value warning
 				}
-			|	TRETURN expr TSEMIC
-			{
-				$$ = new iCReturnStatement($2, *parser_context);
-				delete $1;
-				$3;//suppress unused value warning
-			}
-			|	TRETURN TSEMIC
-			{
-				$$ = new iCReturnStatement(NULL, *parser_context);
-				delete $1;
-				$2;//suppress unused value warning
-			}
+			|	TRETURN expr TSEMIC	{ $$ = new iCReturnStatement($2, *parser_context); delete $1; $3; }
+			|	TRETURN TSEMIC { $$ = new iCReturnStatement(NULL, *parser_context); delete $1; $2; }
 			;
 
-for_prep_scope		:	%empty
-						{
-							parser_context->open_scope("for");
-							$$ = 0;
-						}
+					// dummy rule to open a "for" loop scope before parsing the init statement
+for_prep_scope		:	%empty { parser_context->open_scope("for"); $$ = 0; } 
 					;
 
-for_init_statement	:	expression_statement { $$ = $1; }
+for_init_statement	:	expression_statement 
 					|	var_declaration 
 						{
 							iCVariableDeclaration* decl = new iCVariableDeclaration(*parser_context);
@@ -750,20 +706,10 @@ for_init_statement	:	expression_statement { $$ = $1; }
 						}
 					;
 
-expression_statement: expr TSEMIC //expression statement
-					  {
-						  $$ = new iCExpressionStatement($1, *parser_context);
-						  $$->line_num = parser_context->line();
-						  $2;//suppress unused value warning
-					  }
-					| TSEMIC
-					  {
-						  $$ = new iCExpressionStatement(NULL, *parser_context);
-						  $$->line_num = parser_context->line();
-						  $1;
-					  }
+expression_statement: expr TSEMIC { $$ = new iCExpressionStatement($1, *parser_context); $2; }
+					| TSEMIC { $$ = new iCExpressionStatement(NULL, *parser_context); $1; }
 
-compound_statement:		TLBRACE prep_compound block_items_list TRBRACE // compound statement
+compound_statement:		TLBRACE prep_compound block_items_list TRBRACE 
 						{
 							$$ = $2;
 							if(NULL != $3)
@@ -783,17 +729,9 @@ compound_statement:		TLBRACE prep_compound block_items_list TRBRACE // compound 
 						}
 					;
 
-prep_compound:	%empty // subrule to prepare scope for compound statement
-				{
-					
-					$<statement>$ = new iCCompoundStatement(*parser_context);
-					parser_context->open_scope("comp");
-				}
+prep_compound:	%empty { $$ = new iCCompoundStatement(*parser_context); parser_context->open_scope("comp"); }; // dummy rule to prepare scope for compound statement
 
-timeout	:	TTIMEOUT // 1
-			{
-				parser_context->enter_timeout();	
-			}
+timeout	:	TTIMEOUT {parser_context->enter_timeout();}
 			TLPAREN expr TRPAREN // 3 4 5
 			{
 			  $<timeout>$ = new iCTimeout($4, *parser_context);
@@ -811,20 +749,6 @@ timeout	:	TTIMEOUT // 1
 			  $1;$3;$5;$7;$9;//suppress unused value warning
 			}
 		;
-
-block_items_list	:	block_items_list block_item 
-						{
-							if(NULL != $2)
-								$1->push_back($2); 
-							$$=$1;
-						}
-					|	block_item 
-						{
-							$$ = new iCBlockItemsList; 
-							if(NULL != $1)
-								$$->push_back($1);
-						}
-					;
 			
 /*************************************************************************************************/     
 /*                                 E X P R E S S I O N S                                         */     
@@ -1102,12 +1026,12 @@ var_declaration			:	decl_specs init_declarator_list TSEMIC
 								delete $1;
 								$3;//suppress unused value warning*/
 							}
-							;
+						;
 
-mcu_declaration			:		TVECTOR		TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
-							|	TREGISTER	TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
-							|	TBIT		TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
-							;
+mcu_declaration			:	TVECTOR		TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
+						|	TREGISTER	TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
+						|	TBIT		TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
+						;
 
 decl_specs				:	decl_specs type_spec {$1->push_back(*$2); delete $2; $$=$1;}
 						|	type_spec {$$ = new iCStringList; $$->push_back(*$1); delete $1;}
@@ -1135,40 +1059,40 @@ init_declarator			:	direct_declarator {$$ = $1;}
 							}
 						;
 
-direct_declarator			:	TIDENTIFIER 
-							{
-								parser_context->check_identifier_defined(*$1);
+direct_declarator		:	TIDENTIFIER 
+						{
+							parser_context->check_identifier_defined(*$1);
 
-								const iCScope* scope = parser_context->get_current_scope();
-								$$ = new iCVariable(*$1, scope, *parser_context);
-								parser_context->add_var_to_scope($$);
-								delete $1;
-							}
-							| direct_declarator TLBRACKET binary_expr TRBRACKET 
-							{
-								$$ = $1;
-								$$->add_dimension($3);
-								$2;$4;
-							}
-							| direct_declarator TLBRACKET TRBRACKET 
-							{
-								$$ = $1;
-								$$->add_dimension(NULL); //dimension size is implicit
-								$2;$3;
-							}
-							;
+							const iCScope* scope = parser_context->get_current_scope();
+							$$ = new iCVariable(*$1, scope, *parser_context);
+							parser_context->add_var_to_scope($$);
+							delete $1;
+						}
+						| direct_declarator TLBRACKET binary_expr TRBRACKET 
+						{
+							$$ = $1;
+							$$->add_dimension($3);
+							$2;$4;
+						}
+						| direct_declarator TLBRACKET TRBRACKET 
+						{
+							$$ = $1;
+							$$->add_dimension(NULL); //dimension size is implicit
+							$2;$3;
+						}
+						;
 
 initializer 			:	assignment_expr  
 							{
 								$$ = new iCInitializer(*parser_context);
 								$$->add_initializer($1);
 							}
-							|	TLBRACE initializer_list TRBRACE 
+						|	TLBRACE initializer_list TRBRACE 
 							{
 								$$ = $2;
 								$1;$3;
 							}
-							|	TLBRACE initializer_list TCOMMA TRBRACE 
+						|	TLBRACE initializer_list TCOMMA TRBRACE 
 							{
 								$$ = $2;
 								delete $3;

@@ -33,30 +33,18 @@ public:
 class iCStatement : public virtual iCNode 
 {
 public:
-	//iCStatement(const ParserContext& context) : iCNode(context) {}
 	virtual ~iCStatement(){}
 	virtual bool is_compound() {return false;}
 };
-class iCBlockItem : public virtual iCNode {/*iCBlockItem(const ParserContext& context):iCNode(context){}*/};
+class iCBlockItem : public virtual iCNode {};
 class iCProgramItem {};
 class iCProgramItemsList {};
-class iCExpression : public virtual iCNode  {/*iCExpression(const ParserContext& context):iCNode(context){}*/};
+class iCExpression : public virtual iCNode  {};
 class iCDeclaration : public iCBlockItem, public iCProgramItem, public iCStatement {};
 class iCHyperprocess;
 class iCProcess;
 class iCState;
 class iCIdentifier;
-
-/*class iCMCUIdentifier : public iCNode
-{
-public:
-	iCMCUIdentifier(const std::string& name);
-	std::string name;
-};*/
-/*class iCVector : public iCMCUIdentifier {};
-class iCRegister : public iCMCUIdentifier {};
-class iCBit : public iCMCUIdentifier {};*/
-
 typedef std::vector<iCNode*> NodesList;
 typedef std::vector<iCBlockItem*> iCBlockItemsList;
 typedef std::vector<iCDeclaration*> iCDeclarationList;

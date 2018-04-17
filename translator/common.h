@@ -19,7 +19,7 @@ const int ERR_MSG_BUFFER_SIZE = 1024;
 const char START_STATE_NAME[] = "FS_START";
 const char STOP_STATE_NAME[] = "FS_STOP";
 
-//The comma operator and absence of semicolons are for single-statement
+//The comma operator and absence of semicolons in macros are for single-statement
 //"if/else" and "for" statements
 const char C_MACRO_ROUTINES[] = "\
 								\n\
