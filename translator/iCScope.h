@@ -8,9 +8,7 @@ class iCScope
 {
 	static unsigned long current_id;
 	const unsigned long id;
-
 public:
-	
 	std::string name;
 	iCScope* prev_scope; //does not own
 	std::vector<iCScope*> issues;
@@ -20,10 +18,8 @@ public:
 	std::set<std::string> mcu_decls;
 	std::set<std::string> funcs;
 
-
 	iCScope(const std::string& name);
 	~iCScope();
-
 	void delete_scope_tree(iCScope* root_scope);
 };
 

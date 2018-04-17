@@ -4,12 +4,13 @@
 //=================================================================================================
 //
 //=================================================================================================
-iCSelectionStatement::iCSelectionStatement( const ParserContext& context )
-	: iCNode(context),
-	  body(NULL),
-	  else_body(NULL)
+iCSelectionStatement::iCSelectionStatement( const ParserContext& context, iCStatement *body, iCStatement *else_body, iCExpression *expr )
+	:	iCNode(context),
+		body(body),
+		else_body(else_body),
+		expr(expr)
 {
-	
+	line_num = expr->line_num;
 }
 
 //=================================================================================================
@@ -41,7 +42,6 @@ void iCSelectionStatement::gen_code( CodeGenContext& context )
 		else_body->gen_code(context);
 		if(!else_body->is_compound()) context.indent_depth--;
 	}
-
 }
 
 //=================================================================================================

@@ -8,7 +8,7 @@
 
 class ParserContext;
 
-ParserContext* parser_context = NULL;
+ParserContext* parser_context = NULL; //externed in parser.h
 
 //=================================================================================================
 //Code generator
@@ -30,28 +30,20 @@ void iCProgram::gen_code(CodeGenContext& context)
 
 	//global declarations and c code
 	for(iCDeclarationList::iterator i=mcu_decls.begin();i!=mcu_decls.end();i++)
-	{
 		(*i)->gen_code(context);
-	}
 
 	//variable declarations
 	for(std::list<iCVariable*>::iterator i=var_list.begin();i!=var_list.end();i++)
-	{
 		(*i)->gen_code(context);
-	}
 
 	//function definitions
 	for(std::list<iCFunction*>::iterator i=func_list.begin();i!=func_list.end();i++)
-	{
 		(*i)->gen_code(context);
-	}
 
 	//context.code<<std::endl;
 	context.to_code_fmt("\n");
 
 	//process names enumerator
-	//std::ostringstream state_enums;
-	//context.set_location(line_num, filename);
 	std::ostringstream proc_subroutines;
 	context.to_code_fmt("enum %s\n{\n", C_PROC_ENUM_NAME);
 	context.indent_depth++;
@@ -73,7 +65,7 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.to_code_fmt("const %s %s = 1;\n", C_STATE_FUNC_TYPE_NAME, START_STATE_NAME);
 	context.to_code_fmt("\n");
 
-	context.code.flush();
+	context.flush();
 
 	for(iCProcessList::iterator i=procs.begin();i!=procs.end();i++)
 	{
@@ -84,7 +76,6 @@ void iCProgram::gen_code(CodeGenContext& context)
 		{
 			//state names enumerators
 			unsigned int state_id = 3;
-			//state_enums<<"enum "<<proc_name<<"_STATES"<<std::endl<<"{"<<std::endl;
 			context.to_code_fmt("enum %s_STATES\n{\n", proc_name.c_str());
 			for(StateList::const_iterator s=proc->states.begin();s!=proc->states.end();s++)
 			{
@@ -92,17 +83,12 @@ void iCProgram::gen_code(CodeGenContext& context)
 				if(!state.special)
 				{
 					std::string state_name = proc_name + state.name;
-					//state_enums<<'\t'<<state_name<<" = "<<state_id++<<","<<std::endl;
 					context.to_code_fmt("\t%s=%d,\n", state_name.c_str(), state_id++);
 				}
 			}
-			//state_enums<<"};"<<std::endl<<std::endl;	
 			context.to_code_fmt("};\n\n");
 		}
 	}
-
-	//dump the process subroutines
-	//context.code<<proc_subroutines.str();
 	
 	//process struct array
 	context.to_code_fmt("typedef struct\n{\n");
@@ -113,9 +99,6 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.to_code_fmt("volatile unsigned long T;\n}%s;\n", C_PROC_DATA_STRUCT_NAME);
 	context.to_code_fmt("%s %s[%s];\n\n", C_PROC_DATA_STRUCT_NAME, C_PROC_ARRAY_NAME, C_PROC_ENUM_NUM);
 	context.indent_depth--;
-
-	//dump processes' declarations
-	//context.to_code(proc_decls.str().c_str());
 
 	//interrupt hyperprocesses
 	for(iCHyperprocessMap::iterator i=hps.begin();i!=hps.end();i++)
@@ -136,11 +119,7 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.to_code_fmt("int main()\n{\n");
 	context.indent_depth++;
 
-	//! AVR specific !
-	/*context.indent();context.to_code_fmt("//Init timer0\n");
-	context.indent();context.to_code_fmt("TCCR0A = 0;\n");
-	context.indent();context.to_code_fmt("TCCR0B = (1<<CS00) | (1 <<CS02); // /1024 prescaler\n");
-	context.indent();context.to_code_fmt("TIMSK0 = (1<<TOIE0); // overflow interrupt\n");*/
+	//AVR specific
 	context.indent();context.to_code_fmt("ic_ts_init();\n");
 	context.indent();context.to_code_fmt("sei();\n");
 
@@ -157,7 +136,6 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.indent_depth++;
 
 	//System time update
-	//SysTime_cur = ic_ts_millis();
 	context.to_code_fmt("\n");
 	context.indent();
 	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
@@ -169,7 +147,6 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.indent();
 	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
 	
-
 	//time service: timeout instances for isr-driven processes
 	for(iCHyperprocessMap::iterator i=hps.begin();i!=hps.end();i++)
 	{
@@ -193,7 +170,6 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.indent(); context.to_code_fmt("} //main\n");
 }
 
-
 //=================================================================================================
 //
 //=================================================================================================
@@ -211,12 +187,9 @@ iCProgram::~iCProgram()
 	for(std::list<iCFunction*>::iterator i=func_list.begin();i!=func_list.end();i++)
 		delete *i;	
 
-
 	//clear variables
 	for(std::list<iCVariable*>::iterator i=var_list.begin();i!=var_list.end();i++)
-	{
 		delete *i;
-	}
 }
 
 //=================================================================================================
@@ -231,11 +204,8 @@ void iCProgram::add_process( iCProcess* proc )
 		return;
 	}
 
-
 	if(NULL == first_bkgrnd_process && 0==proc->activator.compare("background"))
-	{
 		first_bkgrnd_process = proc;
-	}
 
 	//add process to its respective hyperprocess
 	iCHyperprocessMap::iterator i = hps.find(proc->activator);
@@ -245,11 +215,9 @@ void iCProgram::add_process( iCProcess* proc )
 		return;
 	}
 
-
 	i->second->add_proc(proc);
 	procs[proc->name] = proc; // auxiliary list for quick checks
 }
-
 
 //=================================================================================================
 //
@@ -309,11 +277,7 @@ bool iCProgram::proc_defined( const std::string& proc_name ) const
 
 void iCProgram::second_pass()
 {
-	/*for(std::list<iCVariable>::iterator i=var_list.begin();i!=var_list.end();i++)
-	{
-		iCVariable& var = *i;
-		std::cout<<var.full_name<<std::endl;
-	}*/
+	
 }
 
 const iCProcess* iCProgram::find_proc( const std::string& proc_name )const

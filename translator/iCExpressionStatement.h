@@ -10,7 +10,7 @@ class iCExpressionStatement : public iCStatement
 {
 public:
 	iCExpression* expr; // Owns
-	iCExpressionStatement(iCExpression* expr, const ParserContext& context) : expr(expr), iCNode(context){}
+	iCExpressionStatement(iCExpression* expr, const ParserContext& context);
 	virtual ~iCExpressionStatement();
 	virtual void gen_code(CodeGenContext& context);
 

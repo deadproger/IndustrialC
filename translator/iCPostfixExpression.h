@@ -8,7 +8,6 @@ class CodeGenContext;
 //=================================================================================================
 class iCPostfixExpression : public iCExpression
 {
-private:
 	iCExpression* expr;
 	std::string op;
 public:

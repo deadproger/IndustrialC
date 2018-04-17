@@ -19,10 +19,11 @@ class ParserContext
 {
 	const iCProgram* program;//does not own
 	iCProcess* process;//does not own
-	iCState* state;
+	iCState* state;//does not own
 	iCFunction* func;//does not own
+	iCScope* root_scope; //owns
+	iCScope* current_scope; //does not own
 
-	//bool in_func;
 	bool _in_isr;
 	bool _in_timeout;
 
@@ -30,20 +31,14 @@ class ParserContext
 	unsigned long line_num;
 	unsigned long start_col;
 	unsigned long end_col;
-	
 	std::string filename;
-
-	iCScope* root_scope;
-	iCScope* current_scope;
-
 public:
-
 	//used for critical section placement decisions
 	bool in_isr() const {return _in_isr && !_in_timeout;}
-	bool enter_isr() {_in_isr = true; /*std::cout<<filename<<":"<<line_num<<"isr->"<<std::endl;*/}
-	bool leave_isr() {if(_in_isr){_in_isr = false; /*std::cout<<filename<<":"<<line_num<<"isr<-"<<std::endl;*/}}
-	bool enter_timeout() {_in_timeout = true; /*std::cout<<filename<<":"<<line_num<<"timeout->"<<std::endl;*/}
-	bool leave_timeout() {_in_timeout = false; /*std::cout<<filename<<":"<<line_num<<"timeout<-"<<std::endl;*/}
+	bool enter_isr() {_in_isr = true;}
+	bool leave_isr() {_in_isr = false; }
+	bool enter_timeout() {_in_timeout = true; }
+	bool leave_timeout() {_in_timeout = false; }
 
 	//var_declaration needs to know if we are inside function to decide whether
 	//the vars should be made local or global 
@@ -69,17 +64,7 @@ public:
 	unsigned long line() const {return line_num;}
 	unsigned long column() const {return start_col;}
 
-	void add_to_second_pass(iCNode* node)
-	{
-		second_pass_nodes.insert(node);
-	}
-
-	void rm_from_second_pass(iCNode* node)
-	{
-		std::set<iCNode*>::iterator n = second_pass_nodes.find(node);
-		if(second_pass_nodes.end() != n)
-			second_pass_nodes.erase(n);
-	}
+	void add_to_second_pass(iCNode* node) { second_pass_nodes.insert(node); }
 
 	void inc_line_num() {line_num++; end_col = start_col = 1;}
 	void inc_column(int shift){start_col = end_col; end_col += shift;}
@@ -101,7 +86,6 @@ public:
 	void add_mcu_decl_to_scope(const std::string& name);
 	void add_func_to_scope(const std::string& func);
 
-	//bool check_scope(const std::string& identifier)const;
 	const iCScope* get_var_scope(const std::string& identifier)const;
 	const iCScope* get_mcu_decl_scope(const std::string& mcu_decl)const;
 	const iCScope* get_func_scope(const std::string& func)const;

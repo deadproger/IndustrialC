@@ -35,7 +35,6 @@ void iCReturnStatement::gen_code( CodeGenContext& context )
 	std::cout<<"done iCReturnStatement\n";
 	std::cout.flush();
 #endif
-
 }
 
 //=================================================================================================

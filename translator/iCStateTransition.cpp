@@ -33,9 +33,7 @@ void iCStateTransition::gen_code(CodeGenContext& context)
 
 	context.to_code_fmt("%s(%s, ", C_STRANS_MACRO, context.process->name.c_str());
 	if(START_STATE_NAME != state_name && STOP_STATE_NAME != state_name)
-	{
 		context.to_code_fmt(context.process->name.c_str());
-	}
 	context.to_code_fmt("%s);", state_name.c_str());
 
 	//atomic block footer

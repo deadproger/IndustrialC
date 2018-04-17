@@ -22,10 +22,9 @@ void iCCompoundStatement::gen_code( CodeGenContext& context )
 	context.to_code_fmt("{\n");
 	context.indent_depth++;
 
+	//body
 	for(iCBlockItemsList::iterator i=block_items.begin();i!=block_items.end();i++)
-	{
 		(*i)->gen_code(context);
-	}
 
 	//footer
 	context.indent_depth--;

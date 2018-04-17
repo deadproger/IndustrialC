@@ -7,7 +7,8 @@
 //=================================================================================================
 void iCBinaryExpression::gen_code(CodeGenContext& context)
 {	
-	if(NULL == left || NULL == right) {return;}
+	if(NULL == left || NULL == right)
+		return;
 
 	context.set_location(line_num, filename);
 	left->gen_code(context);

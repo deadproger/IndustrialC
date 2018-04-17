@@ -16,22 +16,28 @@ void iCVariableDeclaration::gen_code( CodeGenContext& context )
 	}
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 iCVariableDeclaration::iCVariableDeclaration(const ParserContext& context)
 	: iCNode(context)
 {
 
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 iCVariableDeclaration::~iCVariableDeclaration()
 {
 #ifdef ICDEBUG_TRACE
 	std::cout<<"iCVariableDeclaration::gen_code " << "...";
 	std::cout.flush();
 #endif
+
 	for(std::list<iCVariable*>::iterator i=vars.begin();i!=vars.end();i++)
-	{
 		delete *i;
-	}
+
 #ifdef ICDEBUG_TRACE
 	std::cout<<"done iCVariableDeclaration\n";
 	std::cout.flush();

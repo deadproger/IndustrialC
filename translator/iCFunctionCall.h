@@ -14,13 +14,10 @@ private:
 public:
 	iCFunctionCall(	const std::string& func_name,
 					const ParserContext& context) 
-		:	func_name(func_name),
-			iCNode(context){}
+					:	func_name(func_name),
+						iCNode(context){}
 	~iCFunctionCall();
-	void set_args(const std::vector<iCExpression*>& arguments)
-	{
-		args = arguments;
-	}
+	void set_args(const std::vector<iCExpression*>& arguments) { args = arguments; }
 	virtual void gen_code(CodeGenContext& context);
 
 #ifdef DEBUG

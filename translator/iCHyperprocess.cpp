@@ -13,13 +13,14 @@ void iCHyperprocess::gen_code( CodeGenContext& context )
 	std::cout<<"iCHyperprocess::gen_code " << activator << "...";
 	std::cout.flush();
 #endif
+
 	if(activator.empty())
 	{
 		std::cout<<"Empty activator in hyperprocess"<<std::endl;
 		return;
 	}
 
-	bool background = (activator == "background");
+	bool background = ("background" == activator);
 
 	//ISR header
 	if(!background)
@@ -31,9 +32,7 @@ void iCHyperprocess::gen_code( CodeGenContext& context )
 
 	//processes
 	for(iCProcessList::iterator j=procs.begin();j!=procs.end();j++)
-	{
 		j->second->gen_code(context);
-	}
 
 	//ISR footer
 	if(!background)
@@ -42,13 +41,16 @@ void iCHyperprocess::gen_code( CodeGenContext& context )
 		context.to_code_fmt("}\n\n");
 		context.leave_ISR();
 	}
+
 #ifdef ICDEBUG_TRACE
 	std::cout<<"done iCHyperprocess\n";
 	std::cout.flush();
 #endif
 }
 
-
+//=================================================================================================
+//Generates timeout-processing code in background for ISR-driven processes
+//=================================================================================================
 void iCHyperprocess::gen_timeout_code( CodeGenContext& context )
 {
 	for(iCProcessList::iterator j=procs.begin();j!=procs.end();j++)

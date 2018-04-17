@@ -8,9 +8,7 @@
 iCFunctionCall::~iCFunctionCall()
 {
 	for(std::vector<iCExpression*>::iterator i=args.begin();i!=args.end();i++)
-	{
 		delete *i;
-	}
 }
 
 //=================================================================================================

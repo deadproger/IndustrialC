@@ -1,7 +1,6 @@
 #pragma once
 
 #include "iCNode.h"
-//#include "iCCompoundStatement.h"
 class ParserContext;
 class CodeGenContext;
 
@@ -10,19 +9,12 @@ class CodeGenContext;
 //=================================================================================================
 class iCSelectionStatement : public iCStatement
 {
-	
 public:
 	iCStatement *body; // owns
 	iCStatement *else_body; // owns
 	iCExpression *expr; // owns
-	iCSelectionStatement(const ParserContext& context);
+	iCSelectionStatement( const ParserContext& context, iCStatement *body, iCStatement *else_body, iCExpression *expr );
 	virtual ~iCSelectionStatement();
-	void set_expression(iCExpression* expression)
-	{
-		expr = expression;
-		line_num = expr->line_num;
-	}
-
 	virtual void gen_code(CodeGenContext& context);
 
 #ifdef DEBUG

@@ -33,4 +33,7 @@ const std::string iCIdentifier::get_scoped_name()
 //
 //=================================================================================================
 iCIdentifier::iCIdentifier( const std::string& name, const iCScope* scope, const ParserContext& context ) 
-: name(name), scope(scope), iCNode(context) {}
+: name(name), scope(scope), iCNode(context) 
+{
+
+}

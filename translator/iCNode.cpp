@@ -3,18 +3,20 @@
 
 bool had_errors = false;
 
+//=================================================================================================
+//
+//=================================================================================================
 iCNode::iCNode( const ParserContext& context )
  :	line_num(context.line()),
 	col_num(context.column()),
 	filename(context.file_name())
 {
-	if(filename.empty())
-	{
-		//err_msg("dev warning: empty filename in node");
-	}
-
+	//ICASSERT(!filename.empty());
 }
 
+//=================================================================================================
+//Outputs a message with filename and line number
+//=================================================================================================
 void iCNode::err_msg( const char* format, ... ) const
 {
 	had_errors = true;
@@ -26,6 +28,9 @@ void iCNode::err_msg( const char* format, ... ) const
 	std::cout<<filename<<":"<<line_num/*<<":"<<col_num*/<<": error: "<<buffer<<std::endl;
 }
 
+//=================================================================================================
+//Outputs a warning message with filename and line number
+//=================================================================================================
 void iCNode::warning_msg( const char* format, ... ) const
 {
 	//had_errors = true;
@@ -36,4 +41,3 @@ void iCNode::warning_msg( const char* format, ... ) const
 	va_end(args);
 	std::cout<<filename<<":"<<line_num/*<<":"<<col_num*/<<": warning: "<<buffer<<std::endl;
 }
-/*iCMCUIdentifier::iCMCUIdentifier( const std::string& name ): name(name){}*/

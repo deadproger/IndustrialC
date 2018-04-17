@@ -14,7 +14,6 @@ void iCState::gen_code(CodeGenContext& context)
 	std::cout.flush();
 #endif
 
-
 	std::string state_name = special ? name : (context.process->name + name);
 
 	//update context
@@ -60,6 +59,10 @@ void iCState::gen_code(CodeGenContext& context)
 #endif
 }
 
+//=================================================================================================
+//Generates only the timeout code
+//Used for ISR-driven processes' timeout checks in background
+//=================================================================================================
 void iCState::gen_timeout_code( CodeGenContext& context )
 {
 #ifdef ICDEBUG_TRACE
@@ -71,8 +74,6 @@ void iCState::gen_timeout_code( CodeGenContext& context )
 
 	//update context
 	context.state = this;
-
-	//context.set_location(line_num, filename);
 
 	//state header
 	context.indent();
@@ -101,7 +102,6 @@ void iCState::gen_timeout_code( CodeGenContext& context )
 	std::cout.flush();
 #endif
 }
-
 
 //=================================================================================================
 //

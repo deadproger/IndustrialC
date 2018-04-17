@@ -15,7 +15,6 @@ private:
 public:
 	iCString(const std::string& str, const ParserContext& context);
 	~iCString(){}
-
 	virtual void gen_code(CodeGenContext& context);
 
 #ifdef DEBUG

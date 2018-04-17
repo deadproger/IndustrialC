@@ -4,6 +4,9 @@
 
 extern bool had_errors;
 
+//=================================================================================================
+//
+//=================================================================================================
 ParserContext::ParserContext()
 	:	program(NULL),
 		process(NULL),
@@ -20,7 +23,9 @@ ParserContext::ParserContext()
 	current_scope = root_scope = new iCScope("program");
 }
 
-
+//=================================================================================================
+//
+//=================================================================================================
 ParserContext::~ParserContext()
 {
 	delete root_scope; //the scope tree recursively deletes itself (see iCScope destructor)
@@ -56,43 +61,21 @@ void ParserContext::add_var_to_scope(iCVariable* decl)
 	current_scope->vars.push_back(decl);
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 void ParserContext::add_state_to_scope(const std::string& name)
 {
 	current_scope->states.insert(name);
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 void ParserContext::add_proc_to_scope(const std::string& name)
 {
 	current_scope->processes.insert(name);
 }
-
-//=================================================================================================
-//
-//=================================================================================================
-/*bool ParserContext::check_scope(const std::string& identifier)const
-{
-	iCScope* scope = current_scope;
-
-	while(NULL != scope)
-	{
-		//simple search for now - replace with a map or with binary search
-		for(std::vector<iCVariableDeclaration*>::iterator i=scope->vars.begin();i!=scope->vars.end();i++)
-		{
-			iCStringList& var_names = (*i)->var_names;
-			for(iCStringList::iterator j=var_names.begin();j!=var_names.end();j++)
-			{
-				if(0 == (*j)->compare(identifier))
-				{
-					return true;
-				}
-			}
-		}
-
-		//go up the scope tree
-		scope = scope->prev_scope;
-	}
-	return false;
-}*/
 
 //=================================================================================================
 //
@@ -105,20 +88,8 @@ const iCScope* ParserContext::get_var_scope(const std::string& identifier)const
 	{
 		//simple search for now - replace with a map or with binary search
 		for(std::vector<iCVariable*>::iterator i=scope->vars.begin();i!=scope->vars.end();i++)
-		{
 			if(0 == (*i)->name.compare(identifier))
-			{
 				return scope;
-			}
-			/*iCStringList& var_names = (*i)->var_names;
-			for(iCStringList::iterator j=var_names.begin();j!=var_names.end();j++)
-			{
-				if(0 == (*j)->compare(identifier))
-				{
-					return scope;
-				}
-			}*/
-		}
 
 		//go up the scope tree
 		scope = scope->prev_scope;

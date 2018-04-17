@@ -16,28 +16,22 @@ void iCProcess::gen_code(CodeGenContext& context)
 	//update context
 	context.process = this;
 
+	//Add comments
 	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
 	context.to_code_fmt("//Process: %s\n", name.c_str());
 	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
-
 	context.set_location(line_num, filename);
 
 	//Process header
-	//If the process is in ISR, no critical section needed - switch directly on process state
-	//Otherwise atomically fetch the process state into a temporary variable
-	//and use it in switch
 	context.indent();
 	context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME, name.c_str(), C_STATE_FUNC_ATTR_NAME);
-	
 	context.indent();
 	context.to_code_fmt("{\n");
 	context.indent_depth++;
 
 	//states
 	for(StateList::iterator i=states.begin();i!=states.end();i++)
-	{
 		(*i)->gen_code(context);
-	}
 
 	//process footer
 	context.indent_depth--;
@@ -78,13 +72,8 @@ void iCProcess::gen_timeout_code( CodeGenContext& context )
 
 	//states - states with timeouts only
 	for(StateList::iterator i=states.begin();i!=states.end();i++)
-	{
-		iCState* state = *i;
-		if(state->has_timeout())
-		{
-			state->gen_timeout_code(context);
-		}
-	}
+		if((*i)->has_timeout())
+			(*i)->gen_timeout_code(context);
 
 	//process footer
 	context.indent_depth--;
@@ -100,7 +89,6 @@ void iCProcess::gen_timeout_code( CodeGenContext& context )
 //=================================================================================================
 iCProcess::~iCProcess()
 {
-	//std::cout<<"deleting process "<<name<<std::endl;
 	for(StateList::iterator i=states.begin();i!=states.end();i++)
 		delete *i;
 }
@@ -145,18 +133,7 @@ void iCProcess::add_states( const StateList& states )
 			iCState* state = *i;
 			state->set_isr_driven();
 			if(state->has_timeout())
-			{
 				_has_timeouts = true;
-			}
 		}
 	}
 }
-
-/*void iCProcess::add_state( iCState* state )
-{
-	if(isr_driven)
-	{
-		state->set_isr_driven();
-	}
-	states.push_back(state);
-}*/

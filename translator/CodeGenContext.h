@@ -10,20 +10,18 @@ const unsigned int CODEGEN_BUFFER_SIZE = 1024;
 //=================================================================================================
 //Code generation context
 //Used and updated by code generator methods
+//All code generation is done via this class
 //=================================================================================================
 class CodeGenContext
 {
 	std::string cur_filename;
 	unsigned long cur_line_num;
-
+	bool _in_ISR;
+	std::ostream& code;
 	void add_new_lines(int num = 1);
 	void place_line_marker(unsigned long line_num, const std::string& file);
 	void place_line_marker(unsigned long line_num);
-
-	bool _in_ISR;
-	
 public:
-
 	std::string filename() const { return cur_filename; }
 	unsigned long line() const { return cur_line_num; }
 
@@ -34,8 +32,8 @@ public:
 	void to_code(const std::string& str);
 	void to_code_string(const std::string& str);
 
-	void atomic_header();
-	void atomic_footer();
+	void atomic_header();//adds atomic block header to code
+	void atomic_footer();//adds atomic block foother to code
 
 	CodeGenContext(std::ostream& code, const iCHyperprocessMap* hps)
 		:	process(NULL),
@@ -56,22 +54,18 @@ public:
 			_in_ISR(false),
 			indent_enabled(true){}
 
-	//CodeGenContext does not own these pointed objects
-	iCProcess* process; //current process
-	iCState* state; //current state
-	const iCHyperprocessMap* hps;
+	iCProcess* process; //current process, does not own
+	iCState* state; //current state, does not own
+	const iCHyperprocessMap* hps;//does not own
 
 	unsigned int indent_depth; //current indentation
 	bool indent_enabled;
 
 	void disable_indentation(){indent_enabled = false;}
 	void enable_indentation(){indent_enabled = true;}
-
-	std::ostream& code;
-
 	void indent(){ if(indent_enabled)code<<std::string(indent_depth, C_INDENT);}
-
 	void enter_ISR(){_in_ISR = true;}
 	void leave_ISR(){_in_ISR = false;}
 	bool in_ISR()const{return _in_ISR;}
+	void flush(){code.flush();};
 };
