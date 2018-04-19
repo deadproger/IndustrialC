@@ -232,7 +232,8 @@ iCVariable* ParserContext::get_var( const std::string& identifier ) const
 }
 
 //=================================================================================================
-//
+//Checks the identifier in argument against all separate scopes(namespaces) and gens an error 
+//if found
 //=================================================================================================
 void ParserContext::check_identifier_defined( const std::string& identifier )
 {

@@ -84,7 +84,7 @@
 	std::vector<iCExpression*>* expr_list;
 	iCProgramItemsList* program_items_list;
 	iCProgramItem* program_item;
-	iCProcBody* proc_body;
+	//iCProcBody* proc_body;
 	iCInitializer* icinitializer;
 	unsigned long line_num;
 }
@@ -188,7 +188,7 @@
 /***********************************************/
 %type <hyperprocess>		hp_definition	
 %type <process>				proc_def
-%type <proc_body>			proc_body
+%type <state_list>			proc_body
 %type <ccode>				c_code
 %type <state>				state
 %type <block_items_list>	state_body
@@ -224,7 +224,7 @@
 %type <variable>			init_declarator
 %type <func>				func_declarator
 %type <var_list>			param_list
-%type <var_list>			prep_param_scope
+//%type <var_list>			prep_param_scope
 %type <variable>			param_declarator
 %type <statement>			for_init_statement
 %type <token>				for_prep_scope
@@ -232,7 +232,7 @@
 /***********************************************/
 /*                  DESTRUCTORS                */
 /***********************************************/
-
+//these are for killing all the lost tokens
 %destructor {} <token>
 %destructor 
 {
@@ -243,26 +243,16 @@
 	}
 	delete $$;
 }<block_items_list> //  <str_list>
-
 %destructor 
 {
-	for(StateList::iterator i=$$->states.begin();i!=$$->states.end();i++)
-	{
+	for(StateList::iterator i=$$->begin();i!=$$->end();i++)
 		delete *i;
-	}
-	for(iCDeclarationList::iterator i=$$->decls.begin();i!=$$->decls.end();i++)
-	{
-		delete *i;
-	}
-
 	delete $$;
-}<proc_body> 
-
+}<state_list> 
 %destructor
 {
 	delete $$;
 }<expression>
-
 %destructor 
 {
 	delete $$;
@@ -294,6 +284,7 @@
 /*                                        GRAMMAR                                                */
 /*************************************************************************************************/
 %%
+
 program		:	{
 					ic_program = new iCProgram(*parser_context);
 					ic_program->add_hyperprocess(new iCHyperprocess("background", *parser_context));
@@ -302,24 +293,28 @@ program		:	{
 				}
 				program_items_list 
 				{
-					parser_context->close_scope();
+					//program scope is opened in ParserContext constructor, but closed here...
+					parser_context->close_scope();//end of the program - close the scope
 				}
 			;
 
+//nothing's passed further here, because items get added to the program directly when parsed
 program_items_list	:	program_items_list program_item 
 					|	program_item 
 					;
 
 program_item	:	var_declaration	
 				{
+					//split the declaration into separate variables and feed them to the program
+					//the variables are global, var_declaration is a simple list of iCVariable
+					//no iCVaribleDeclaration objects are built or used here
 					for(std::list<iCVariable*>::iterator i=$1->begin();i!=$1->end();i++)
-					{
 						ic_program->add_variable(*i);
-					}
 					delete $1;
 				}
 				|	mcu_declaration	
 				{
+					//check for redefinition: error message is generated inside check_identifier_defined (not a very explicit method...)
 					parser_context->check_identifier_defined(*$1);
 					parser_context->add_mcu_decl_to_scope(*$1); 
 					delete $1;	
@@ -330,19 +325,18 @@ program_item	:	var_declaration
 				|	func_definition	{ic_program->add_function($1); }
 				;
 
-c_code		:	TCCODELINE 
-				{
-					$$ = new CCode(*parser_context); 
-					$$->add_line(new CCodeLine(*$1, *parser_context)); 
-					delete $1;
-				}
-			;
-
+//=================================================================================================
+//Hyperprocess definition defines the name, interrupt vector, as well as register and bit that 
+//are used to enable/disable the interrupt
+// * don't see the need for that midrule action here - look into and fix later
+//=================================================================================================
 hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 					{
-						if(ic_program->hp_defined(*$2)) //check hyperprocess redefinition
+						//check hyperprocess redefinition - if redefined, gen error and move on anyway
+						if(ic_program->hp_defined(*$2)) 
 							parser_context->err_msg("hyperprocess redefinition: %s already defined", $2->c_str());
 
+						//iCHyperprocess is created with name only, params are parsed and added later 
 						$<hyperprocess>$ = new iCHyperprocess(*$2, *parser_context);
 						delete $2;
 					}
@@ -352,13 +346,15 @@ hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 					TBIT		TASSGN TIDENTIFIER TSEMIC // 13 14 15 16
 					TRBRACE	// 17
 					{
+						//check the vector, register and bit have been declared
 						if(NULL == parser_context->get_mcu_decl_scope(*$7))
 							parser_context->err_msg("undefined interrupt vector: %s ", $7->c_str());
 						if(NULL == parser_context->get_mcu_decl_scope(*$11))
 							parser_context->err_msg("undefined mcu register: %s ", $11->c_str());
 						if(NULL == parser_context->get_mcu_decl_scope(*$15))
 							parser_context->err_msg("undefined register bit: %s ", $15->c_str());
-
+						
+						//finalize the iCHyperprocess object
 						$$ = $<hyperprocess>3;
 						$$->set_params(*$7, *$11, *$15);
 
@@ -370,168 +366,177 @@ hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 					}
 				;
 
+//=================================================================================================
+//iCProcess object needs to be created before the states are parsed,
+//so that we have an already opened scope and a process in ParserContext when parsing the states.
+//proc_body rule builds a list of states.
+//proc_def rule creates iCProcess w/o states, then copies the states into iCProcess later.
+//=================================================================================================
 proc_def	:	TPROC TIDENTIFIER // 1 2
 				{
 					//check for process redefinition
 					const iCScope* scope = parser_context->get_proc_scope(*$2);
 					if(NULL != scope)
 					{
-						parser_context->open_scope(*$2);
+						//process already defined - gen error, but continue parsing anyway to check for more errors
 						parser_context->err_msg("process redefinition: %s already defined in %s",
 												$2->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
-						$<process>$ = NULL;
 					}
-					else
-					{
-						$<process>$ = new iCProcess(*$2, *parser_context);
-						parser_context->set_process($<process>$);//entering process definition
-						parser_context->open_scope(*$2);
-					}
+					
+					//Create the iCProcess objects (w/o states or activator) and modify context
+					$<process>$ = new iCProcess(*$2, *parser_context);
+					parser_context->set_process($<process>$);//entering process definition
+					parser_context->open_scope(*$2);
 					delete $2;
 				}
 				TCOLON TIDENTIFIER // 4 5
 				{
+					//hyperprocess defined check - hp needs to be defined beforehand
 					if(!ic_program->hp_defined(*$5))
-					{
 						parser_context->err_msg("undefined hyperprocess: %s", $5->c_str());
-					}
-					if(NULL != $<process>3)
-					{
-						$<process>3->set_hp(*$5);
-					}
+					
+					//set process hp and modify context
+					$<process>3->set_hp(*$5);
 					if($<process>3->is_isr_driven())
-					{
 						parser_context->enter_isr();
-					}
+
+					delete $5;//hp name
 				}
 				TLBRACE proc_body TRBRACE // 7 8 9 
 				{
+					//proc body has already been parsed - closing process scope
 					parser_context->close_scope();
 
-					//process redefiniton
-					if(NULL == $<process>3)
-					{
-						//delete proc_body
-						for(StateList::iterator i=$8->states.begin();i!=$8->states.end();i++)
-							delete *i;
-						for(iCDeclarationList::iterator i=$8->decls.begin();i!=$8->decls.end();i++)
-							delete *i;
-						delete $5;
-						delete $8;
-						$$ = NULL;
-					}
-					else
-					{
-						$$ = $<process>3;
-						$$->add_states($8->states);
-						parser_context->add_proc_to_scope($$->name);
-						parser_context->set_process(NULL);//leaving process definition
-						
-						delete $5;
-						delete $8;
-					}
+					//finalize the iCProcess and add it to scope
+					//if a redifinition took place the proc will have multiple instance in the scope but it's ok
+					$$ = $<process>3;
+					$$->add_states(*$8);
+					parser_context->add_proc_to_scope($$->name);
+
+					//restore context
+					parser_context->set_process(NULL);//leaving process definition
 					parser_context->leave_isr();
+					
+					delete $8;//proc body (list of states)
 					$1;$4;$7;$9;//suppress unused value warning
 				}
 			;	
-		
-proc_body	: proc_body state {$1->states.push_back($2); $$=$1;}
+
+//=================================================================================================
+//process body can contain state definitions and variable declarations (interleaved)
+//states are stored in a list that is passed further as proc_body node
+//var declarations are disbanded with variables added directly to program (as globals with scope prefixes)
+//variables already know their context (the process they belong to)
+//var_declaration is a simple list of vars. No iCVariableDeclaration objects are built here
+//=================================================================================================
+proc_body	: proc_body state {$1->push_back($2); $$=$1;}//states are stored in the list
 			| proc_body var_declaration 
 			{
+				//Split the declaration into variables and feed them to the program
 				std::list<iCVariable*>* vars = $2;
 				for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
-				{
 					ic_program->add_variable(*i);
-				}
+
 				delete vars;
 				$$ = $1;
 			}
-			| state {$$ = new iCProcBody(); $$->states.push_back($1); }
+			| state {$$ = new StateList(); $$->push_back($1); }
 			| var_declaration 
 			{
+				//Split the declaration into variables and feed them to the program
 				std::list<iCVariable*>* vars = $1;
 				for(std::list<iCVariable*>::iterator i=vars->begin();i!=vars->end();i++)
-				{
 					ic_program->add_variable(*i);
-				}
+				
 				delete vars;
-				$$ = new iCProcBody(); //$$->decls.push_back($1);
+				$$ = new StateList();
 			}
-			| proc_body c_code{if(NULL!=$2)$1->decls.push_back($2);	$$=$1;}
-			| c_code {$$ = new iCProcBody();if(NULL!=$1)$$->decls.push_back($1);}
 			;
 
+//=================================================================================================
+//the iCState object is created before parsing the body, so that body items have proper context
+//states are stored in a list that is passed further as proc_body node
+//var declarations are disbanded with variables added directly to program (as globals with scope prefixes)
+//variables already know their context (the process they belong to)
+//var_declaration is a simple list of vars. No iCVariableDeclaration objects are built here
+//=================================================================================================
 state		:	TSTATE TIDENTIFIER
 				{
 					//check for state redefinition
 					const iCScope* scope = parser_context->get_state_scope(*$2);
 					if(NULL != scope)
 					{
+						//state already defined - gen error message and move on like it's ok
 						parser_context->err_msg("state redefinition: %s already defined in %s",
 												$2->c_str(), scope->name.empty()?"this scope":scope->name.c_str());
 					}
+
+					//Create the state object with name only - state body is parsed and added later
+					$<state>$ = new iCState(*$2, *parser_context);
+
+					//modify context - we are now inside a state and inside a new scope
 					parser_context->add_state_to_scope(*$2);
 					parser_context->open_scope(*$2); 
-					$<state>$ = new iCState(*$2, *parser_context);
 					parser_context->set_state($<state>$);
 					delete $2;
 				}
-				TLBRACE state_body TRBRACE 
+				TLBRACE state_body TRBRACE // 4 5 6
 				{
+					//finalize the iCState object - copy parsed body items
 					$$ = $<state>3; 
 					if(NULL != $5)
 						$$->set_items(*$5); 
+
+					//restore context
 					parser_context->close_scope(); 
 					parser_context->set_state(NULL);
-					delete $5;
+
+					delete $5;// state body
 					$1;$2;$4;$6;//suppress unused value warning
 				}
 			;
 		
-state_body	:	%empty {$$ = new iCBlockItemsList();}
+//=================================================================================================
+//the state body is a list of block items and (probably) one timeout. or it can be nothing (empty)
+//the state_body rule is needed so that the body could be empty.
+//state_items_list and state_block_item are needed to give special treatment to timeout
+//TODO: should be able to simply use block_items_list directly instead of state_body
+//could get rid of all those rules and add explicit checks instead of embedding them into the grammar
+//=================================================================================================
+state_body	:	%empty {$$ = new iCBlockItemsList();} // state body can be empty
 			|	state_items_list {$$ = $1;}
 			;
 
-state_items_list	:	state_items_list state_block_item 
+state_items_list	:	state_items_list state_block_item //build a list of state_block_items
 						{
 							if(NULL != $2)
-							{
 								$1->push_back($2);
-							}
 							$$=$1;
 						}
 					|	state_block_item 
-					{
-						$$ = new iCBlockItemsList(); 
-						if(NULL != $1)
-							$$->push_back($1);
-					}
-					|	state_items_list error TSEMIC 
-					{
-						yyerrok;
-						$$=$1;
-						$3;
-						
-					}
-					|	error TSEMIC
 						{
-							$$ = new iCBlockItemsList();
-							yyerrok;
-							$2;
+							$$ = new iCBlockItemsList(); 
+							if(NULL != $1)
+								$$->push_back($1);
 						}
+					|	state_items_list error TSEMIC { yyerrok; $$=$1; $3; }
+					|	error TSEMIC { $$ = new iCBlockItemsList(); yyerrok; $2; }
 					;
 
 state_block_item	:	block_item	{$$ = $1;}
-					|	timeout 
+					|	timeout //timeout is treated separately from all the other statements
 						{
 							$$ = NULL;
-							parser_context->modify_state()->set_timeout($1);
+							parser_context->modify_state()->set_timeout($1);//a hack to access the state
 						}
 					;
 
 block_item	:	var_declaration 
 				{
+					// these are local variables - make sure we are inside a state or a function
 					ICASSERT(NULL != parser_context->get_func() || NULL != parser_context->get_state());
+
+					//Build an iCVariableDeclaration object and pass it further
 					std::list<iCVariable*>* vars = $1;
 					iCVariableDeclaration* decl = new iCVariableDeclaration(*parser_context);
 					decl->set_vars(*vars);
@@ -542,7 +547,7 @@ block_item	:	var_declaration
 			|	c_code {$$ = $<block_item>1;}	
 			;
 
-block_items_list	:	block_items_list block_item 
+block_items_list	:	block_items_list block_item //build a list of block items
 						{
 							if(NULL != $2)
 								$1->push_back($2); 
@@ -555,11 +560,19 @@ block_items_list	:	block_items_list block_item
 								$$->push_back($1);
 						}
 					;
+
+c_code		:	TCCODELINE 
+				{
+					$$ = new CCode(*parser_context); 
+					$$->add_line(new CCodeLine(*$1, *parser_context)); 
+					delete $1;
+				}
+			;
 			
 /*************************************************************************************************/     
 /*                                 S T A T E M E N T S                                           */     
 /*************************************************************************************************/
-statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
+statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 				{
 					const iCProcess* proc = parser_context->get_process();
 					if(NULL == proc)
@@ -575,7 +588,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}			
-			|	TSTART TPROC TIDENTIFIER TSEMIC //start process
+			|	TSTART TPROC TIDENTIFIER TSEMIC //start process proc_name;
 				{
 					const iCProcess* proc = parser_context->get_process();
 					if(NULL == proc)
@@ -591,7 +604,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}	
-			|	TSTOP TPROC TIDENTIFIER TSEMIC //stop process
+			|	TSTOP TPROC TIDENTIFIER TSEMIC //stop process proc_name;
 				{
 					const iCProcess* proc = parser_context->get_process();
 					if(NULL == proc)
@@ -607,7 +620,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}	
-			|	TSTOP TPROC TSEMIC
+			|	TSTOP TPROC TSEMIC //stop process;
 				{
 					const iCProcess* proc = parser_context->get_process();
 					if(NULL == proc)
@@ -622,22 +635,22 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					}
 					$1;$2;$3;//suppress unused value warning
 				}
-			|	expression_statement //default action is $$ = $1;			
-			|	TSTART THYPERPROCESS TIDENTIFIER TSEMIC //hyperprocess control - start
+			|	expression_statement //e.g. "a = b + c - d;"
+			|	TSTART THYPERPROCESS TIDENTIFIER TSEMIC //start hyperprocess hp_name;
 				{
 					$$ = new iCStartHPStatement(*$3, *parser_context); 
 					parser_context->add_to_second_pass($$); // to check if HP was defined
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}
-			|	TSTOP THYPERPROCESS TIDENTIFIER TSEMIC //hyperprocess control - stop
+			|	TSTOP THYPERPROCESS TIDENTIFIER TSEMIC //stop hyperprocess hp_name;
 				{
 					$$ = new iCStopHPStatement(*$3, *parser_context); 
 					parser_context->add_to_second_pass($$); // to check if HP was defined
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}
-			|	TSTOP THYPERPROCESS TSEMIC
+			|	TSTOP THYPERPROCESS TSEMIC // stop hyperprocess;
 				{
 					const iCProcess* proc = parser_context->get_process();
 					if(NULL == proc)
@@ -652,7 +665,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					}
 					$1;$2;$3;//suppress unused value warning
 				}
-			|	compound_statement //default action is $$ = $1;
+			|	compound_statement // {...}
 			|	TIF TLPAREN expr TRPAREN statement TELSE statement { $<statement>$ = new iCSelectionStatement(*parser_context, $5, $7, $3); $1;$2;$4;$6;	}
 			|	TIF TLPAREN expr TRPAREN statement %prec XIF { $<statement>$ = new iCSelectionStatement(*parser_context, $5, NULL, $3); $1;$2;$4; }
 				
@@ -670,7 +683,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 					parser_context->close_scope();
 					$1;$2;$3;$6;
 				}
-			|	TATOMIC	statement
+			|	TATOMIC	statement // explicit atomic block
 				{
 					//Atomic block with FORCEON executed in ISR would cause nested interrupts
 					if(parser_context->get_process()->is_isr_driven())
@@ -692,7 +705,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //state transition
 			|	TRETURN TSEMIC { $$ = new iCReturnStatement(NULL, *parser_context); delete $1; $2; }
 			;
 
-					// dummy rule to open a "for" loop scope before parsing the init statement
+//dummy rule to open a "for" loop scope before parsing the init statement
 for_prep_scope		:	%empty { parser_context->open_scope("for"); $$ = 0; } 
 					;
 
@@ -709,16 +722,16 @@ for_init_statement	:	expression_statement
 expression_statement: expr TSEMIC { $$ = new iCExpressionStatement($1, *parser_context); $2; }
 					| TSEMIC { $$ = new iCExpressionStatement(NULL, *parser_context); $1; }
 
+//compound statement is pair of braces with block items in between. e.g. for or if body can be a compound statement
+//prep_compound rule is used to open a separate scope for the items inside
+//TODO: use midrule action instead of prep_compound, remove prep_compound in the empty case - don't need the scope there.
 compound_statement:		TLBRACE prep_compound block_items_list TRBRACE 
 						{
+							ICASSERT(NULL != $3)
 							$$ = $2;
-							if(NULL != $3)
-							{
-								static_cast<iCCompoundStatement*>($<statement>$)->set_items(*$3);
-								delete $3;
-							}
-
+							static_cast<iCCompoundStatement*>($<statement>$)->set_items(*$3);
 							parser_context->close_scope();
+							delete $3;
 							$1;$4;//suppress unused value warning
 						}
 					|	TLBRACE prep_compound TRBRACE // empty compound statement {}
@@ -728,25 +741,30 @@ compound_statement:		TLBRACE prep_compound block_items_list TRBRACE
 							$1;$3;
 						}
 					;
-
 prep_compound:	%empty { $$ = new iCCompoundStatement(*parser_context); parser_context->open_scope("comp"); }; // dummy rule to prepare scope for compound statement
 
-timeout	:	TTIMEOUT {parser_context->enter_timeout();}
-			TLPAREN expr TRPAREN // 3 4 5
+//iCTimeout is created without body to prep the scope for the body items
+//enter_timeout and leave_timeout are used in critical section (atomic block) placement analysis
+timeout	:	TTIMEOUT TLPAREN expr TRPAREN // 1 2 3 4
 			{
-			  $<timeout>$ = new iCTimeout($4, *parser_context);
+			  //created only with name, items are parsed and added later
+			  $<timeout>$ = new iCTimeout($3, *parser_context);
+			  
+			  //modify context
 			  parser_context->open_scope("timeout");
+			  parser_context->enter_timeout();
 			}
-			TLBRACE block_items_list TRBRACE // 7 8 9
+			TLBRACE block_items_list TRBRACE // 6 7 8
 			{
-			  $$ = $<timeout>6;
+			  //finalize the iCTimeout object
+			  $$ = $<timeout>5;
+			  $$->set_items(*$7);
+			  
+			  //restore the scope
 			  parser_context->close_scope();
-			  $$->set_items(*$8);
-			  delete $8;
-
 			  parser_context->leave_timeout();
-
-			  $1;$3;$5;$7;$9;//suppress unused value warning
+			  delete $7; // block_items_list
+			  $1;$2;$4;$6;$8;//suppress unused value warning
 			}
 		;
 			
@@ -797,18 +815,18 @@ unary_expr 	: postfix_expr
 		   	;
 		   	
 postfix_expr : primary_expr 
-			 | postfix_expr TLBRACKET expr TRBRACKET 
+			 | postfix_expr TLBRACKET expr TRBRACKET // array indexing
 			   {
 				   $$ = new iCSubscriptExpression($1, $3, *parser_context);
 				   $2;$4;
 			   }
-			 |	TIDENTIFIER TLPAREN TRPAREN 
+			 |	TIDENTIFIER TLPAREN TRPAREN // function call w/o arguments
 			   {
 				   $$ = new iCFunctionCall(*$1, *parser_context);
 				   delete $1;
 				   $2;$3;
 			   }
-			 |	 TIDENTIFIER TLPAREN arg_expr_list TRPAREN
+			 |	 TIDENTIFIER TLPAREN arg_expr_list TRPAREN // function call w/ arguments
 				 {
 					 iCFunctionCall* func_call = new iCFunctionCall(*$1, *parser_context);
 					 func_call->set_args(*$3);
@@ -818,10 +836,12 @@ postfix_expr : primary_expr
 					 delete $3;
 					 $2;$4;
 				 }
-			 | postfix_expr TINC {$$ = new iCPostfixExpression($1, *$2, *parser_context); delete $2;}
-			 | postfix_expr TDEC {$$ = new iCPostfixExpression($1, *$2, *parser_context); delete $2;}
+			 | postfix_expr TINC {$$ = new iCPostfixExpression($1, *$2, *parser_context); delete $2;} // --
+			 | postfix_expr TDEC {$$ = new iCPostfixExpression($1, *$2, *parser_context); delete $2;} // ++
 			 ;
-			 
+
+//argument list for function call - list of comma-separated assignment expressions
+//can optionaly be terminated by an extra comma (C legacy)
 arg_expr_list  :	arg_expr_list TCOMMA assignment_expr
 					{
 						if(NULL != $3)
@@ -853,8 +873,7 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 					else // variable
 					{
 						iCVariable* var = parser_context->get_var(*$1);
-						
-						if(NULL == var) // variable wasn't declared
+						if(NULL == var) // undeclared variable
 						{
 							parser_context->err_msg("%s was not declared in this scope", $1->c_str());
 							$$ = new iCIdentifier(*$1, NULL, *parser_context);
@@ -864,11 +883,11 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 							$$ = new iCIdentifier(*$1, var->scope, *parser_context);
 							const iCProcess* proc = parser_context->get_process();
 
-							//Mark var as used in ISR - used for volatile checks
 							if(NULL != proc)//added because of functions - vars in functions don't belong to any proc
 							{
 								if(0 != proc->activator.compare("background"))
 								{
+									//Mark var as used in ISR - used for volatile checks
 									var->used_in_isr = true;
 									parser_context->add_to_second_pass(var);
 								}
@@ -897,7 +916,7 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 					$$ = new CCodeLine(*$1, *parser_context);
 					delete $1;
 				}
-				/* add hyperprocess active/inactive check*/
+				//TODO: add hyperprocess active/inactive checks
 			 |	TSTRING
 				{
 					$$ = new iCString(*$1, *parser_context);
@@ -927,9 +946,9 @@ assignement_op : TASSGN
 //Parameters are put in a preopened scope func_params_xx
 //Function body (a compound statement) opens its own scope, nested within
 //the func_param_xx scope (scope names do not add up)
-// ! Func declaration (prototype) is treated as a definition
-// ! Need to allow declarations and definitions with redefinition (body != NULL)
-// ! and undefined (body == NULL on second pass) checks
+//TODO: Func declaration (prototype) is treated as a definition
+//Need to allow declarations and definitions with redefinition (body != NULL)
+//and undefined (body == NULL on second pass) checks
 //=============================================================================
 func_definition			:	decl_specs func_declarator
 							{
@@ -943,7 +962,7 @@ func_definition			:	decl_specs func_declarator
 								$$->body = $4;//func_body	
 								delete $1;//decl_specs
 
-								//if there were params, they had a scope opened (in prep_param_scope rule)
+								//if there were params, they had a scope opened (in func_declarator midrule action)
 								//that needs to be closed
 								if(!$$->params.empty())
 									parser_context->close_scope();
@@ -968,7 +987,11 @@ func_declarator			: TIDENTIFIER TLPAREN TRPAREN //function with empty parenthese
 
 							  $2;$3;
 						  }
-						| TIDENTIFIER TLPAREN param_list TRPAREN //function name with params list in parentheses
+						| TIDENTIFIER TLPAREN // 1 2
+						  {
+							  parser_context->open_scope("func_params");
+						  }
+						  param_list TRPAREN // 4 5 function name with params list in parentheses
 						  {
 							  parser_context->check_identifier_defined(*$1);
 							
@@ -976,17 +999,10 @@ func_declarator			: TIDENTIFIER TLPAREN TRPAREN //function with empty parenthese
 							  const iCScope* scope = parser_context->get_current_scope();
 							  $$ = new iCFunction(*$1, scope, *parser_context);
 							  parser_context->add_func_to_scope(*$1);
-							  $$->set_params(*$3);
+							  $$->set_params(*$4);
 							  delete $1;
-							  delete $3;
-							  $2;$4;
-						  }
-						;
-
-prep_param_scope		: %empty //dummy rule to preopen the parameters scope
-						  {
-							  $<var_list>$ = new std::list<iCVariable*>;
-							  parser_context->open_scope("func_params");
+							  delete $4;
+							  $2;$5;
 						  }
 						;
 
@@ -996,10 +1012,10 @@ param_list				: param_list TCOMMA param_declarator
 							  $$->push_back($3);
 							  delete $2;
 						  }
-						| prep_param_scope param_declarator 
+						| param_declarator 
 						{
-							$$ = $<var_list>1;
-							$$->push_back($2);	
+							$$ = new std::list<iCVariable*>;
+							$$->push_back($1);
 						}
 						;
 
@@ -1014,7 +1030,6 @@ param_declarator		: decl_specs direct_declarator
 //=============================================================================
 //Variable Declaration
 //=============================================================================
-
 var_declaration			:	decl_specs init_declarator_list TSEMIC 
 							{
 								$$ = $2;
@@ -1026,11 +1041,6 @@ var_declaration			:	decl_specs init_declarator_list TSEMIC
 								delete $1;
 								$3;//suppress unused value warning*/
 							}
-						;
-
-mcu_declaration			:	TVECTOR		TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
-						|	TREGISTER	TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
-						|	TBIT		TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
 						;
 
 decl_specs				:	decl_specs type_spec {$1->push_back(*$2); delete $2; $$=$1;}
@@ -1059,6 +1069,9 @@ init_declarator			:	direct_declarator {$$ = $1;}
 							}
 						;
 
+//can be just as simple as a variable name
+//or an array name with dimensions in brackets, e.g. matrix[3][10]
+//in C these can get really complex, with pointers, function pointers etc.
 direct_declarator		:	TIDENTIFIER 
 						{
 							parser_context->check_identifier_defined(*$1);
@@ -1068,13 +1081,13 @@ direct_declarator		:	TIDENTIFIER
 							parser_context->add_var_to_scope($$);
 							delete $1;
 						}
-						| direct_declarator TLBRACKET binary_expr TRBRACKET 
+						| direct_declarator TLBRACKET binary_expr TRBRACKET //explicit array dimension
 						{
 							$$ = $1;
 							$$->add_dimension($3);
 							$2;$4;
 						}
-						| direct_declarator TLBRACKET TRBRACKET 
+						| direct_declarator TLBRACKET TRBRACKET //implicit array dimension (size will be specified by initializer)
 						{
 							$$ = $1;
 							$$->add_dimension(NULL); //dimension size is implicit
@@ -1082,24 +1095,25 @@ direct_declarator		:	TIDENTIFIER
 						}
 						;
 
-initializer 			:	assignment_expr  
+//initializers form a tree in case of multi-dimensional arrays
+//array initializer list can be optionally terminated with an extra comma (C legacy)
+initializer 			:	assignment_expr  //simple variable initializer
 							{
 								$$ = new iCInitializer(*parser_context);
 								$$->add_initializer($1);
 							}
-						|	TLBRACE initializer_list TRBRACE 
+						|	TLBRACE initializer_list TRBRACE //array initializer
 							{
 								$$ = $2;
 								$1;$3;
 							}
-						|	TLBRACE initializer_list TCOMMA TRBRACE 
+						|	TLBRACE initializer_list TCOMMA TRBRACE //array initializer with and extra comma at the end
 							{
 								$$ = $2;
 								delete $3;
 								$1;$4;
 							}
 						;
-
 initializer_list		:	initializer_list TCOMMA initializer 
 							{
 								$$ = $1;
@@ -1125,6 +1139,11 @@ type_spec				:	TVOID
 						|	TCONST
 						|	TVOLATILE	
 						|	TINLINE		
+						;
+
+mcu_declaration			:	TVECTOR		TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
+						|	TREGISTER	TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
+						|	TBIT		TIDENTIFIER TSEMIC {$$ = $2;$1;$3;}
 						;
 
 %%

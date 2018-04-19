@@ -17,11 +17,16 @@ $ #include <math.h>
 #include "sorbiprep/ad7792.ih"
 #include "sorbiprep/adt7320.ih"
 
+void asdasd(int a, int b, int c);
 //=============================================================================
 //Процесс инициализации
 //=============================================================================
 process Initialization : background
 {
+	//$int aasd, asd;
+	//$aasd = asd;
+	//$
+	
 	state FS_START
 	{
 		//Настройка направления работы выводов CS и выставление всех сигналов CS в 1
