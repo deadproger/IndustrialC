@@ -442,6 +442,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCResetTimeoutStatement.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCResetTimeoutStatement.h"
+					>
+				</File>
+				<File
 					RelativePath="..\iCReturnStatement.cpp"
 					>
 				</File>

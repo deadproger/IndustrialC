@@ -76,7 +76,7 @@ public:
 	void set_file(const std::string& filename) {this->filename = filename;}
 	const std::string& file_name() const {return filename;}
 
-	void err_msg(const char* format, ...);
+	void err_msg(const char* format, ...)const;
 
 	void open_scope(const std::string& name = "");
 	void close_scope();

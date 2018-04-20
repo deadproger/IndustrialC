@@ -21,8 +21,8 @@ void iCStopProcStatement::gen_code(CodeGenContext& context)
 	context.set_location(line_num, filename);
 	context.indent();
 	context.to_code_fmt("%s(%s);", C_STOPPROC_MACRO, proc_name.c_str());
-	if(in_isr)
-		context.to_code_fmt("//in ISR");
+	/*if(in_isr)
+		context.to_code_fmt("//in ISR");*/
 	context.to_code_fmt("\n");
 }
 

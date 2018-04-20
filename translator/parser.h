@@ -40,6 +40,7 @@
 	#include "iCIterationStatement.h"
 	#include "iCAtomicBlock.h"
 	#include "iCReturnStatement.h"
+	#include "iCResetTimeoutStatement.h"
 
 	#include <stdio.h>
 	#include <stdarg.h> 
@@ -111,6 +112,7 @@
 %token <token> TELSE			"else"
 %token <token> TFOR				"for"
 %token <token> TATOMIC			"atomic"
+%token <token> TRESET			"reset"
 
 %token <token> TTRUE			"true"
 %token <token> TFALSE			"false"
@@ -224,10 +226,9 @@
 %type <variable>			init_declarator
 %type <func>				func_declarator
 %type <var_list>			param_list
-//%type <var_list>			prep_param_scope
 %type <variable>			param_declarator
 %type <statement>			for_init_statement
-%type <token>				for_prep_scope
+//%type <token>				for_prep_scope
 
 /***********************************************/
 /*                  DESTRUCTORS                */
@@ -669,19 +670,20 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 			|	TIF TLPAREN expr TRPAREN statement TELSE statement { $<statement>$ = new iCSelectionStatement(*parser_context, $5, $7, $3); $1;$2;$4;$6;	}
 			|	TIF TLPAREN expr TRPAREN statement %prec XIF { $<statement>$ = new iCSelectionStatement(*parser_context, $5, NULL, $3); $1;$2;$4; }
 				
-				//the for loop needs a preopened scope for variables declared in its init statement
+				//for loop needs a preopened scope for variables declared in its init statement
 				//for_prep_scope opens a separate scope that wraps the whole for statement
-			|	TFOR for_prep_scope	TLPAREN for_init_statement expression_statement expr TRPAREN statement
+			|	TFOR
+				for_prep_scope TLPAREN for_init_statement expression_statement expr TRPAREN statement
 				{
 					$$ = new iCIterationStatement($4, $5, $6, $8, *parser_context);
 					parser_context->close_scope();
-					$1;$2;$3;$7;
+					$1;$3;$7;
 				}
 			|	TFOR for_prep_scope TLPAREN for_init_statement expression_statement TRPAREN statement
 				{
 					$$ = new iCIterationStatement($4, $5, NULL, $7, *parser_context);
 					parser_context->close_scope();
-					$1;$2;$3;$6;
+					$1;$3;$6;
 				}
 			|	TATOMIC	statement // explicit atomic block
 				{
@@ -703,10 +705,11 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 				}
 			|	TRETURN expr TSEMIC	{ $$ = new iCReturnStatement($2, *parser_context); delete $1; $3; }
 			|	TRETURN TSEMIC { $$ = new iCReturnStatement(NULL, *parser_context); delete $1; $2; }
+			|	TRESET TTIMEOUT TSEMIC { $$ = new iCResetTimeoutStatement(*parser_context); $1;$2;$3;}
 			;
 
-//dummy rule to open a "for" loop scope before parsing the init statement
-for_prep_scope		:	%empty { parser_context->open_scope("for"); $$ = 0; } 
+//subroutine to open a "for" loop scope before parsing the init statement
+for_prep_scope		:	%empty { parser_context->open_scope("for"); } 
 					;
 
 for_init_statement	:	expression_statement 

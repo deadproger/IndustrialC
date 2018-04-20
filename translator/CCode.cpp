@@ -63,7 +63,7 @@ CCodeLine::CCodeLine( const std::string& text, ParserContext& parser_context ) :
 		iCVariable* var = parser_context.get_var(var_name);
 		if(NULL == var) // variable not defined in this scope
 		{
-			parser_context.err_msg("undefined iC variable %s in c code section", var_name.c_str());
+			err_msg("undefined iC variable %s in c code section", var_name.c_str());
 			text_stream<<var_name;//dump the var name anyway
 		}
 		else

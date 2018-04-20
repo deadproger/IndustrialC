@@ -43,7 +43,8 @@ iCInitializer.cpp ^
 iCString.cpp ^
 iCIterationStatement.cpp ^
 iCAtomicBlock.cpp ^
-iCReturnStatement.cpp
+iCReturnStatement.cpp ^
+iCResetTimeoutStatement.cpp
 @echo --------------------------------Done-------------------------------------
 
  

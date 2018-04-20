@@ -36,8 +36,8 @@ void iCStartProcStatement::gen_code(CodeGenContext& context)
 	context.indent();
 	context.to_code_fmt("%s(%s);", C_STARTPROC_MACRO, proc_name.c_str());
 
-	if(in_isr)
-		context.to_code_fmt("//in ISR");
+	/*if(in_isr)
+		context.to_code_fmt("//in ISR");*/
 	context.to_code_fmt("\n");
 
 	//atomic block footer

@@ -195,7 +195,7 @@ const iCScope* ParserContext::get_func_scope( const std::string& func ) const
 //=================================================================================================
 //
 //=================================================================================================
-void ParserContext::err_msg( const char* format, ... )
+void ParserContext::err_msg( const char* format, ... )const
 {
 	had_errors = true;
 	char buffer[ERR_MSG_BUFFER_SIZE];

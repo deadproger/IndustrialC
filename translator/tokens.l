@@ -67,6 +67,7 @@ const int IC_TAB_SIZE = 4;
 "active"				return TOKEN(TACTIVE		);
 "passive"				return TOKEN(TPASSIVE		);
 "sizeof"				return TOKEN(TSIZEOF		);
+"reset"					return TOKEN(TRESET			);
 
 "hyperprocess"			return TOKEN(THYPERPROCESS	);
 "vector"				return TOKEN(TVECTOR		);	

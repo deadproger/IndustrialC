@@ -2,6 +2,7 @@
 #include "CodeGenContext.h"
 #include "iCProcess.h"
 #include "ParserContext.h"
+#include "iCState.h"
 
 //=================================================================================================
 //Semantic checks
@@ -49,6 +50,9 @@ iCStateTransition::iCStateTransition( const std::string& state_name, const Parse
 		process(context.get_process()),
 		iCNode(context)
 {
+	if(state_name == context.get_state()->name)
+		warning_msg("state transition to the same state - use \"reset timeout;\" instead");
+	
 	line_num = context.line();
 }
 
