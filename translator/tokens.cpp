@@ -1364,7 +1364,7 @@ SAVE_TOKEN; return TMINUS	;
 case 72:
 YY_RULE_SETUP
 #line 130 "tokens.l"
-SAVE_TOKEN; return TMUL		;
+SAVE_TOKEN; return TASTERISK		;
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
@@ -1454,7 +1454,7 @@ SAVE_TOKEN; return TMINUS_ASSGN	;
 case 90:
 YY_RULE_SETUP
 #line 148 "tokens.l"
-SAVE_TOKEN; return TMUL_ASSGN	;
+SAVE_TOKEN; return TASTERISK_ASSGN	;
 	YY_BREAK
 case 91:
 YY_RULE_SETUP

@@ -159,7 +159,7 @@
 %token <string> TCOMMA			"," 
 %token <string> TPLUS			"+" 
 %token <string> TMINUS			"-" 
-%token <string> TMUL			"*" 
+%token <string> TASTERISK			"*" 
 %token <string> TDIV			"/" 
 %token <string> TPERC			"%"	
 %token <string> TINC			"++"
@@ -177,7 +177,7 @@
 %token <string> TL_ASSGN		"<<="	
 %token <string> TPLUS_ASSGN		"+="	
 %token <string> TMINUS_ASSGN	"-="	
-%token <string> TMUL_ASSGN		"*="		
+%token <string> TASTERISK_ASSGN		"*="		
 %token <string> TDIV_ASSGN		"/="		
 %token <string> TPERC_ASSGN		"%="	
 %token <string> TAND_ASSGN		"&="		
@@ -283,7 +283,7 @@
 %left TGT TLT TGE TLE
 %left TLSHIFT TRSHIFT
 %left TPLUS TMINUS
-%left TMUL TDIV TPERC
+%left TASTERISK TDIV TPERC
 %left TINC TDEC UMINUS TTILDE TEXCLAM
 
 /*************************************************************************************************/
@@ -802,10 +802,9 @@ binary_expr : cast_expr
 			| binary_expr	 TRSHIFT	binary_expr {$$ = new iCBinaryExpression($1, *$2, $3, *parser_context); delete $2;}
 			| binary_expr	 TPLUS		binary_expr {$$ = new iCBinaryExpression($1, *$2, $3, *parser_context); delete $2;}
 			| binary_expr	 TMINUS		binary_expr {$$ = new iCBinaryExpression($1, *$2, $3, *parser_context); delete $2;}
-			| binary_expr	 TMUL		binary_expr {$$ = new iCBinaryExpression($1, *$2, $3, *parser_context); delete $2;}
+			| binary_expr	 TASTERISK		binary_expr {$$ = new iCBinaryExpression($1, *$2, $3, *parser_context); delete $2;}
 			| binary_expr	 TDIV		binary_expr {$$ = new iCBinaryExpression($1, *$2, $3, *parser_context); delete $2;}
 			| binary_expr	 TPERC		binary_expr {$$ = new iCBinaryExpression($1, *$2, $3, *parser_context); delete $2;}
-			
 			;
 		  
 unary_expr 	: postfix_expr 
@@ -933,7 +932,7 @@ assignement_op : TASSGN
 			   | TL_ASSGN 		
 			   | TPLUS_ASSGN  	
 			   | TMINUS_ASSGN  	
-			   | TMUL_ASSGN  
+			   | TASTERISK_ASSGN  
 			   | TDIV_ASSGN	 
 			   | TPERC_ASSGN  
 			   | TAND_ASSGN	 
@@ -984,28 +983,49 @@ abstract_declarator	:	pointer
 
 direct_abstract_declarator	:	TLPAREN abstract_declarator TRPAREN
 								{
-									$$ = new std::string ("asd");
-									*$$ += "(" + *$2 + ")"; 
+									$$ = new std::string;
+									*$$ += '(' + *$2 + ')'; 
 									delete $2;
 									$1;$3;
 								}
-							//|	'[' ']'
-							//|	'[' binary_expr ']'
-							//|	direct_abstract_declarator '[' ']'
-							//|	direct_abstract_declarator '[' binary_expr ']'
+							|	TLBRACKET TRBRACKET
+								{
+									$$ = new std::string("[]");
+									$1;$2;
+								}
+							|	TLBRACKET TICONST TRBRACKET // should be binary expression instead of TICONST
+								{
+									$$ = new std::string;
+									*$$ += '[' + *$2 + ']';
+									delete $2;
+									$1;$3;
+								}
+							|	direct_abstract_declarator TLBRACKET TRBRACKET
+								{
+									$$ = $1;
+									*$$ += "[]";
+									$2; $3;
+								}
+							|	direct_abstract_declarator TLBRACKET TICONST TRBRACKET // should be binary expression instead of TICONST
+								{
+									$$ = $1;
+									*$$ += '[' + *$3 + ']';
+									delete $3;
+									$2; $4;
+								}
 							//|	'(' ')'
 							//|	'(' parameter_type_list ')'
 							//|	direct_abstract_declarator '(' ')'
 							//|	direct_abstract_declarator '(' parameter_type_list ')'
 							;
 
-pointer	:	TMUL 
+pointer	:	TASTERISK 
 			{
 				$$ = new std::string("*"); 
 				delete $1; 
 			}
 		//|	'*' type_qualifier_list
-		|	TMUL pointer 
+		|	TASTERISK pointer 
 			{
 				$$ = $2; 
 				*$$ += "*"; 
@@ -1116,7 +1136,7 @@ var_declaration			:	decl_specs init_declarator_list TSEMIC
 									var->set_type_specs(*$1);
 								}
 								delete $1;
-								$3;//suppress unused value warning*/
+								$3;//suppress unused value warning
 							}
 						;
 

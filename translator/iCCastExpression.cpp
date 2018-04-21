@@ -1,8 +1,10 @@
 #include "iCCastExpression.h"
 #include "CodeGenContext.h"
-#include "ParserContext.h"
+//#include "ParserContext.h"
 
-
+//=================================================================================================
+//
+//=================================================================================================
 iCCastExpression::iCCastExpression( const std::string& type_name, iCExpression* expr, const ParserContext& context ) 
 	:	iCNode(context),
 		type_name(type_name), 
@@ -11,6 +13,9 @@ iCCastExpression::iCCastExpression( const std::string& type_name, iCExpression* 
 
 }
 
+//=================================================================================================
+//Code generator
+//=================================================================================================
 void iCCastExpression::gen_code( CodeGenContext& context )
 {
 	context.set_location(line_num, filename);
@@ -21,6 +26,9 @@ void iCCastExpression::gen_code( CodeGenContext& context )
 
 }
 
+//=================================================================================================
+//
+//=================================================================================================
 iCCastExpression::~iCCastExpression()
 {
 	delete expr;
