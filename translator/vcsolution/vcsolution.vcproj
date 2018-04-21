@@ -298,6 +298,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCCastExpression.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\iCCastExpression.h"
 					>
 				</File>
@@ -535,8 +539,15 @@
 			Name="FlexBison"
 			>
 			<File
-				RelativePath="..\parser.h"
+				RelativePath="..\parser.y"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\tokens.l"

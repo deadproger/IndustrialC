@@ -230,6 +230,11 @@
 %type <statement>			for_init_statement
 //%type <token>				for_prep_scope
 
+%type <string>				type_name
+%type <string>				abstract_declarator
+%type <string>				direct_abstract_declarator
+%type <string>				pointer
+
 /***********************************************/
 /*                  DESTRUCTORS                */
 /***********************************************/
@@ -802,10 +807,6 @@ binary_expr : cast_expr
 			| binary_expr	 TPERC		binary_expr {$$ = new iCBinaryExpression($1, *$2, $3, *parser_context); delete $2;}
 			
 			;
-			
-cast_expr 	: unary_expr 
-		  	/*| TLPAREN type_name TRPAREN cast_expr*/
-		  	;
 		  
 unary_expr 	: postfix_expr 
 		   	| TINC unary_expr {$$ = new iCUnaryExpression(*$1, $2, *parser_context); delete $1;}
@@ -939,6 +940,79 @@ assignement_op : TASSGN
 			   | TXOR_ASSGN	 
 			   | TOR_ASSGN	 
 			   ;
+
+//=============================================================================
+//cast expression's a bitch
+//for now we just shove it all in a string, call it type_name
+//and let the c compiler deal with it
+//=============================================================================
+cast_expr 	: unary_expr 
+			| TLPAREN type_name TRPAREN cast_expr 
+			  {
+				  $$ = new iCCastExpression(*$2, $4, *parser_context); 
+				  delete $2; 
+				  $1; $3; 
+			  }
+		  	;
+type_name	:	decl_specs 
+				{
+					$$ = new std::string;
+					for(iCStringList::iterator i=$1->begin();i!=$1->end();i++)
+						*$$ += *i;
+					delete $1;
+				}
+			|	decl_specs abstract_declarator 
+			{
+				$$ = new std::string;
+				for(iCStringList::iterator i=$1->begin();i!=$1->end();i++)
+						*$$ += *i;
+				*$$ += *$2; 
+				delete $1;
+				delete $2; 
+			}
+			;
+
+abstract_declarator	:	pointer 
+					|	direct_abstract_declarator
+					|	pointer direct_abstract_declarator 
+						{
+							$$ = $1; 
+							*$$ += *$2; 
+							delete $2; 
+						}
+					;
+
+direct_abstract_declarator	:	TLPAREN abstract_declarator TRPAREN
+								{
+									$$ = new std::string ("asd");
+									*$$ += "(" + *$2 + ")"; 
+									delete $2;
+									$1;$3;
+								}
+							//|	'[' ']'
+							//|	'[' binary_expr ']'
+							//|	direct_abstract_declarator '[' ']'
+							//|	direct_abstract_declarator '[' binary_expr ']'
+							//|	'(' ')'
+							//|	'(' parameter_type_list ')'
+							//|	direct_abstract_declarator '(' ')'
+							//|	direct_abstract_declarator '(' parameter_type_list ')'
+							;
+
+pointer	:	TMUL 
+			{
+				$$ = new std::string("*"); 
+				delete $1; 
+			}
+		//|	'*' type_qualifier_list
+		|	TMUL pointer 
+			{
+				$$ = $2; 
+				*$$ += "*"; 
+				delete $1;  
+			}
+		//|	'*' type_qualifier_list pointer
+		;
 
 /*************************************************************************************************/     
 /*                              D E C L A R A T I O N S                                          */     

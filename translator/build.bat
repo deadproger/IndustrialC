@@ -1,6 +1,6 @@
 @echo --------------------------------Build------------------------------------
 del industrialc.exe
-win_bison --report=all --report-file=bisonreport -d -o parser.cpp parser.h 
+win_bison --report=all --report-file=bisonreport -d -o parser.cpp parser.y 
 win_flex -otokens.cpp tokens.l 
 g++ -static-libgcc -static-libstdc++ -oindustrialc parser.cpp tokens.cpp main.cpp ^
 CCode.cpp ^
@@ -44,7 +44,8 @@ iCString.cpp ^
 iCIterationStatement.cpp ^
 iCAtomicBlock.cpp ^
 iCReturnStatement.cpp ^
-iCResetTimeoutStatement.cpp
+iCResetTimeoutStatement.cpp ^
+iCCastExpression.cpp
 @echo --------------------------------Done-------------------------------------
 
  
