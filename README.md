@@ -1,7 +1,7 @@
 # IndustrialC
 IndustrialC is a programming language intended for microcontroller-based embedded systems.
 
-## headers - uC-specific headers
+## headers: uC-specific headers
 The headers contain declarations for registers, bits and interrupt vectors as well as time-functions implementations.
 
 ## npp_plugin: Visual Studio code for Notepad++ IndustrialC plugin
