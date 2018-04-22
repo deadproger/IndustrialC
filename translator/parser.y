@@ -39,7 +39,7 @@
 	#include "iCString.h"
 	#include "iCIterationStatement.h"
 	#include "iCAtomicBlock.h"
-	#include "iCReturnStatement.h"
+	#include "iCJumpStatement.h"
 	#include "iCResetTimeoutStatement.h"
 
 	#include <stdio.h>
@@ -110,6 +110,8 @@
 %token <token> TCLEAN			"clean"	
 %token <token> TIF				"if"
 %token <token> TELSE			"else"
+%token <token> TSWITCH			"switch"
+%token <token> TCASE			"case"
 %token <token> TFOR				"for"
 %token <token> TATOMIC			"atomic"
 %token <token> TRESET			"reset"
@@ -130,6 +132,8 @@
 %token <string> TVOLATILE		"volatile"
 %token <string> TINLINE			"inline"
 %token <string> TRETURN			"return"
+%token <string> TBREAK			"break"
+%token <string> TCONTINUE		"continue"
 
 %token <string> TIDENTIFIER		"identifier"
 %token <string> TICONST			"integer constant"
@@ -142,8 +146,8 @@
 %token <string> TSTRING			"string literal"
 %token <token> TLPAREN			"(" 
 %token <token> TRPAREN			")" 
-%token <token> TLBRACKET			"["	
-%token <token> TRBRACKET			"]"	
+%token <token> TLBRACKET		"["	
+%token <token> TRBRACKET		"]"	
 %token <token> TLBRACE			"{" 
 %token <token> TRBRACE			"}" 
 %token <token> TSEMIC			";" 
@@ -672,9 +676,11 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 					$1;$2;$3;//suppress unused value warning
 				}
 			|	compound_statement // {...}
-			|	TIF TLPAREN expr TRPAREN statement TELSE statement { $<statement>$ = new iCSelectionStatement(*parser_context, $5, $7, $3); $1;$2;$4;$6;	}
-			|	TIF TLPAREN expr TRPAREN statement %prec XIF { $<statement>$ = new iCSelectionStatement(*parser_context, $5, NULL, $3); $1;$2;$4; }
-				
+			|	TIF TLPAREN expr TRPAREN statement TELSE statement { $<statement>$ = new iCIfElseStatement(*parser_context, $5, $7, $3); $1;$2;$4;$6;	}
+			|	TIF TLPAREN expr TRPAREN statement %prec XIF { $<statement>$ = new iCIfElseStatement(*parser_context, $5, NULL, $3); $1;$2;$4; }
+			|	TSWITCH TLPAREN expr TRPAREN statement {$<statement>$ = new iCSwitchStatement(*parser_context, $5, $3); $1;$2;$4; }
+			|	TCASE expr TCOLON statement {$$ = new iCCaseStatement(*parser_context, $4, $2); $1; $3; }
+
 				//for loop needs a preopened scope for variables declared in its init statement
 				//for_prep_scope opens a separate scope that wraps the whole for statement
 			|	TFOR
@@ -708,9 +714,11 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 					}
 					$1;//suppress unused value warning
 				}
-			|	TRETURN expr TSEMIC	{ $$ = new iCReturnStatement($2, *parser_context); delete $1; $3; }
-			|	TRETURN TSEMIC { $$ = new iCReturnStatement(NULL, *parser_context); delete $1; $2; }
 			|	TRESET TTIMEOUT TSEMIC { $$ = new iCResetTimeoutStatement(*parser_context); $1;$2;$3;}
+			|	TRETURN expr TSEMIC	{ $$ = new iCJumpStatement("return",	$2,		*parser_context);		delete $1; $3; }
+			|	TRETURN TSEMIC		{ $$ = new iCJumpStatement("return",	NULL,	*parser_context);		delete $1; $2; }
+			|	TBREAK TSEMIC		{ $$ = new iCJumpStatement("break",		NULL,	*parser_context);		delete $1; $2; }
+			|	TCONTINUE TSEMIC	{ $$ = new iCJumpStatement("continue",	NULL,	*parser_context);		delete $1; $2; }
 			;
 
 //subroutine to open a "for" loop scope before parsing the init statement

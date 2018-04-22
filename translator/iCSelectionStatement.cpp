@@ -1,13 +1,13 @@
 #include "iCSelectionStatement.h"
 #include "CodeGenContext.h"
+#include "ParserContext.h"
 
 //=================================================================================================
 //
 //=================================================================================================
-iCSelectionStatement::iCSelectionStatement( const ParserContext& context, iCStatement *body, iCStatement *else_body, iCExpression *expr )
+iCSelectionStatement::iCSelectionStatement( const ParserContext& context, iCStatement *body, iCExpression *expr )
 	:	iCNode(context),
 		body(body),
-		else_body(else_body),
 		expr(expr)
 {
 	line_num = expr->line_num;
@@ -16,7 +16,7 @@ iCSelectionStatement::iCSelectionStatement( const ParserContext& context, iCStat
 //=================================================================================================
 //
 //=================================================================================================
-void iCSelectionStatement::gen_code( CodeGenContext& context )
+void iCIfElseStatement::gen_code( CodeGenContext& context )
 {
 	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
@@ -47,9 +47,56 @@ void iCSelectionStatement::gen_code( CodeGenContext& context )
 //=================================================================================================
 //
 //=================================================================================================
+void iCSwitchStatement::gen_code( CodeGenContext& context )
+{
+	//context.to_code_fmt("\n");
+	context.set_location(line_num, filename);
+
+	//header
+	context.indent();
+	context.to_code_fmt("switch(");
+	expr->gen_code(context);
+	context.to_code_fmt(")\n");
+
+	//if body
+	if(!body->is_compound()) context.indent_depth++;
+	body->gen_code(context);
+	if(!body->is_compound()) context.indent_depth--;
+}
+
+//=================================================================================================
+//
+//=================================================================================================
+void iCCaseStatement::gen_code( CodeGenContext& context )
+{
+	//context.to_code_fmt("\n");
+	context.set_location(line_num, filename);
+
+	//header
+	context.indent();
+	context.to_code_fmt("case ");
+	expr->gen_code(context);
+	context.to_code_fmt(" : ");
+
+	// body
+	if(!body->is_compound()) context.indent_depth++;
+	body->gen_code(context);
+	if(!body->is_compound()) context.indent_depth--;
+}
+
+//=================================================================================================
+//
+//=================================================================================================
 iCSelectionStatement::~iCSelectionStatement()
 {	
 	delete expr;
 	delete body;
+}
+
+//=================================================================================================
+//
+//=================================================================================================
+iCIfElseStatement::~iCIfElseStatement()
+{	
 	delete else_body;
 }

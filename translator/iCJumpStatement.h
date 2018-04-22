@@ -5,18 +5,20 @@ class ParserContext;
 class CodeGenContext;
 
 //=================================================================================================
-//
+//C jump statement
+//Jump statements are goto, break, continue & return
 //=================================================================================================
-class iCReturnStatement : public iCStatement
+class iCJumpStatement : public iCStatement
 {
+	std::string op;
 	iCExpression* expr; // owns
 public:
-	iCReturnStatement(iCExpression* expr, const ParserContext& context);
-	virtual ~iCReturnStatement();
+	iCJumpStatement(const std::string& op, iCExpression* expr, const ParserContext& context);
+	virtual ~iCJumpStatement();
 
 	virtual void gen_code(CodeGenContext& context);
 
 #ifdef DEBUG
-	virtual const std::string& identify() const { return "iCReturnStatement";}
+	virtual const std::string& identify() const { return "iCJumpStatement";}
 #endif//DEBUG
 };

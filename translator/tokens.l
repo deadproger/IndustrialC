@@ -68,6 +68,8 @@ const int IC_TAB_SIZE = 4;
 "passive"				return TOKEN(TPASSIVE		);
 "sizeof"				return TOKEN(TSIZEOF		);
 "reset"					return TOKEN(TRESET			);
+"break"					return TOKEN(TBREAK			);
+"continue"				return TOKEN(TCONTINUE		);
 
 "hyperprocess"			return TOKEN(THYPERPROCESS	);
 "vector"				return TOKEN(TVECTOR		);	
@@ -77,6 +79,8 @@ const int IC_TAB_SIZE = 4;
 "clean"					return TOKEN(TCLEAN			);
 "if"					return TOKEN(TIF			);
 "else"					return TOKEN(TELSE			);
+"switch"				return TOKEN(TSWITCH		);
+"case"					return TOKEN(TCASE			);
 "for"					return TOKEN(TFOR			);
 "atomic"				return TOKEN(TATOMIC		);
 
