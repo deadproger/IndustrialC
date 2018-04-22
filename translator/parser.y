@@ -965,15 +965,15 @@ type_name	:	decl_specs
 				{
 					$$ = new std::string;
 					for(iCStringList::iterator i=$1->begin();i!=$1->end();i++)
-						*$$ += *i;
+						*$$ += " " + *i;
 					delete $1;
 				}
 			|	decl_specs abstract_declarator 
 			{
 				$$ = new std::string;
 				for(iCStringList::iterator i=$1->begin();i!=$1->end();i++)
-						*$$ += *i;
-				*$$ += *$2; 
+						*$$ += " " + *i;
+				*$$ += " " + *$2; 
 				delete $1;
 				delete $2; 
 			}
@@ -984,7 +984,7 @@ abstract_declarator	:	pointer
 					|	pointer direct_abstract_declarator 
 						{
 							$$ = $1; 
-							*$$ += *$2; 
+							*$$ += " " + *$2; 
 							delete $2; 
 						}
 					;
