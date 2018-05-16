@@ -10,7 +10,8 @@ iCSelectionStatement::iCSelectionStatement( const ParserContext& context, iCStat
 		body(body),
 		expr(expr)
 {
-	line_num = expr->line_num;
+	if(NULL != expr)
+		line_num = expr->line_num;
 }
 
 //=================================================================================================
@@ -77,6 +78,24 @@ void iCCaseStatement::gen_code( CodeGenContext& context )
 	context.to_code_fmt("case ");
 	expr->gen_code(context);
 	context.to_code_fmt(" : ");
+
+	// body
+	if(!body->is_compound()) context.indent_depth++;
+	body->gen_code(context);
+	if(!body->is_compound()) context.indent_depth--;
+}
+
+//=================================================================================================
+//
+//=================================================================================================
+void iCDefaultStatement::gen_code( CodeGenContext& context )
+{
+	//context.to_code_fmt("\n");
+	context.set_location(line_num, filename);
+
+	//header
+	context.indent();
+	context.to_code_fmt("default:");
 
 	// body
 	if(!body->is_compound()) context.indent_depth++;

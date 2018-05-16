@@ -112,6 +112,7 @@
 %token <token> TELSE			"else"
 %token <token> TSWITCH			"switch"
 %token <token> TCASE			"case"
+%token <token> TDEFAULT		"default"
 %token <token> TFOR				"for"
 %token <token> TATOMIC			"atomic"
 %token <token> TRESET			"reset"
@@ -680,7 +681,8 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 			|	TIF TLPAREN expr TRPAREN statement %prec XIF { $<statement>$ = new iCIfElseStatement(*parser_context, $5, NULL, $3); $1;$2;$4; }
 			|	TSWITCH TLPAREN expr TRPAREN statement {$<statement>$ = new iCSwitchStatement(*parser_context, $5, $3); $1;$2;$4; }
 			|	TCASE expr TCOLON statement {$$ = new iCCaseStatement(*parser_context, $4, $2); $1; $3; }
-
+			|	TDEFAULT TCOLON statement {$$ = new iCDefaultStatement(*parser_context, $3); $1; $2; }
+				
 				//for loop needs a preopened scope for variables declared in its init statement
 				//for_prep_scope opens a separate scope that wraps the whole for statement
 			|	TFOR
@@ -717,16 +719,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 			|	TRESET TTIMEOUT TSEMIC { $$ = new iCResetTimeoutStatement(*parser_context); $1;$2;$3;}
 			|	TRETURN expr TSEMIC	{ $$ = new iCJumpStatement("return",	$2,		*parser_context);		delete $1; $3; }
 			|	TRETURN TSEMIC		{ $$ = new iCJumpStatement("return",	NULL,	*parser_context);		delete $1; $2; }
-			|	TBREAK TSEMIC		
-				{
-					std::cout<<"parsing break"<<std::endl;
-					
-					$$ = new iCJumpStatement("break",		NULL,	*parser_context);		
-					
-					std::cout<<"iCJumpStatement constructor called"<<std::endl;
-					delete $1; $2; 
-					std::cout<<"deleted shit"<<std::endl;
-				}
+			|	TBREAK TSEMIC		{ $$ = new iCJumpStatement("break",		NULL,	*parser_context); 		delete $1; $2; }
 			|	TCONTINUE TSEMIC	{ $$ = new iCJumpStatement("continue",	NULL,	*parser_context);		delete $1; $2; }
 			;
 

@@ -64,3 +64,20 @@ public:
 	virtual const std::string& identify() const { return "iCCaseStatement";}
 #endif//DEBUG
 };
+
+//=================================================================================================
+//C default statement
+//=================================================================================================
+class iCDefaultStatement : public iCStatement
+{
+	iCStatement *body; // owns
+	
+public:
+	iCDefaultStatement( const ParserContext& context, iCStatement *body) 
+		:	iCNode(context), body(body) {}
+	virtual void gen_code(CodeGenContext& context);
+
+#ifdef DEBUG
+	virtual const std::string& identify() const { return "iCDefaultStatement";}
+#endif//DEBUG
+};

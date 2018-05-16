@@ -80,6 +80,7 @@ const int IC_TAB_SIZE = 4;
 "else"					return TOKEN(TELSE			);
 "switch"				return TOKEN(TSWITCH		);
 "case"					return TOKEN(TCASE			);
+"default"				return TOKEN(TDEFAULT		);
 "for"					return TOKEN(TFOR			);
 "atomic"				return TOKEN(TATOMIC		);
 
