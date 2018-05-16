@@ -717,7 +717,16 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 			|	TRESET TTIMEOUT TSEMIC { $$ = new iCResetTimeoutStatement(*parser_context); $1;$2;$3;}
 			|	TRETURN expr TSEMIC	{ $$ = new iCJumpStatement("return",	$2,		*parser_context);		delete $1; $3; }
 			|	TRETURN TSEMIC		{ $$ = new iCJumpStatement("return",	NULL,	*parser_context);		delete $1; $2; }
-			|	TBREAK TSEMIC		{ $$ = new iCJumpStatement("break",		NULL,	*parser_context);		delete $1; $2; }
+			|	TBREAK TSEMIC		
+				{
+					std::cout<<"parsing break"<<std::endl;
+					
+					$$ = new iCJumpStatement("break",		NULL,	*parser_context);		
+					
+					std::cout<<"iCJumpStatement constructor called"<<std::endl;
+					delete $1; $2; 
+					std::cout<<"deleted shit"<<std::endl;
+				}
 			|	TCONTINUE TSEMIC	{ $$ = new iCJumpStatement("continue",	NULL,	*parser_context);		delete $1; $2; }
 			;
 

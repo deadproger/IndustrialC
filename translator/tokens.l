@@ -68,7 +68,6 @@ const int IC_TAB_SIZE = 4;
 "passive"				return TOKEN(TPASSIVE		);
 "sizeof"				return TOKEN(TSIZEOF		);
 "reset"					return TOKEN(TRESET			);
-"break"					return TOKEN(TBREAK			);
 "continue"				return TOKEN(TCONTINUE		);
 
 "hyperprocess"			return TOKEN(THYPERPROCESS	);
@@ -103,6 +102,7 @@ const int IC_TAB_SIZE = 4;
 "inline"				SAVE_TOKEN; return TINLINE   ;
 
 "return"				SAVE_TOKEN; return TRETURN	 ;
+"break"					SAVE_TOKEN; return TBREAK	 ;
 
 [a-zA-Z_][a-zA-Z0-9_]*  SAVE_TOKEN; return TIDENTIFIER	;
 [0-9]+\.[0-9]*          SAVE_TOKEN; return TDCONST		;
