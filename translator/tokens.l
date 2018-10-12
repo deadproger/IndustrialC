@@ -66,7 +66,7 @@ const int IC_TAB_SIZE = 4;
 "timeout"				return TOKEN(TTIMEOUT		);
 "active"				return TOKEN(TACTIVE		);
 "passive"				return TOKEN(TPASSIVE		);
-"sizeof"				return TOKEN(TSIZEOF		);
+
 "reset"					return TOKEN(TRESET			);
 "continue"				return TOKEN(TCONTINUE		);
 
@@ -74,8 +74,6 @@ const int IC_TAB_SIZE = 4;
 "vector"				return TOKEN(TVECTOR		);	
 "register"				return TOKEN(TREGISTER		);
 "bit"					return TOKEN(TBIT			);
-"enabled"				return TOKEN(TENABLED		);
-"clean"					return TOKEN(TCLEAN			);
 "if"					return TOKEN(TIF			);
 "else"					return TOKEN(TELSE			);
 "switch"				return TOKEN(TSWITCH		);
