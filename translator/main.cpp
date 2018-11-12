@@ -8,41 +8,6 @@
 #include <fstream>
 #include <typeinfo>
 
-///////////////////////////////////////////////////////////////////////////////
-#include <boost/graph/directed_graph.hpp>
-#include <boost/graph/graphml.hpp>
-typedef struct Vertex
-{ 
-	std::string name; 
-	std::string cmdb_id;
-
-	Vertex& operator= (const Vertex& rhs)
-	{
-		if (this == &rhs)
-			return *this;
-
-		name = rhs.name;
-		cmdb_id = rhs.cmdb_id;
-	}
-
-	bool operator< (const Vertex& rhs) const
-	{
-		return cmdb_id < rhs.cmdb_id;
-	};
-
-	bool operator== (const Vertex& rhs) const
-	{
-		return ((cmdb_id == rhs.cmdb_id) && (name == rhs.name));
-	};
-
-}vertex_container;
-
-typedef struct Edge {std::string name;} edge_container;
-
-typedef boost::directed_graph<vertex_container, edge_container> Graph;
-typedef boost::graph_traits<Graph>::vertex_descriptor vertex_descriptor;
-///////////////////////////////////////////////////////////////////////////////
-
 extern iCProgram* ic_program ;
 extern int ic_parse();
 extern FILE *ic_in;
@@ -53,42 +18,10 @@ extern ParserContext* parser_context;
 extern bool had_errors;
 extern bool gen_line_markers;
 
-/*struct ProcGraphNode
-{
-	ProcGraphNode(const std::string& first, const std::string& second) : first(first), second(second){}
-	std::string first;
-	std::string second;
-};*/
-
-
 std::set<ProcGraphNode> proc_graph;
 
 int main(int argc, char **argv)
 {
-	///////////////////////////////////////////////////////////////////////////////
-	Graph g;
-	vertex_container A, B;
-	edge_container AB;
-
-	A.name="A";
-	A.cmdb_id="1";
-	B.name="B";
-	B.cmdb_id="2";
-	AB.name="A-B";
-
-	vertex_descriptor v0 = g.add_vertex(A);
-	vertex_descriptor v1 = g.add_vertex(B);
-	g.add_edge(v0,v1,AB);
-
-	boost::dynamic_properties dp;
-	dp.property("vertex_name",get(&vertex_container::name,g));
-	dp.property("vertex_cmdb_id",get(&vertex_container::cmdb_id,g));
-	dp.property("edge_name",get(&edge_container::name,g));
-
-	write_graphml(std::cout, g, dp);
-	///////////////////////////////////////////////////////////////////////////////
-
-
 	//1: Parse command line arguments
 	if(argc <= 1)
 	{
