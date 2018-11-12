@@ -76,12 +76,14 @@ int main(int argc, char **argv)
 
 	std::cout<<"translator finished"<<std::endl;
 
+	/*
 	//DOT process graph test
 	std::cout<<proc_graph.size()<<std::endl;
 	for(std::set<ProcGraphNode>::const_iterator i = proc_graph.begin();i != proc_graph.end(); i++)
 	{
 		std::cout<< i->first << "->" << i->second << ";" << std::endl;
 	}
+	*?
 	
 	proc_graph.clear();
 
