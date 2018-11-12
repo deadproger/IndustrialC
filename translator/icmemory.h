@@ -22,8 +22,8 @@ inline void ic_mem_delete(void* ptr);
 #ifdef ICDEBUG
 void* operator new(std::size_t sz)/*throw (std::bad_alloc)*/;
 void* operator new[](std::size_t sz)/*throw (std::bad_alloc)*/;
-void operator delete(void* ptr)throw ();
-void operator delete[](void* ptr)throw ();
+void operator delete(void* ptr)/*throw ()*/;
+void operator delete[](void* ptr)/*throw ()*/;
 #endif /*ICDEBUG*/
 unsigned long get_num_allocs();
 //=================================================================================================

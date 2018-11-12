@@ -5,6 +5,8 @@
 
 //=================================================================================================
 //Memory leak tracker
+//keeps track of how many pointers are have allocated memory
+//The number is output at the end of program to check for memory leaks
 //=================================================================================================
 #ifdef ICDEBUG
 
@@ -49,6 +51,7 @@ inline void ic_mem_delete(void* ptr)
 	std::free(ptr);
 }
 
+//for C++11+ comment out the throws
 void* operator new(std::size_t sz)throw (std::bad_alloc) {return ic_mem_new(sz);}
 void* operator new[](std::size_t sz)throw (std::bad_alloc) {return ic_mem_new(sz);}
 void operator delete(void* ptr)throw (){ic_mem_delete(ptr);}

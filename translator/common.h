@@ -16,6 +16,7 @@ const int ERR_MSG_BUFFER_SIZE = 1024;
 //=================================================================================================
 //Code generation templates
 //=================================================================================================
+
 const char START_STATE_NAME[] = "FS_START";
 const char STOP_STATE_NAME[] = "FS_STOP";
 
@@ -63,3 +64,5 @@ const char C_TIMEOUT_MACRO[] = "timeout";
 const char C_COMMENT_FRAME[] = "//=============================================================================";
 
 const char C_STUB_DEFS[] = "";
+
+typedef std::pair<std::string, std::string> ProcGraphNode;

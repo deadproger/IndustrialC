@@ -9,7 +9,7 @@
 //=================================================================================================
 void iCStartProcStatement::second_pass()
 {
-	//check that process was defined
+	//check that process has been defined
 	proc = program->find_proc(proc_name);
 	if(NULL == proc)
 	{

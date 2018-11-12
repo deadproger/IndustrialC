@@ -35,10 +35,10 @@ class ParserContext
 public:
 	//used for critical section placement decisions
 	bool in_isr() const {return _in_isr && !_in_timeout;}
-	bool enter_isr() {_in_isr = true;}
-	bool leave_isr() {_in_isr = false; }
-	bool enter_timeout() {_in_timeout = true; }
-	bool leave_timeout() {_in_timeout = false; }
+	void enter_isr() {_in_isr = true;}
+	void leave_isr() {_in_isr = false; }
+	void enter_timeout() {_in_timeout = true; }
+	void leave_timeout() {_in_timeout = false; }
 
 	//var_declaration needs to know if we are inside function to decide whether
 	//the vars should be made local or global 

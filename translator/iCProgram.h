@@ -10,16 +10,17 @@ class ParserContext;
 class iCFunction;
 
 //=================================================================================================
-//Program
+//Program - root node in AST
 //=================================================================================================
 class iCProgram : public iCNode 
 {
-	iCProcess* first_bkgrnd_process;
-	iCHyperprocessMap hps;
-	iCDeclarationList mcu_decls;
+	iCProcess* first_bkgrnd_process;//process that is initially active
+	iCHyperprocessMap hps;//map of all hyperprocesses
+	iCDeclarationList mcu_decls;//vector/register/bit name definitions
 	iCProcessList procs; // does not own, auxiliary list for quick checks
-	std::list<iCVariable*> var_list;
-	std::list<iCFunction*> func_list;
+	std::list<iCVariable*> var_list;//list of defined variables
+	std::list<iCFunction*> func_list;//list of defined functions
+
 public:
 	iCProgram(const ParserContext& context) : iCNode(context), first_bkgrnd_process(NULL){}
 	virtual ~iCProgram();

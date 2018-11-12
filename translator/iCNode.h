@@ -5,17 +5,21 @@ class CodeGenContext;
 class ParserContext;
 
 //=================================================================================================
-//Abstract node
+//Base class for all AST nodes
 //=================================================================================================
 class iCNode 
 {
 public:
+
+	//Nodes location in the source code
 	unsigned long line_num;
 	unsigned long col_num;
 	std::string filename;
+
 	iCNode(){}
 	iCNode(const ParserContext& context);
     virtual ~iCNode() {}
+
 	virtual void gen_code(CodeGenContext& context) = 0;
 	virtual void second_pass() {}
 
@@ -36,6 +40,7 @@ public:
 	virtual ~iCStatement(){}
 	virtual bool is_compound() {return false;}
 };
+
 class iCBlockItem : public virtual iCNode {};
 class iCProgramItem {};
 class iCProgramItemsList {};

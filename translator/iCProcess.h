@@ -5,15 +5,6 @@ class CodeGenContext;
 class ParserContext;
 class iCState;
 
-/*
-//auxiliary type
-struct iCProcBody
-{
-	//iCDeclarationList decls; //does not own
-	StateList states; //does not own
-};
-*/
-
 //=================================================================================================
 //Process
 //=================================================================================================

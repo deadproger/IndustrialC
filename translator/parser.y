@@ -50,6 +50,8 @@
     iCProgram* ic_program = NULL; /* AST root */
 	extern ParserContext* parser_context;
 
+	extern std::set<ProcGraphNode> proc_graph;
+
     extern int ic_lex();
 	int ic_error(const char *s);
 %}
@@ -235,6 +237,9 @@
 %type <statement>			for_init_statement
 //%type <token>				for_prep_scope
 
+%type <string>				program_items_list
+%type <string>				program_item
+
 %type <string>				type_name
 %type <string>				abstract_declarator
 %type <string>				direct_abstract_declarator
@@ -306,12 +311,21 @@ program		:	{
 				{
 					//program scope is opened in ParserContext constructor, but closed here...
 					parser_context->close_scope();//end of the program - close the scope
+					$2;
 				}
 			;
 
 //nothing's passed further here, because items get added to the program directly when parsed
-program_items_list	:	program_items_list program_item 
-					|	program_item 
+program_items_list	:	program_items_list program_item  
+						{
+							$$ = $1;
+							$2;
+						}
+						|	program_item 
+						{
+							$$ = NULL;
+							$1;
+						}
 					;
 
 program_item	:	var_declaration	
@@ -322,6 +336,7 @@ program_item	:	var_declaration
 					for(std::list<iCVariable*>::iterator i=$1->begin();i!=$1->end();i++)
 						ic_program->add_variable(*i);
 					delete $1;
+					$$ = NULL;
 				}
 				|	mcu_declaration	
 				{
@@ -329,11 +344,16 @@ program_item	:	var_declaration
 					parser_context->check_identifier_defined(*$1);
 					parser_context->add_mcu_decl_to_scope(*$1); 
 					delete $1;	
+					$$ = NULL;
 				}
-				|	proc_def		{if(NULL!=$1)ic_program->add_process($1);		}
-				|	hp_definition	{if(NULL!=$1)ic_program->add_hyperprocess($1);	}
-				|	c_code			{if(NULL!=$1)ic_program->add_mcu_declaration($1);	}
-				|	func_definition	{ic_program->add_function($1); }
+				|	proc_def		
+					{
+						if(NULL!=$1)ic_program->add_process($1);		
+						$$ = NULL;
+					}
+				|	hp_definition	{if(NULL!=$1)ic_program->add_hyperprocess($1);	$$ = NULL;}
+				|	c_code			{if(NULL!=$1)ic_program->add_mcu_declaration($1);	$$ = NULL;}
+				|	func_definition	{ic_program->add_function($1); $$ = NULL;}
 				;
 
 //=================================================================================================
@@ -402,6 +422,7 @@ proc_def	:	TPROC TIDENTIFIER // 1 2
 				}
 				TCOLON TIDENTIFIER // 4 5
 				{
+
 					//hyperprocess defined check - hp needs to be defined beforehand
 					if(!ic_program->hp_defined(*$5))
 						parser_context->err_msg("undefined hyperprocess: %s", $5->c_str());
@@ -611,6 +632,9 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 					{
 						$$ = new iCStartProcStatement(*$3, *parser_context); 
 						parser_context->add_to_second_pass($$); // to check if process was defined
+
+						//add edge to the process graph (for DOT generation)
+						proc_graph.insert(ProcGraphNode(proc->name, *$3));
 					}
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
@@ -627,6 +651,9 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 					{
 						$$ = new iCStopProcStatement(*$3, *parser_context); 
 						parser_context->add_to_second_pass($$); // to check if process was defined
+
+						//add edge to the process graph (for DOT generation)
+						proc_graph.insert(ProcGraphNode(proc->name, *$3));
 					}
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
@@ -912,6 +939,10 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 			 |	TLPAREN expr TRPAREN {$$ = new iCPrimaryExpression($2, *parser_context);$1;$3;}
 			 |	TIDENTIFIER TACTIVE
 				{
+					const iCProcess* proc = parser_context->get_process();
+					//add edge to the process graph (for DOT generation)
+					proc_graph.insert(ProcGraphNode(proc->name, *$1));
+
 					$$ = new iCProcStatusCheck(*$1, true, *parser_context);
 					delete $1;
 					parser_context->add_to_second_pass($$);
@@ -919,6 +950,10 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 				}
 			 |	TIDENTIFIER TPASSIVE 
 				{
+					const iCProcess* proc = parser_context->get_process();
+					//add edge to the process graph (for DOT generation)
+					proc_graph.insert(ProcGraphNode(proc->name, *$1));
+
 					$$ = new iCProcStatusCheck(*$1, false, *parser_context);
 					delete $1; 
 					parser_context->add_to_second_pass($$);

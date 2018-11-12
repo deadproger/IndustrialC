@@ -14,7 +14,7 @@
 
 #define SAVE_TOKEN ic_lval.string = new std::string(ic_text, ic_leng)
 #define TOKEN(t) (ic_lval.token = t)
-extern "C" int ic_wrap() { }
+//extern "C" int ic_wrap() { return 0; }
 extern ParserContext* parser_context;
 
 const int IC_TAB_SIZE = 4;
@@ -24,6 +24,7 @@ const int IC_TAB_SIZE = 4;
 %}
 
 %option prefix="ic_"
+%option noyywrap
 
 %x C_CODE
 %x PREPROCESSOR
