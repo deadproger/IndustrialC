@@ -1,0 +1,118 @@
+#pragma once
+
+//=============================================================================
+//AD7792
+//=============================================================================
+//Значения в коммуникационном регистре (Communication register) AD7792
+const unsigned char AD7792_READ			= 	0b01000000;//Операция чтения
+const unsigned char AD7792_WRITE		= 	0b00000000;//Операция записи
+const unsigned char AD7792_STATUS_REG	= 	0b000 << 3;//Регистр состояния
+const unsigned char AD7792_MODE_REG		= 	0b001 << 3;//Регистр задания режима
+const unsigned char AD7792_CONF_REG		= 	0b010 << 3;//Конфигурационный регистр
+const unsigned char AD7792_DATA_REG		= 	0b011 << 3;//Регистр данных
+
+//Значения в регистре состояния (Status register) AD7792
+const unsigned char AD7792_DRDY			= 	1 << 7;//Data Ready
+const unsigned char AD7792_CHANNEL0		= 	0b000 << 0;//Канал 0
+const unsigned char AD7792_CHANNEL1		= 	0b001 << 0;//Канал 1
+const unsigned char AD7792_CHANNEL2		= 	0b010 << 0;//Канал 2
+
+//Значения в регистре задания режима (Mode register) AD7792
+const unsigned int AD7792_CONTS_CONV	= 	0b000 << 13;//Непрерывное преобразование(Continuous conversion)
+const unsigned int AD7792_SINGL_CONV	= 	0b001 << 13;//Единичное преобразование (Single conversion)
+const unsigned int AD7792_INT_ZSC		= 	0b100 << 13;//Внутренняя калибровка нуля шкалы (Internal Zero Scale Calibration)
+const unsigned int AD7792_INT_FSC		= 	0b101 << 13;//Внутренняя калибровка максимума шкалы (Internal Full Scale Calibration)
+const unsigned int AD7792_4HZ_UPD_RATE	= 	0b0001 << 0;//Конфигурация фильтра, обеспечивающая частоту обновления 4.17 Гц
+
+//Значения в конфигурационном регистре (Configuration register) AD7792
+const unsigned int AD7792_UNIPOLAR		= 	1 << 12;
+const unsigned int AD7792_BIPOLAR		= 	0;
+const unsigned int AD7792_GAIN_64		= 	0b110 << 8;
+const unsigned int AD7792_INT_REF		= 	1 << 7;
+const unsigned int AD7792_BUF			= 	1 << 4;
+
+//=============================================================================
+//Сброс (reset) AD7792
+//=============================================================================
+void AD7792_Reset()
+{
+	SPI_CS_PORT &= ~_BV(AD7792_CS_PIN);
+	Write16SPI(0xffff);
+	Write16SPI(0xffff);
+	SPI_CS_PORT |= _BV(AD7792_CS_PIN);
+}
+
+//=============================================================================
+//Чтение статусного регистра
+//=============================================================================
+unsigned char AD7792_ReadStatus()
+{
+	SPI_CS_PORT &= ~_BV(AD7792_CS_PIN);
+	WriteByteSPI(AD7792_READ | AD7792_STATUS_REG);//comm: read status
+	unsigned char s = ReadByteSPI(0xff);//read status
+	SPI_CS_PORT |= _BV(AD7792_CS_PIN);
+	return s;
+}
+
+//=============================================================================
+//Чтение регистра данных
+//=============================================================================
+unsigned int AD7792_ReadData()
+{
+	unsigned int d;
+	SPI_CS_PORT &= ~_BV(AD7792_CS_PIN);
+	WriteByteSPI(AD7792_READ | AD7792_DATA_REG);//comm: read data
+	d = Read16SPI(0xff);
+	SPI_CS_PORT |= _BV(AD7792_CS_PIN);
+	return d;
+}
+
+//=============================================================================
+//Внутрення калибровка заданного канала AD7792
+//=============================================================================
+void AD7792_CalibrateChannel(unsigned char channel)
+{
+	//запись в конфигурационный регистр
+	SPI_CS_PORT &= ~_BV(AD7792_CS_PIN);
+	WriteByteSPI(AD7792_WRITE | AD7792_CONF_REG);//comm: write config
+	Write16SPI(AD7792_BIPOLAR | AD7792_GAIN_64 | AD7792_INT_REF | AD7792_BUF | channel);
+	
+	//запуск внутренней калибровки нуля
+	WriteByteSPI(AD7792_WRITE | AD7792_MODE_REG);//comm: write mode
+	Write16SPI(AD7792_INT_ZSC | AD7792_4HZ_UPD_RATE);
+	SPI_CS_PORT |= _BV(AD7792_CS_PIN);
+	
+	//ожидание завершения внутренней калибровки нуля
+	for(bool ready = false;!ready;)
+	{
+		if(!(AD7792_ReadStatus() & AD7792_DRDY))//check !DRDY flag
+			ready = true;
+	}
+	
+	//запуск внутренней калибровки максимума
+	SPI_CS_PORT &= ~_BV(AD7792_CS_PIN);
+	WriteByteSPI(AD7792_WRITE | AD7792_MODE_REG);//comm: write mode
+	Write16SPI(AD7792_INT_FSC | AD7792_4HZ_UPD_RATE);
+	SPI_CS_PORT |= _BV(AD7792_CS_PIN);
+	
+	//ожидание завершения внутренней калибровки максимума
+	for(bool ready = false;!ready;)
+	{
+		if(!(AD7792_ReadStatus() & AD7792_DRDY))//check !DRDY flag
+			ready = true;
+	}
+}
+
+//=============================================================================
+//Запуск преобразования в заданном канале
+//=============================================================================
+void AD7792_StartConversion(unsigned char channel)
+{
+	SPI_CS_PORT &= ~_BV(AD7792_CS_PIN);
+	WriteByteSPI(AD7792_WRITE | AD7792_CONF_REG);//comm: write config
+	Write16SPI(AD7792_BIPOLAR | AD7792_GAIN_64 | AD7792_INT_REF | AD7792_BUF | channel);
+	WriteByteSPI(AD7792_WRITE | AD7792_MODE_REG);//comm: write mode
+	Write16SPI(AD7792_CONTS_CONV | AD7792_4HZ_UPD_RATE);
+	SPI_CS_PORT |= _BV(AD7792_CS_PIN);
+}
+

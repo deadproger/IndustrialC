@@ -32,30 +32,12 @@ const int IC_TAB_SIZE = 4;
 %x LM_LINENUM
 %x LM_FILE
 %x LM_FLAGS
-%x COMMENT
+
 
 %x SKIP_TO_NEWLINE
 
 %%
-"/*"					BEGIN(COMMENT);
-<COMMENT>"*/"			BEGIN(INITIAL);
-<COMMENT>[^*\n]+		{
-							SAVE_TOKEN;
-							std::string* str = ic_lval.string;
-							//std::cout<<"comment line \""<<*str<<"\""<<std::endl;
-							return TCOMMENTLINE;
-						}
-<COMMENT>"*"			
-<COMMENT>\n				parser_context->inc_line_num();           		
 
-"//".*"\n"				{
-							SAVE_TOKEN;
-							std::string* str = ic_lval.string;
-							str->erase(0, 2); // trim the dollar sign
-							str->erase(str->end()-1, str->end()); // trim the newline
-							//std::cout<<"comment line \""<<*str<<"\""<<std::endl;
-							return TCOMMENTLINE;
-						}
 " "+					;
 "\t"					{parser_context->to_prev_column(); parser_context->tab_column(IC_TAB_SIZE);}
 "\n"					parser_context->inc_line_num(); 	

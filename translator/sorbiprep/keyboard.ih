@@ -1,0 +1,405 @@
+#pragma once
+
+//=============================================================================
+//Процесс контроля одновременного зажатия клавиш "вверх" и "вниз"
+// - В начальном состоянии процесс отслеживает ситуацию одновременного нажатия клавиш вверх/вниз
+// - По одновременному нажатию отключаются реакции на отдельные нажатия клавиш и начинается отсчет 
+//		длительности зажатия клавиши (переход в состояние Pressed)
+// - При преждевременном отпускании хотя бы одной из клавиш, процесс после задержки (состояние DelayBeforeResuming)
+//		разрешает реакции на отдельные нажатия клавиш и возвращается в начальное состояние
+// - Задержка в DelayBeforeResuming нужна для исключения непреднамеренных срабатываний клавиш, 
+//		вызванных их неодновременным отпусканием 
+// - При достаточной длительности зажатия обеих клавиш, процесс генерирует событие setup_switch_combination,
+//		запускает длительный звуковой сигнал, дожидается отпускания обеих клавиш, 
+//		разрешает реакции на отдельные нажатия клавиш и возвращается в начальное состояние
+//=============================================================================
+process ButtonsUpDownHoldDetect : background
+{
+	state FS_START
+	{
+		if(BUTTON_UP && BUTTON_DOWN)//Обе клавиши нажаты
+		{
+			stop process ButtonUp;
+			stop process ButtonDown;
+			//setup_switch_combination = true;
+			set state Pressed;
+		}
+	}
+	state Pressed
+	{
+		if(!BUTTON_UP || !BUTTON_DOWN)//Отпустили хотя бы одну из клавиш
+		{
+			set state DelayBeforeResuming;
+		}
+		timeout(BUTTON_HOLD_TIME_MS)
+		{
+			setup_switch_combination = true;
+			start process LongBuzz;
+			set state Held;
+		}
+	}
+	state DelayBeforeResuming//Задержка после отпускания одной из клавиш
+	{
+		timeout(100)
+		{
+			start process ButtonUp;
+			start process ButtonDown;
+			set state FS_START;
+		}
+	}
+	state Held
+	{
+		setup_switch_combination = false;
+		if(!BUTTON_UP && !BUTTON_DOWN)//Обе клавиши отпустили
+		{
+			start process ButtonUp;
+			start process ButtonDown;
+			set state FS_START;
+		}
+	}
+	state FS_STOP
+	{
+		setup_switch_combination = false;
+	}
+}
+
+//=============================================================================
+//Процесс контроля клавиши "вверх"
+/*
+   Обрабатывает ситуации: нажатие клавиши, зажатие клавиши (промотка), 
+   длительное зажатие (ускоренная промотка)
+ - По нажатию клавиши процесс генерирует событие button_up_pressed, запускает
+   процесс короткого звукового сигнала и переходит в режим нажатия (Pressed)
+ - При зажатии клавиши дольше времени BUTTON_SPD0_TIME_MS переходит в режим 
+   промотки (состояние Held)
+ - В режиме промотки событие button_up_pressed генерируется с периодом 
+   BUTTON_SPD1_TIME_MS
+ - При нахождении в режиме промотки дольше BUTTON_SPD2_TIME_MS, процесс переходит 
+   в режим ускоренной промотки (состояние LongHeld)
+ - В режиме ускоренной промотки событие button_up_pressed генерируется с периодом 
+   BUTTON_SPD3_TIME_MS
+ - Во всех описанных режимах процесс возвращается в исходное состояние при 
+   отпускании клавиши
+Событие button_up_pressed доступно в течение одного цикла активации 
+   гиперпроцесса после генерации
+*/
+//=============================================================================
+process ButtonUp : background
+{
+	unsigned int hold_counter;
+	
+	state FS_START
+	{
+		if(BUTTON_UP)
+		{
+			hold_counter = 0;
+			button_up_pressed = true;
+			start process ShortBuzz; 
+			scroll_speed_multiplier = DEFAULT_SCROLL_SPEED_MULTIPLIER;
+			set state Pressed;
+		}
+	}
+	state Pressed //Клавиша нажата
+	{
+		button_up_pressed = false;
+		
+		if(!BUTTON_UP)//Клавишу отпустили
+		{
+			set state FS_START;
+		}
+		timeout(BUTTON_SPD0_TIME_MS)
+		{
+			set state Held;
+		}
+	}
+	state Held // Залипание
+	{
+		button_up_pressed = false;
+		if(!BUTTON_UP)//Клавишу отпустили
+		{
+			set state FS_START;
+		}
+		
+		timeout(BUTTON_SPD1_TIME_MS)
+		{
+			button_up_pressed = true;
+			hold_counter+=BUTTON_SPD1_TIME_MS;
+			reset timeout;//set state Held;
+		}
+		
+		if(hold_counter > BUTTON_SPD2_TIME_MS)
+		{
+			hold_counter = 0;
+			set state LongHeld;
+		}
+	}
+	state LongHeld // Ускоренная промотка
+	{
+		button_up_pressed = false;
+		
+		if(!BUTTON_UP)//Клавишу отпустили
+		{
+			scroll_speed_multiplier = DEFAULT_SCROLL_SPEED_MULTIPLIER;
+			set state FS_START;
+		}
+		timeout(BUTTON_SPD3_TIME_MS)
+		{
+			button_up_pressed = true;
+			if(scroll_speed_multiplier <= SCROLL_SPEED_MULTIPLIER_MAX)
+				scroll_speed_multiplier += SCROLL_SPEED_MULTIPLIER_STEP;
+				
+			reset timeout;//set state LongHeld;//Сброс таймаута
+		}
+	}
+	state FS_STOP
+	{
+		button_up_pressed = false;
+	}
+}
+
+//=============================================================================
+//Процесс контроля клавиши "вниз"
+//Работает аналогично процессу контроля клавиши "вверх"
+//Генерирует событие button_down_pressed
+//=============================================================================
+process ButtonDown : background
+{
+	unsigned int hold_counter;
+	state FS_START
+	{
+		if(BUTTON_DOWN)
+		{
+			hold_counter = 0;
+			button_down_pressed = true;
+			start process ShortBuzz; 
+			scroll_speed_multiplier = DEFAULT_SCROLL_SPEED_MULTIPLIER;
+			set state Pressed;
+		}
+	}
+	state Pressed // Клавиша нажата
+	{
+		button_down_pressed = false;
+		if(!BUTTON_DOWN)
+		{
+			set state FS_START;
+		}
+		timeout(BUTTON_SPD0_TIME_MS)
+		{
+			set state Held;
+		}
+	}
+	state Held // Залипание
+	{
+		button_down_pressed = false;
+		if(!BUTTON_DOWN)
+		{
+			set state FS_START;
+		}
+		
+		timeout(BUTTON_SPD1_TIME_MS)
+		{
+			button_down_pressed = true;
+			hold_counter+=BUTTON_SPD1_TIME_MS;
+			reset timeout;//set state Held;
+		}
+		
+		if(hold_counter > BUTTON_SPD2_TIME_MS)
+		{
+			hold_counter = 0;
+			//button_down_held = true;
+			set state LongHeld;
+		}
+	}
+	state LongHeld // Ускоренная промотка
+	{
+		button_down_pressed = false;
+		//button_down_held = false;
+		if(!BUTTON_DOWN)
+		{
+			scroll_speed_multiplier = DEFAULT_SCROLL_SPEED_MULTIPLIER;
+			set state FS_START;
+		}
+		timeout(BUTTON_SPD3_TIME_MS)
+		{
+			button_down_pressed = true;
+			if(scroll_speed_multiplier <= SCROLL_SPEED_MULTIPLIER_MAX)
+				scroll_speed_multiplier += SCROLL_SPEED_MULTIPLIER_STEP;
+			reset timeout;//set state LongHeld;
+		}
+	}
+	state FS_STOP
+	{
+		button_down_pressed = false;
+	}
+}
+
+//=============================================================================
+//Процесс контроля клавиши "A"
+//Обрабатывает ситуации: нажатие клавиши, длительное нажатие
+//По нажатию генерирует событие button_A_pressed и короткий звуковой сигнал
+//При зажатии дольше BUTTON_HOLD_TIME_MS генерирует событие button_A_held
+//=============================================================================
+process ButtonA : background
+{
+	state FS_START
+	{
+		if(BUTTON_A)
+		{
+			button_A_pressed = true;
+			start process ShortBuzz;
+			set state Pressed;
+		}
+	}
+	state Pressed //Клавиша нажата
+	{
+		button_A_pressed = false;
+		if(!BUTTON_A)
+		{
+			set state FS_START;
+		}
+		timeout(BUTTON_HOLD_TIME_MS)
+		{
+			button_A_held = true;
+			set state Held;
+		}
+	}
+	state Held //Длительное нажатие
+	{
+		button_A_held = false;
+		if(!BUTTON_A)
+		{
+			set state FS_START;
+		}
+	}
+	state FS_STOP
+	{
+		button_A_pressed = false;
+		button_A_held = false;
+	}
+}
+
+//=============================================================================
+//Процесс контроля клавиши "B"
+//=============================================================================
+process ButtonB : background
+{
+	state FS_START
+	{
+		if(BUTTON_B)
+		{
+			button_B_pressed = true;
+			start process ShortBuzz; 
+			set state Pressed;
+		}
+	}
+	state Pressed //Клавиша нажата
+	{
+		button_B_pressed = false;
+		if(!BUTTON_B)
+		{
+			set state FS_START;
+		}
+		timeout(BUTTON_HOLD_TIME_MS)
+		{
+			button_B_held = true;
+			set state Held;
+		}
+	}
+	state Held //Длительное нажатие
+	{
+		button_B_held = false;
+		if(!BUTTON_B)
+		{
+			set state FS_START;
+		}
+	}
+	state FS_STOP
+	{
+		button_B_pressed = false;
+		button_B_held = false;
+	}
+}
+
+//=============================================================================
+//Процесс контроля клавиши "C"
+//=============================================================================
+process ButtonC : background
+{
+	state FS_START
+	{
+		if(BUTTON_C)
+		{
+			button_C_pressed = true;
+			start process ShortBuzz;
+			set state Pressed;
+		}
+	}
+	state Pressed //Клавиша нажата
+	{
+		button_C_pressed = false;
+		if(!BUTTON_C)
+		{
+			set state FS_START;
+		}
+		timeout(BUTTON_HOLD_TIME_MS)
+		{
+			button_C_held = true;
+			set state Held;
+		}
+	}
+	state Held //Длительное нажатие
+	{
+		button_C_held = false;
+		if(!BUTTON_C)
+		{
+			set state FS_START;
+		}
+	}
+	state FS_STOP
+	{
+		button_C_pressed = false;
+		button_C_held = false;
+	}
+}
+
+//=============================================================================
+//Процесс контроля клавиши "Enter"
+//=============================================================================
+process ButtonEnter : background
+{
+	state FS_START
+	{
+		if(BUTTON_ENTER)
+		{
+			button_Enter_pressed = true;
+			start process ShortBuzz;
+			set state Pressed;
+		}
+	}
+	state Pressed //Клавиша нажата
+	{
+		button_Enter_pressed = false;
+		if(!BUTTON_ENTER)
+		{
+			set state FS_START;
+		}
+		timeout(BUTTON_HOLD_TIME_MS)
+		{
+			button_Enter_held = true;
+			set state Held;
+		}
+	}
+	state Held //Длительное нажатие
+	{
+		button_Enter_held = false;
+		if(!BUTTON_ENTER)
+		{
+			set state FS_START;
+		}
+	}
+	state FS_STOP
+	{
+		button_Enter_pressed = false;
+		button_Enter_held = false;
+	}
+}

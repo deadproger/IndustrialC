@@ -1,0 +1,392 @@
+#pragma once
+
+//=============================================================================
+//Процесс обработки меню настроечного интерфейса
+//Меню представляет собой список параметров, перелистываемых клавишами вверх/вниз
+//По  нажатию клавиши Enter производится переход в режим корректировки параметра
+//В режиме корректировки значение параметра изменяется клавишами вверх/вниз
+//В режиме корректировки отключается выбор порта клавишами A/B/C
+//Выход из режима корректировки осуществляется:
+// - по нажатию клавиши Enter с сохранением нового значения параметра
+// - по таймауту с сохранением прежнего значения
+//Порядок параметров в списке:
+// - Kd - дифференциальный коэффициент ПИД-регулятора	
+// - Ki - интегральный коэффициент ПИД-регулятора		
+// - Kp - пропорциональный коэффициент ПИД-регулятора	
+// - dt - скорость нагрева в порту °С/сек				
+// - K  - калибровочный коэффициент термопары			
+// - Zero - нуль АЦП 									
+// - Temp.int - температура внутри станции 				
+//По запуску процесс отображает самый нижний параметр в списке
+//Все параметры кроме Temp.int задаются отдельно для каждого порта
+//Параметры Kd, Ki, Kp, dt, K обрабатываются состояниями DisplayRegParam и EditRegParam
+//=============================================================================
+process UI_Setup_Menu : background
+{	
+	unsigned int uint_param_value;
+	float float_param_value;//редактируемое значение параметра
+	char float_param_str[16];//используется для перевода в строку значений типа float
+	unsigned int curr_param = 0;//текущий идентификатор отображаемого/корректируемого параметра порта
+
+	state FS_START
+	{
+		start process UI_PortSelection;
+		set state DisplayIntTemp;
+	}
+	
+	//Отображение внутренней температуры станции
+	state DisplayIntTemp 
+	{
+		sprintf(Display_text, "Temp.int=%s%cC", internal_temp_str, DEGREE_SYM_CODE);
+		if(button_up_pressed)
+			set state DisplayPortZero;
+		if(button_down_pressed)
+		{
+			curr_param = NUM_REG_PARAMS-1;
+			set state DisplayRegParam;
+		}
+			
+		if(button_Enter_pressed)
+		{
+			stop process UI_PortSelection;//запрет на изменение текущего порта дегазации
+			stop process UI_Setup_Switching;//запрет переключения между интерфейсами
+			blink_start_pos = 9;//Начальная позиция мигающего участка ЖК-экрана
+			blink_end_pos = 13;//Конечная позиция мигающего участка ЖК-экрана
+			start process Blink;//Запуск мигания заданным участком ЖК-экрана
+			set state EditIntTemp;
+			float_param_value = internal_temp;
+			dtostrf(float_param_value, 5, 2, float_param_str);
+		}
+	}
+	
+	//Корректировка внутренней температуры станции по независимому измерению
+	state EditIntTemp 
+	{
+		sprintf(Display_text, "Temp.int=%s%cC", float_param_str, DEGREE_SYM_CODE);
+		if(button_Enter_pressed)
+		{
+			stop process Blink;//Остановка мигания участка ЖК-экрана
+			start process UI_Setup_Switching;//запрет переключения между интерфейсами
+			set state DisplayIntTemp;
+			
+			//Обновление значения калибровочного смещения температуры внутри станции
+			int_temp_calib_offset += float_param_value - internal_temp;
+			
+			EEPROM_write_float(INT_TEMP_CALIB_EEPROM_ADDR, int_temp_calib_offset);
+		}
+		
+		if(button_up_pressed)
+		{
+			float_param_value += STEP_INT_TEMP;
+			if(float_param_value > MAX_INT_TEMP)//Ограничение по наибольшему значению
+				float_param_value = MAX_INT_TEMP;
+			
+			dtostrf(float_param_value, 5, 2, float_param_str);
+			
+			start process Blink;//Сброс процесса мигания в начальное состояние
+			reset timeout;//set state EditIntTemp;//Сброс таймаута
+		}
+		if(button_down_pressed)
+		{
+			float_param_value -= STEP_INT_TEMP;
+			if(float_param_value < MIN_INT_TEMP)//Ограничение по наименьшему значению
+				float_param_value = MIN_INT_TEMP;
+				
+			dtostrf(float_param_value, 5, 2, float_param_str);
+				
+			start process Blink;//Сброс процесса мигания в начальное состояние
+			reset timeout;//set state EditIntTemp;//Сброс таймаута
+		}
+			
+		timeout(EDIT_TIMEOUT_MS)//Выход из режима корректировки по таймауту
+		{
+			stop process Blink;//Остановка мигания участком ЖК-экрана
+			start process UI_Setup_Switching;
+			set state DisplayIntTemp;
+		}
+	}
+	
+	//Отображение текущего значения смещения нуля в порту
+	//Состояние параметризуется текущим идентификатором порта
+	state DisplayPortZero 
+	{
+		sprintf(Display_text, "%c:Zero=%5u    ", PORT_NAME[UI_port], port_zero_values[UI_port]);
+		if(button_up_pressed)
+		{
+			curr_param = 0;
+			set state DisplayRegParam;
+		}
+		if(button_down_pressed)
+			set state DisplayIntTemp;
+		
+		//Редактирование запрещено, если в выбранном порту заущен процесс дегазации
+		if(button_Enter_pressed && SP_PORT_DEGAS != sp_port_status[UI_port])
+		{
+			stop process UI_PortSelection;//запрет на изменение текущего порта дегазации
+			stop process UI_Setup_Switching;//запрет переключения между интерфейсами
+			blink_start_pos = 7;//Начальная позиция мигающего участка ЖК-экрана
+			blink_end_pos = 15;//Конечная позиция мигающего участка ЖК-экрана
+			start process Blink;//Запуск мигания заданным участком ЖК-экрана
+			set state SelectPortZeroNew;
+		}
+	}
+	
+	//Установка значения смещения нуля в порту
+	
+	//Автоматическая установка нового значения при замкнутом входе АЦП
+	state SelectPortZeroNew
+	{
+		sprintf(Display_text, "%c:Zero=NEW      ", PORT_NAME[UI_port]);
+		
+		if(button_up_pressed)
+			set state SelectPortZeroDefault;
+		if(button_Enter_pressed)
+		{
+			stop process Blink;
+		
+			sprintf(Display_text, "Please Wait...  ");
+			start process SetPortZero;
+			set state WaitSetZero;
+		}
+		timeout(EDIT_TIMEOUT_MS)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayPortZero;
+		}
+	}
+	state WaitSetZero
+	{
+		if(SetPortZero passive)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			start process ShortBuzz;
+			set state DisplayPortZero;
+			
+			EEPROM_write_int(PORT_ZERO_EEPROM_ADDR(UI_port), port_zero_values[UI_port]);
+		}
+		timeout(PORT_ZERO_SET_TIMEOUT)
+		{
+			stop process SetPortZero;
+			sprintf(Display_text, "Failed          ");
+			start process LongBuzz;
+			set state DelayError;
+		}
+	}
+	state DelayError
+	{
+		timeout(500)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			set state DisplayPortZero;
+		}
+	}
+	
+	//Установка значения нуля по умолчанию
+	state SelectPortZeroDefault
+	{
+		sprintf(Display_text, "%c:Zero=DEFAULT  ", PORT_NAME[UI_port]);
+		if(button_up_pressed)
+			set state SelectPortZeroManual;
+		if(button_down_pressed)
+			set state SelectPortZeroNew;
+		if(button_Enter_pressed)
+		{
+			port_zero_values[UI_port] = 32767;
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayPortZero;
+			
+			EEPROM_write_int(PORT_ZERO_EEPROM_ADDR(UI_port), port_zero_values[UI_port]);
+		}
+		timeout(EDIT_TIMEOUT_MS)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayPortZero;
+		}
+	}
+	
+	//Ручная корректировка нуля АЦП
+	state SelectPortZeroManual
+	{
+		sprintf(Display_text, "%c:Zero=MANUAL   ", PORT_NAME[UI_port]);
+		if(button_down_pressed)
+			set state SelectPortZeroDefault;
+		if(button_Enter_pressed)
+		{
+			uint_param_value = port_zero_values[UI_port];
+			set state EditPortZero;
+		}
+		timeout(EDIT_TIMEOUT_MS)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayPortZero;
+		}
+	}
+	state EditPortZero
+	{
+		sprintf(Display_text, "%c:Zero=%5u    ", PORT_NAME[UI_port], uint_param_value);
+		if(button_Enter_pressed)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayPortZero;
+			
+			//Обновить значение настрочного параметра порта
+			port_zero_values[UI_port] = uint_param_value;
+			
+			EEPROM_write_int(PORT_ZERO_EEPROM_ADDR(UI_port), port_zero_values[UI_port]);
+		}
+		
+		if(button_up_pressed)
+		{
+			uint_param_value += PORT_ZERO_STEP;
+			if(uint_param_value > PORT_ZERO_MAX)
+				uint_param_value = PORT_ZERO_MAX;
+			
+			start process Blink;//Сброс процесса мигания в начальное состояние
+			reset timeout;//set state EditPortZero;//Сброс таймаута
+		}
+		if(button_down_pressed)
+		{
+			uint_param_value -= PORT_ZERO_STEP;
+			if(uint_param_value < PORT_ZERO_MIN)
+				uint_param_value = PORT_ZERO_MIN;
+				
+			start process Blink;//Сброс процесса мигания в начальное состояние
+			reset timeout;//set state EditPortZero;//Сброс таймаута
+		}
+			
+		timeout(EDIT_TIMEOUT_MS)//Выход из режима корректировки по таймауту
+		{
+			start process UI_PortSelection;//Разрешение изменения текущего идентификатора порта
+			start process UI_Setup_Switching;
+			stop process Blink;//Остановка мигания участком ЖК-экрана
+			set state DisplayPortZero;
+		}
+	}
+	
+	//Отображение настроечных параметров порта
+	//Состояние параметризуется текущим идентификатором порта и 
+	//текущим идентификатором параметра
+	state DisplayRegParam
+	{
+		if(REG_PARAM_K == curr_param)
+		{
+			dtostrf(port_reg_params[UI_port][curr_param], 6, 3, float_param_str);
+			sprintf(Display_text, "%c:%s=%s%s", PORT_NAME[UI_port], REG_PARAM_NAMES[curr_param], float_param_str, REG_PARAM_UNITS[curr_param]);
+		}
+		else
+		{
+			dtostrf(port_reg_params[UI_port][curr_param], 5, 2, float_param_str);
+			sprintf(Display_text, "%c:%s=%s%s", PORT_NAME[UI_port], REG_PARAM_NAMES[curr_param], float_param_str, REG_PARAM_UNITS[curr_param]);
+		}
+		
+		if(button_down_pressed)
+		{
+			if(curr_param <= 0)
+				set state DisplayPortZero;
+			else
+				curr_param--;
+		}
+		if(button_up_pressed)
+		{
+			if(curr_param < NUM_REG_PARAMS-1)
+				curr_param++;
+			else
+				set state DisplayIntTemp;
+		}
+		
+		//Редактирование запрещено, если в выбранном порту заущен процесс дегазации
+		if(button_Enter_pressed && SP_PORT_READY == sp_port_status[UI_port])
+		{
+			stop process UI_PortSelection;//запрет на изменение текущего порта дегазации
+			stop process UI_Setup_Switching;//запрет переключения между интерфейсами
+			blink_start_pos = 5;//Начальная позиция мигающего участка ЖК-экрана
+			blink_end_pos = 9;//Конечная позиция мигающего участка ЖК-экрана
+			if(REG_PARAM_K == curr_param)
+				blink_end_pos = 10;
+			start process Blink;//Запуск мигания заданным участком ЖК-экрана
+			float_param_value = port_reg_params[UI_port][curr_param];//Копирование текущего значения параметра
+			set state EditRegParam;
+		}
+	}
+	
+	//Корректировка настроечных параметров порта
+	//Состояние параметризуется текущим идентификатором порта и 
+	//текущим идентификатором параметра
+	state EditRegParam
+	{
+		if(REG_PARAM_K == curr_param)
+		{
+			dtostrf(float_param_value, 6, 3, float_param_str);
+			sprintf(Display_text, "%c:%s=%s%s", PORT_NAME[UI_port], REG_PARAM_NAMES[curr_param], float_param_str, REG_PARAM_UNITS[curr_param]);
+		}
+		else
+		{
+			dtostrf(float_param_value, 5, 2, float_param_str);
+			sprintf(Display_text, "%c:%s=%s%s", PORT_NAME[UI_port], REG_PARAM_NAMES[curr_param], float_param_str, REG_PARAM_UNITS[curr_param]);
+		}
+		
+		if(button_Enter_pressed)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayRegParam;
+			
+			//Обновить значение настрочного параметра порта
+			port_reg_params[UI_port][curr_param] = float_param_value;
+			
+			EEPROM_write_float(PORT_REG_PARAM_EEPROM_ADDR(UI_port, curr_param), port_reg_params[UI_port][curr_param]);
+		}
+		
+		if(button_up_pressed)
+		{
+			if(REG_PARAM_K == curr_param)
+				float_param_value += 0.001 * scroll_speed_multiplier;		
+			else
+				float_param_value += REG_PARAMS_STEP * scroll_speed_multiplier;
+				
+			if(float_param_value > REG_PARAMS_MAX)
+				float_param_value = REG_PARAMS_MAX;
+			
+			start process Blink;//Сброс процесса мигания в начальное состояние
+			reset timeout;//set state EditRegParam;//Сброс таймаута
+		}
+		if(button_down_pressed)
+		{
+			if(REG_PARAM_K == curr_param)
+				float_param_value -= 0.001 * scroll_speed_multiplier;		
+			else
+				float_param_value -= REG_PARAMS_STEP * scroll_speed_multiplier;
+			if(float_param_value < REG_PARAMS_MIN)
+				float_param_value = REG_PARAMS_MIN;
+				
+			//Ограничение для Tq
+			if(REG_PARAM_TQ == curr_param)
+				if(float_param_value < REG_PARAM_TQ_MIN)
+					float_param_value = REG_PARAM_TQ_MIN;
+				
+			start process Blink;//Сброс процесса мигания в начальное состояние
+			reset timeout;//set state EditRegParam;//Сброс таймаута
+		}
+			
+		timeout(EDIT_TIMEOUT_MS)//Выход из режима корректировки по таймауту
+		{
+			start process UI_PortSelection;//Разрешение изменения текущего идентификатора порта
+			start process UI_Setup_Switching;
+			stop process Blink;//Остановка мигания участком ЖК-экрана
+			set state DisplayRegParam;
+		}
+	}
+}

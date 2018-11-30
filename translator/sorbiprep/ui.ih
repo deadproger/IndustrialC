@@ -1,0 +1,342 @@
+#pragma once
+
+#include "keyboard.ih"
+#include "ui_menu.ih"
+#include "ui_setup_menu.ih"
+
+//=============================================================================
+//Процесс отображения температуры по трем портам в нижней строке индикатора
+//Отображает три знака температуры с символом градуса для каждого порта
+//Для портов, в которых поврежден измеритель, отображается " -- "
+//=============================================================================
+process DisplayLine2 : background
+{
+	state FS_START
+	{
+		unsigned int temp;
+		char temp_str[NUM_PORTS][5] = {" -- ", " -- ", " -- "};
+		
+		for(int port = SP_PORT_A;port<NUM_PORTS;port++)
+		{
+			if(SP_PORT_ERROR_TC!=sp_port_status[port])
+			{
+				temp = port_temp[port];
+				temp = temp % 1000;
+				sprintf(temp_str[port], "%3u%c", temp, DEGREE_SYM_CODE);
+			}
+		}
+		
+		sprintf(Display_line_2, " %s %s %s ", temp_str[SP_PORT_A], temp_str[SP_PORT_B], temp_str[SP_PORT_C]);
+		set state Wait;
+	}
+	state Wait
+	{
+		timeout(200)
+		{
+			set state FS_START;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс мигания участком текста ЖК-экрана
+//=============================================================================
+process Blink : background
+{
+	state FS_START
+	{
+		//копирование всего текста экрана
+		for(int i=0;i<17;i++)
+			Blink_text[i] = Display_text[i];
+			
+		set state Show;
+	}
+	state Hide // символы скрыты
+	{
+		//замена символов в заданном диапазоне на пробелы
+		for(int i=blink_start_pos;i<=blink_end_pos;i++)
+			Blink_text[i] = ' ';
+		
+		timeout(BLINK_PERIOD_MS)
+		{
+			set state Show;
+		}
+	}
+	state Show // символы отображаются
+	{
+		//копирование актуальных символов в диапазоне
+		for(int i=blink_start_pos;i<=blink_end_pos;i++)
+			Blink_text[i] = Display_text[i];
+		
+		timeout(BLINK_PERIOD_MS)
+		{
+			set state Hide;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс взаимодействия с платой индикации
+//Производит обновление ЖК-экрана и светодиодов, опрос клавиатуры
+//с заданным периодом (40мс/25Гц)
+//=============================================================================
+process UpdateUI : background
+{
+	state FS_START
+	{
+		//Обновление состояния светодиодов
+		unsigned char leds = 0;
+		if(SP_PORT_READY == sp_port_status[SP_PORT_A]){}
+		else if(SP_PORT_DEGAS == sp_port_status[SP_PORT_A] || SP_PORT_HEATING == sp_port_status[SP_PORT_A])
+			leds |= _BV(LED_A_GRN_PIN);
+		else if(SP_PORT_FINISHED == sp_port_status[SP_PORT_A])
+			leds |= _BV(LED_A_GRN_PIN) | _BV(LED_A_RED_PIN);
+		else if(SP_PORT_ERROR_TC == sp_port_status[SP_PORT_A] || SP_PORT_ERROR_HTR == sp_port_status[SP_PORT_A])
+			leds |= _BV(LED_A_RED_PIN);
+			
+		if(SP_PORT_READY == sp_port_status[SP_PORT_B]){}
+		else if(SP_PORT_DEGAS == sp_port_status[SP_PORT_B] || SP_PORT_HEATING == sp_port_status[SP_PORT_B])
+			leds |= _BV(LED_B_GRN_PIN);
+		else if(SP_PORT_FINISHED == sp_port_status[SP_PORT_B])
+			leds |= _BV(LED_B_GRN_PIN) | _BV(LED_B_RED_PIN);
+		else if(SP_PORT_ERROR_TC == sp_port_status[SP_PORT_B] || SP_PORT_ERROR_HTR == sp_port_status[SP_PORT_B])
+			leds |= _BV(LED_B_RED_PIN);
+		
+		if(SP_PORT_READY == sp_port_status[SP_PORT_C]){}
+		else if(SP_PORT_DEGAS == sp_port_status[SP_PORT_C] || SP_PORT_HEATING == sp_port_status[SP_PORT_C])
+			leds |= _BV(LED_C_GRN_PIN);
+		else if(SP_PORT_FINISHED == sp_port_status[SP_PORT_C])
+			leds |= _BV(LED_C_GRN_PIN) | _BV(LED_C_RED_PIN);
+		else if(SP_PORT_ERROR_TC == sp_port_status[SP_PORT_C] || SP_PORT_ERROR_HTR == sp_port_status[SP_PORT_C])
+			leds |= _BV(LED_C_RED_PIN);
+		
+		LED_PORT = leds;
+		
+		//Чтение состояний клавиш
+		BUTTON_UP		=	!(KEYBOARD_PORT & _BV(BUTTON_UP_PIN		));
+		BUTTON_DOWN		=	!(KEYBOARD_PORT & _BV(BUTTON_DOWN_PIN	));
+		BUTTON_A		=	!(KEYBOARD_PORT & _BV(BUTTON_A_PIN		));
+		BUTTON_B		=	!(KEYBOARD_PORT & _BV(BUTTON_B_PIN		));
+		BUTTON_C		=	!(KEYBOARD_PORT & _BV(BUTTON_C_PIN		));
+		BUTTON_ENTER	=	!(KEYBOARD_PORT & _BV(BUTTON_ENTER_PIN	));
+	
+		//Обновление текста на ЖК-экране
+		if(Blink active)
+			UpdateDisplay(Blink_text);
+		else
+			UpdateDisplay(Display_text);
+		set state Wait;
+	}
+	state Wait
+	{
+		timeout(UI_UPDATE_PERIOD_MS)
+		{
+			set state FS_START;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс короткого звукового сигнала
+//=============================================================================
+process ShortBuzz : background
+{
+	state FS_START
+	{
+		TCCR2 |= _BV(COM21);
+		set state Buzz;
+	}
+	state Buzz
+	{
+		timeout(SHORT_BUZZ_DURATION_MS)
+		{
+			TCCR2 &= ~_BV(COM21);
+			stop process;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс звукового сигнала порта
+//Генерирует серию длинных звуковых сигналов
+//Количество сигналов соответствует номеру порта дегазации, заданному в
+//переменной buzz_port
+//=============================================================================
+process PortBuzz : background
+{
+	unsigned char buzzes_left;
+	state FS_START
+	{
+		start process LongBuzz;
+		buzzes_left = buzz_port + 1;
+		set state Buzz;
+	}
+	state Buzz
+	{
+		if(LongBuzz passive)
+		{
+			set state Wait;
+		}
+	}
+	state Wait
+	{
+		timeout(LONG_BUZZ_DURATION_MS)
+		{
+			buzzes_left--;
+			if(0 >= buzzes_left)
+			{
+				stop process;
+			}
+			else
+			{
+				start process LongBuzz;
+				set state Buzz;
+			}
+		}
+	}
+}
+
+//=============================================================================
+//Процесс длинного звукового сигнала
+//=============================================================================
+process LongBuzz : background
+{
+	state FS_START
+	{
+		TCCR2 |= _BV(COM21);
+		set state Buzz;
+	}
+	state Buzz
+	{
+		timeout(LONG_BUZZ_DURATION_MS)
+		{
+			TCCR2 &= ~_BV(COM21);
+			stop process;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс выбора порта дегазации и запуска/остановки процессов дегазации
+//Обрабатывает события с клавиш выбора порта
+//По нажатию устанавливает текущий порт в меню пользовательского интерфейса
+//По длительному нажатию запускает или останавливает процесс дегазации в порту
+//=============================================================================
+process UI_PortSelection : background
+{
+	state FS_START
+	{
+		if(button_A_pressed)
+		{
+			UI_port = SP_PORT_A;
+			if(SP_PORT_FINISHED == sp_port_status[UI_port])//Сброс состояния "дегазация завершена"
+				sp_port_status[UI_port] = SP_PORT_READY;
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
+		}
+		if(button_B_pressed)
+		{
+			UI_port = SP_PORT_B;
+			if(SP_PORT_FINISHED == sp_port_status[UI_port])//Сброс состояния "дегазация завершена"
+				sp_port_status[UI_port] = SP_PORT_READY;
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
+		}
+		if(button_C_pressed)
+		{
+			UI_port = SP_PORT_C;
+			if(SP_PORT_FINISHED == sp_port_status[UI_port])//Сброс состояния "дегазация завершена"
+				sp_port_status[UI_port] = SP_PORT_READY;
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
+		}
+		
+		//Запуск и остановка процессов дегазации по длительным нажатиям клавиш A, B, C
+		if(button_A_held)
+		{
+			//if(DegasA active)
+			if(SP_PORT_DEGAS == sp_port_status[SP_PORT_A] || SP_PORT_HEATING == sp_port_status[SP_PORT_A])
+			{
+				stop process DegasA;
+				sp_port_status[SP_PORT_A] = SP_PORT_READY;
+				buzz_port = SP_PORT_A;
+				start process PortBuzz;
+			}
+			//Запуск дегазации разрешен если нет ошибок в порту и не запущен настроечный интерфейс
+			else if(SP_PORT_READY == sp_port_status[SP_PORT_A] && UI_Setup_Menu passive)
+			{
+				start process DegasA;
+				//sp_port_status[SP_PORT_A] = SP_PORT_DEGAS;
+			}
+		}
+		if(button_B_held)
+		{
+			//if(DegasB active)
+			if(SP_PORT_DEGAS == sp_port_status[SP_PORT_B] || SP_PORT_HEATING == sp_port_status[SP_PORT_B])
+			{
+				stop process DegasB;
+				sp_port_status[SP_PORT_B] = SP_PORT_READY;
+				buzz_port = SP_PORT_B;
+				start process PortBuzz;
+			}
+			//Запуск дегазации разрешен если нет ошибок в порту и не запущен настроечный интерфейс
+			else if(SP_PORT_READY == sp_port_status[SP_PORT_B] && UI_Setup_Menu passive)
+			{
+				start process DegasB;
+				//sp_port_status[SP_PORT_B] = SP_PORT_DEGAS;
+			}
+		}
+		if(button_C_held)
+		{
+			//if(DegasC active)
+			if(SP_PORT_DEGAS == sp_port_status[SP_PORT_C] || SP_PORT_HEATING == sp_port_status[SP_PORT_C])
+			{
+				stop process DegasC;
+				sp_port_status[SP_PORT_C] = SP_PORT_READY;
+				buzz_port = SP_PORT_C;
+				start process PortBuzz;
+			}
+			//Запуск дегазации разрешен если нет ошибок в порту и не запущен настроечный интерфейс
+			else if(SP_PORT_READY == sp_port_status[SP_PORT_C] && UI_Setup_Menu passive)
+			{
+				start process DegasC;
+				//sp_port_status[SP_PORT_C] = SP_PORT_DEGAS;
+			}
+		}
+	}
+}
+
+//=============================================================================
+//Процесс переключения между пользовательским и настроечным интерфейсами
+//Обрабатывает событие одновременного зажатия клавиш "вверх" и "вниз" 
+//=============================================================================
+process UI_Setup_Switching : background
+{
+	state FS_START
+	{
+		if(UI_Setup_Menu active)
+			set state InSetup;
+		else
+			set state InUI;
+	}
+	
+	state InUI
+	{
+		if(setup_switch_combination)
+		{
+			stop process UI_Menu;
+			start process UI_Setup_Menu;
+			set state InSetup;
+		}
+	}
+	
+	state InSetup
+	{
+		if(setup_switch_combination)
+		{
+			stop process UI_Setup_Menu;
+			start process UI_Menu;
+			set state InUI;
+		}
+	}
+}

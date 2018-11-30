@@ -1,0 +1,360 @@
+#pragma once
+
+//=============================================================================
+//Процесс получения температуры внутри станции с датчика ADT7320
+//=============================================================================
+process ReadIntTemp : background
+{
+	unsigned int IntTemp_Buf[FILTER_SAMPLE_NUM];
+	unsigned int IntTemp_ptr;
+	unsigned long IntTemp_Sum;
+	unsigned int IntTempNumSamples;
+	
+	state FS_START
+	{
+		IntTemp_ptr = 0;
+		IntTemp_Sum = 0;
+		IntTempNumSamples = 0;
+		set state ReadTemp;
+	}
+	state ReadTemp
+	{
+		if(!(ADT7320_ReadStatus() & ADT7320_DRDY))//check !RDY flag
+		{
+			if(IntTempNumSamples < FILTER_SAMPLE_NUM)
+				IntTempNumSamples++;
+		
+			//Чтение регистра значений
+			unsigned int NewSample = ADT7320_ReadData();
+		
+			IntTemp_Sum -= IntTemp_Buf[IntTemp_ptr];
+			IntTemp_Sum += NewSample;
+			IntTemp_Buf[IntTemp_ptr] = NewSample;
+			IntTemp_ptr++;
+			if (IntTemp_ptr >= FILTER_SAMPLE_NUM) 
+				IntTemp_ptr = 0;
+			float tmp = IntTempNumSamples; // (float) приведение типов
+			internal_temp = IntTemp_Sum / tmp / 128.0 + int_temp_calib_offset;
+			//internal_temp = ((IntTemp_Sum / tmp * ADCREF_VOLTAGE_MV)/(65535.0 * ADC_INT_TEMP_GAIN) - ADCREF_T_NOMINAL_VOLTAGE_MV) / ADCREF_T_RATE_MV_PER_DEG + ADCREF_T_NOMINAL_TEMP_DEG + int_temp_calib_offset;
+			dtostrf(internal_temp, 5, 2, internal_temp_str);
+		}
+	}
+}
+
+//=============================================================================
+//Процесс получения значений с АЦП
+//Поочередно считывает значения с трех каналов АЦП AD7792
+//=============================================================================
+process ReadADC : background
+{
+	unsigned char channel;//Текущий канал АЦП
+
+	state FS_START
+	{
+		AD7792_StartConversion(AD7792_CHANNEL0);//запуск преобразования на 0ом канале
+		channel = 0;
+		set state Read;
+	}
+	state Read
+	{
+		if(!(AD7792_ReadStatus() & AD7792_DRDY))//проверка флага готовности данных DRDY
+		{
+			PortSample[channel] = AD7792_ReadData();//Чтение значения с АЦП
+			PortSampleReady[channel] = true;//Флаг готовности данных для процессов вычисления температуры
+				
+			channel++;
+			if(channel >= 3)
+				channel = 0;
+			
+			AD7792_StartConversion(channel);//запуск преобразования на следующем канале
+		}
+	}
+}
+
+//=============================================================================
+//Процесс получения температуры в порту A
+//=============================================================================
+process ReadTempPortA : background
+{
+	//Кольцевой буфер для вычисления скользящего среднего
+	unsigned int Port_Buf[FILTER_SAMPLE_NUM];//буфер значений
+	unsigned int Port_ptr = 0;//Текущий индекс в буфере
+	unsigned long Port_Sum = 0;//Текущая сумма значений в буфере
+	unsigned int Port_Num_Samples = 0;
+
+	state FS_START
+	{
+		Port_Num_Samples = 0;
+		set state CalcTemp;
+	}
+	state CalcTemp
+	{
+		if(PortSampleReady[SP_PORT_A])
+		{
+			unsigned int NewSample;
+			NewSample = PortSample[SP_PORT_A];
+			PortSampleReady[SP_PORT_A] = false;//сброс флага готовности данных
+			
+			if(NewSample < ADC_TC_OPEN_THRESHOLD)//Проверка корректности данных
+			{	
+				if(Port_Num_Samples < FILTER_SAMPLE_NUM)
+					Port_Num_Samples++;
+			
+				//Скользящее среднее с кольцевым буфером
+				Port_Sum -= Port_Buf[Port_ptr];//Извлечение самого старого отсчета
+				Port_Sum += NewSample;//Добавление нового отсчета к сумме
+				Port_Buf[Port_ptr] = NewSample;//добавление нового отсчета в буфер
+				Port_ptr++;
+				if (Port_ptr >= FILTER_SAMPLE_NUM)//зацикливание буфера
+					Port_ptr = 0;
+				
+				float tmp = Port_Num_Samples; // (float) приведение типов
+				float port_zero = port_zero_values[SP_PORT_A]; // (float) приведение типов
+				
+				//Вычисление текущего значения температуры
+				port_temp[SP_PORT_A] = (((Port_Sum/tmp - port_zero) / 32768.0) * AD7792_VREF_MV / AD7792_PORT_GAIN) / TC_SEEBECK ;//+ internal_temp;
+				port_temp[SP_PORT_A] *= port_reg_params[SP_PORT_A][REG_PARAM_K];//Коррекция термопары
+				port_temp[SP_PORT_A] += internal_temp;//коррекция холодного спая
+				
+				//raw_PORT_A_Temp
+				
+				//Получение значения в строковом представлении
+				dtostrf(port_temp[SP_PORT_A], 5, 1, port_temp_str[SP_PORT_A]);	
+			}
+			else
+			{
+				set state BadData;
+			}
+		}
+	}
+	state BadData
+	{
+		//Состояние "некорректные данные"
+		//Значение температуры не обновляется
+		//Выход из состояния - при получении корректных данных с АЦП
+		if(PortSampleReady[SP_PORT_A])
+		{
+			unsigned int NewSample;
+			NewSample = PortSample[SP_PORT_A];
+			PortSampleReady[SP_PORT_A] = false;
+			if(NewSample < ADC_TC_OPEN_THRESHOLD)
+			{
+				//получены корректные данные - возврат в штатное состояние
+				set state CalcTemp;
+			}
+		}
+		
+		//Некорректные данные в течение заданного времени - обрыв термопары
+		timeout(TC_OPEN_TIMEOUT)
+		{
+			sp_port_status[SP_PORT_A] = SP_PORT_ERROR_TC;
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
+			stop process DegasA;
+			stop process PortA_Brezenham;
+			start process LongBuzz;
+			stop process;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс получения температуры в порту B
+//=============================================================================
+process ReadTempPortB : background
+{
+	//Кольцевой буфер для вычисления скользящего среднего
+	unsigned int Port_Buf[FILTER_SAMPLE_NUM];//буфер значений
+	unsigned int Port_ptr = 0;//Текущий индекс в буфере
+	unsigned long Port_Sum = 0;//Текущая сумма значений в буфере
+	unsigned int Port_Num_Samples = 0;
+
+	state FS_START
+	{
+		Port_Num_Samples = 0;
+		set state CalcTemp;
+	}
+	state CalcTemp
+	{
+		if(PortSampleReady[SP_PORT_B])
+		{
+			unsigned int NewSample;
+			NewSample = PortSample[SP_PORT_B];
+			PortSampleReady[SP_PORT_B] = false;//сброс флага готовности данных
+			
+			if(NewSample < ADC_TC_OPEN_THRESHOLD)//Проверка корректности данных
+			{
+				if(Port_Num_Samples < FILTER_SAMPLE_NUM)
+					Port_Num_Samples++;
+			
+				//Скользящее среднее с кольцевым буфером
+				Port_Sum -= Port_Buf[Port_ptr];//Извлечение самого старого отсчета
+				Port_Sum += NewSample;//Добавление нового отсчета к сумме
+				Port_Buf[Port_ptr] = NewSample;//добавление нового отсчета в буфер
+				Port_ptr++;
+				if (Port_ptr >= FILTER_SAMPLE_NUM)//зацикливание буфера
+					Port_ptr = 0;
+				
+				float tmp = Port_Num_Samples; // (float) приведение типов
+				float port_zero = port_zero_values[SP_PORT_B]; // (float) приведение типов
+				
+				//Вычисление текущего значения температуры
+				//port_temp[channel] = Port_Sum[channel]/tmp;
+				port_temp[SP_PORT_B] = (((Port_Sum/tmp - port_zero) / 32768.0) * AD7792_VREF_MV / AD7792_PORT_GAIN) / TC_SEEBECK ;//+ internal_temp;
+				port_temp[SP_PORT_B] *= port_reg_params[SP_PORT_B][REG_PARAM_K];//Коррекция термопары
+				port_temp[SP_PORT_B] += internal_temp;//коррекция холодного спая
+				
+				//raw_PORT_A_Temp
+				
+				//Получение значения в строковом представлении
+				dtostrf(port_temp[SP_PORT_B], 5, 1, port_temp_str[SP_PORT_B]);	
+			}
+			else
+			{
+				set state BadData;
+			}
+		}
+	}
+	state BadData
+	{
+		//Состояние "некорректные данные"
+		//Значение температуры не обновляется
+		//Выход из состояния - при получении корректных данных с АЦП
+		if(PortSampleReady[SP_PORT_B])
+		{
+			unsigned int NewSample;
+			NewSample = PortSample[SP_PORT_B];
+			PortSampleReady[SP_PORT_B] = false;
+			if(NewSample < ADC_TC_OPEN_THRESHOLD)
+			{
+				//получены корректные данные - возврат в штатное состояние
+				set state CalcTemp;
+			}
+		}
+		
+		//Некорректные данные в течение заданного времени - обрыв термопары
+		timeout(TC_OPEN_TIMEOUT)
+		{
+			sp_port_status[SP_PORT_B] = SP_PORT_ERROR_TC;
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
+			stop process DegasB;
+			stop process PortB_Brezenham;
+			start process LongBuzz;
+			stop process;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс получения температуры в порту C
+//=============================================================================
+process ReadTempPortC : background
+{
+	//Кольцевой буфер для вычисления скользящего среднего
+	unsigned int Port_Buf[FILTER_SAMPLE_NUM];//буфер значений
+	unsigned int Port_ptr = 0;//Текущий индекс в буфере
+	unsigned long Port_Sum = 0;//Текущая сумма значений в буфере
+	unsigned int Port_Num_Samples = 0;
+
+	state FS_START
+	{
+		Port_Num_Samples = 0;
+		set state CalcTemp;
+	}
+	state CalcTemp
+	{
+		if(PortSampleReady[SP_PORT_C])
+		{
+			unsigned int NewSample;
+			NewSample = PortSample[SP_PORT_C];
+			PortSampleReady[SP_PORT_C] = false;//сброс флага готовности данных
+			
+			if(NewSample < ADC_TC_OPEN_THRESHOLD)//Проверка корректности данных
+			{	
+				if(Port_Num_Samples < FILTER_SAMPLE_NUM)
+					Port_Num_Samples++;
+				
+				//Скользящее среднее с кольцевым буфером
+				Port_Sum -= Port_Buf[Port_ptr];//Извлечение самого старого отсчета
+				Port_Sum += NewSample;//Добавление нового отсчета к сумме
+				Port_Buf[Port_ptr] = NewSample;//добавление нового отсчета в буфер
+				Port_ptr++;
+				if (Port_ptr >= FILTER_SAMPLE_NUM)//зацикливание буфера
+					Port_ptr = 0;
+				
+				float tmp = Port_Num_Samples; // (float) приведение типов
+				float port_zero = port_zero_values[SP_PORT_C]; // (float) приведение типов
+				
+				//Вычисление текущего значения температуры
+				//port_temp[channel] = Port_Sum[channel]/tmp;
+				port_temp[SP_PORT_C] = (((Port_Sum/tmp - port_zero) / 32768.0) * AD7792_VREF_MV / AD7792_PORT_GAIN) / TC_SEEBECK ;//+ internal_temp;
+				port_temp[SP_PORT_C] *= port_reg_params[SP_PORT_C][REG_PARAM_K];//Коррекция термопары
+				port_temp[SP_PORT_C] += internal_temp;//коррекция холодного спая
+				
+				//raw_PORT_A_Temp
+				
+				//Получение значения в строковом представлении
+				dtostrf(port_temp[SP_PORT_C], 5, 1, port_temp_str[SP_PORT_C]);	
+			}
+			else
+			{
+				set state BadData;
+			}
+		}
+	}
+	state BadData
+	{
+		//Состояние "некорректные данные"
+		//Значение температуры не обновляется
+		//Выход из состояния - при получении корректных данных с АЦП
+		if(PortSampleReady[SP_PORT_C])
+		{
+			unsigned int NewSample;
+			NewSample = PortSample[SP_PORT_C];
+			PortSampleReady[SP_PORT_C] = false;
+			if(NewSample < ADC_TC_OPEN_THRESHOLD)
+			{
+				//получены корректные данные - возврат в штатное состояние
+				set state CalcTemp;
+			}
+		}
+		
+		//Некорректные данные в течение заданного времени - обрыв термопары
+		timeout(TC_OPEN_TIMEOUT)
+		{
+			sp_port_status[SP_PORT_C] = SP_PORT_ERROR_TC;
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
+			stop process DegasC;
+			stop process PortC_Brezenham;
+			start process LongBuzz;
+			stop process;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс установки смещения нуля в порту
+//=============================================================================
+process SetPortZero : background
+{
+	volatile unsigned long cma;//кумулятивное скользящее среднее считанных значений
+	volatile unsigned int num_values;
+	state FS_START
+	{
+		cma = 0;
+		num_values = 0;
+		set state Accumulate;
+	}
+	state Accumulate
+	{
+		num_values++;
+		cma = (PortSample[UI_port] + (num_values-1)*cma)/num_values;
+		if(num_values >= PORT_ZERO_NUM_SAMPLES-1)
+		{
+			port_zero_values[UI_port] = cma;
+			stop process;
+		}
+	}
+}

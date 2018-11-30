@@ -1,0 +1,83 @@
+#pragma once
+
+//=============================================================================
+//ADT7230
+//=============================================================================
+const unsigned char ADT7320_WRITE 			=	0b00000000	;
+const unsigned char ADT7320_READ 			=	0b01000000	;
+const unsigned char ADT7320_STATUS_REG		=	0x00 << 3	;//Адрес статусного регистра
+const unsigned char ADT7320_CONFIG_REG		=	0x01 << 3	;//Адрес регистра конфигурации
+const unsigned char ADT7320_VALUE_REG		=	0x02 << 3	;//Адрес регистра значений
+const unsigned char ADT7320_ID_REG			=	0x03 << 3	;//Адрес идентификационного регистра
+const unsigned char ADT7320_16BIT_MODE		=	0b10000000	;//Бит задания разрешения в конфигурационном регистре
+const unsigned char ADT7320_DRDY			=	0b10000000	;//Бит data ready в статусном регистре
+
+//=============================================================================
+//Сброс (reset) ADT7320
+//=============================================================================
+void ADT7320_Reset()
+{
+	SPI_CS_PORT &= ~_BV(ADT7320_CS_PIN);
+	WriteByteSPI(0xff);
+	WriteByteSPI(0xff);
+	WriteByteSPI(0xff);
+	WriteByteSPI(0xff);
+	SPI_CS_PORT |= _BV(ADT7320_CS_PIN);
+}
+
+//=============================================================================
+//Инициализация датчика температуры ADT7320
+//=============================================================================
+void ADT7320_Init()
+{
+	ADT7320_Reset();
+	_delay_ms(10);
+	
+	//Чтение идентификатора
+	SPI_CS_PORT &= ~_BV(ADT7320_CS_PIN);
+	WriteByteSPI(ADT7320_READ | ADT7320_ID_REG);
+	int adt7320id = ReadByteSPI(0x00);
+	SPI_CS_PORT |= _BV(ADT7320_CS_PIN);
+	
+	//Проверка идентификатора ADT7320
+	//if(0xC3 != adt7320id){}
+	_delay_ms(10);
+	
+	//Write Config Register
+	SPI_CS_PORT &= ~_BV(ADT7320_CS_PIN);
+	WriteByteSPI(ADT7320_WRITE | ADT7320_CONFIG_REG);
+	WriteByteSPI(ADT7320_16BIT_MODE);
+	SPI_CS_PORT |= _BV(ADT7320_CS_PIN);
+	_delay_ms(10);
+}
+
+
+//=============================================================================
+//Чтение статусного регистра
+//=============================================================================
+unsigned char ADT7320_ReadStatus()
+{
+	SPI_CS_PORT &= ~_BV(ADT7320_CS_PIN);
+	WriteByteSPI(ADT7320_READ | ADT7320_STATUS_REG);
+	unsigned char s = ReadByteSPI(0x00);
+	SPI_CS_PORT |= _BV(ADT7320_CS_PIN);
+	_delay_ms(10);
+	return s;
+}
+
+//=============================================================================
+//Чтение регистра данных
+//=============================================================================
+unsigned int ADT7320_ReadData()
+{
+	//Чтение регистра значений
+	unsigned int d;
+	SPI_CS_PORT &= ~_BV(ADT7320_CS_PIN);
+	WriteByteSPI(ADT7320_READ | ADT7320_VALUE_REG);//WriteByteSPI(0b01010000);
+	d = Read16SPI(0x00);
+	SPI_CS_PORT |= _BV(ADT7320_CS_PIN);
+	_delay_ms(10);
+	return d;
+}
+
+

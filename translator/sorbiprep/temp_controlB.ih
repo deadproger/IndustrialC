@@ -1,0 +1,376 @@
+#pragma once
+
+//=============================================================================
+//Процесс отслеживания времени дегазации в порту B
+//Отсчитывает время дегазации с момента достижения 90% от заданной температуры
+//По истечении времени дегазации процесс завершается
+//=============================================================================
+process TrackDegasTimeB : background
+{
+	state FS_START
+	{
+		sp_port_status[SP_PORT_B] = SP_PORT_HEATING;
+		set state Wait90Percent;
+	}
+	state Wait90Percent
+	{
+		if(port_temp[SP_PORT_B] >= 0.9 * DegasTemp[SP_PORT_B]) //90% от заданной температуры
+		{
+			degas_start_time[SP_PORT_B] = ic_ts_millis();
+			sp_port_status[SP_PORT_B] = SP_PORT_DEGAS;
+			set state TrackTime;
+		}
+	}
+	state TrackTime
+	{
+		//вычисление времени с момента начала дегазации
+		degas_elapsed_time[SP_PORT_B] = ic_ts_millis() - degas_start_time[SP_PORT_B];
+	
+		timeout (DegasTime[SP_PORT_B] * 60000) // ждем конца дегазации
+		{
+			stop process;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс дегазации в порту B
+//По запуску включает регулятор, линейно интерполирует уставку по времени со скоростью dt
+//от текущего значения температуры до целевой температуры дегазации.
+//Ожидает завершения отсчета времени дегазации (процесс TrackDegasTimeB)
+//=============================================================================
+process DegasB : background 
+{
+	state FS_START 
+	{
+		start process PortB_PID;
+		buzz_port = SP_PORT_B;
+		start process PortBuzz;
+		port_pid_setpoints[SP_PORT_B] = port_temp[SP_PORT_B];
+		start process TrackDegasTimeB;//запуск процесса отслеживания времени дегазации
+		set state WaitSecond;
+	} 
+	state Heating
+	{
+		//Приращение уставки
+		port_pid_setpoints[SP_PORT_B] += (port_reg_params[SP_PORT_B][REG_PARAM_DT] /* / 60.0 */);
+		
+		if (port_pid_setpoints[SP_PORT_B] >  DegasTemp[SP_PORT_B])
+		{
+			//Уставка достигла целевой температуры дегазации
+			port_pid_setpoints[SP_PORT_B] =  DegasTemp[SP_PORT_B];
+			set state Wait4Degas;
+		}
+		else
+		{
+			set state WaitSecond;
+		}
+	}
+	state WaitSecond
+	{
+		timeout (1000) 
+		{
+			set state Heating; // ждем секунду
+		}
+	}
+	state Wait4Degas
+	{
+		if(TrackDegasTimeB passive)//завершился процесс отслеживания времени дегазации
+		{
+			buzz_port = SP_PORT_B;
+			start process PortBuzz;
+			sp_port_status[SP_PORT_B] = SP_PORT_FINISHED;
+			stop process PortB_PID;
+			stop process;
+		}
+	}
+	state FS_STOP
+	{
+		port_pid_setpoints[SP_PORT_B] = 0;
+		stop process PortB_PID;
+		stop process TrackDegasTimeB;
+	}
+}
+
+//=============================================================================
+//Процесс ограничения роста интегральной составляющей в начале регулирования
+//=============================================================================
+process IntegralWindupB : background
+{
+	state FS_START
+	{
+		timeout(10000)
+		{
+			stop process;
+		}
+	}
+}
+
+//=============================================================================
+//Процесс контроля температуры в порту B
+//Активируется внешним прерыванием по восходящем фронту сигнала синхронизации 
+//Реализует алгоритм ПИД-регулирования 
+//Задает значение мощности для процесса PortBBrezenham
+//=============================================================================
+process PortB_PID : background
+{
+	float setpoint;
+	float PrevErr;
+	float Tcur, PrevTcur;
+	float ErrSum;
+	float Kp, Ki, Kd, ErrLim;
+	float power;
+	
+	unsigned long last_active_time;
+	
+	state FS_START
+	{
+		power = 0.0;
+		setpoint = port_pid_setpoints[SP_PORT_B];
+		PrevErr = setpoint - port_temp[SP_PORT_B];
+		PrevTcur = port_temp[SP_PORT_B];
+		ErrSum = 0.0;
+		start process HeaterModelB; // синхронизация расчета Т по модели
+		start process PortB_DetectHtrFailure; //запуск отслеживания обрыва нагревателя
+		set state Wait;
+		last_active_time = ic_ts_millis();
+		
+		start process IntegralWindupB;
+	}
+	state Control
+	{
+		//dt - время с последней активации регулятора в 100 секундных единицах
+		//можно заменить на период квантования если ограничить его снизу макс. временем активации гиперпроцессса
+		float dt = (ic_ts_millis() - last_active_time)/100000.0;
+		last_active_time = ic_ts_millis();
+	
+		Kp = port_reg_params[SP_PORT_B][REG_PARAM_KP];
+		Ki = port_reg_params[SP_PORT_B][REG_PARAM_KI];
+		Kd = port_reg_params[SP_PORT_B][REG_PARAM_KD];
+		
+		setpoint = port_pid_setpoints[SP_PORT_B]; //Уставка
+		Tcur = port_temp[SP_PORT_B]; // текущая Т
+		float Err = setpoint - Tcur; // Текущее значение ошибки
+		float dErr = (Err - PrevErr)/dt;  //Текущее значение производной ошибки по времени
+		
+		float incErr;
+ 		float dT;
+		dT = Tcur - PrevTcur; 
+		
+		//Ограничение роста интегральной составляющей на этапе нагрева
+		float MAXdT = port_reg_params[SP_PORT_B][REG_PARAM_DT] * port_reg_params[SP_PORT_B][REG_PARAM_TQ]; // максимальный наклон
+		MAXdT /= 3.0; // треть максимального наклона
+		if (Err > 0.0) 
+		{
+			// если большая скорость роста температуры или начало регулирования - интеграл не растет, прибавка = 0
+			if (dT >= MAXdT || IntegralWindupB active) 
+				incErr = 0.0; 
+			else 
+				incErr = Err * (1.0 - 2.0 * dT / MAXdT + dT * dT / (MAXdT * MAXdT)); // иначе рост прибавки в зависимости от роста температуры
+		} 
+		else 
+		{
+			//Если перерегулирование - интеграл убывает быстрее
+			//Добавлено для сглаживания эффекта прогрева термостата в начале дегазации
+			incErr = 5.0 * Err; 		
+		}
+		
+		ErrSum += incErr * dt; //Интеграл ошибки по времени 
+		
+		//Интеграл ошибки не может быть отрицательным если не выдается мощность
+		if(ErrSum < 0.0 && 0 == port_power[SP_PORT_B])
+			ErrSum = 0.0;
+		
+		//Ориентировочная базовая мощность (эмпирика) 
+		float BasePower;
+		BasePower = (setpoint - internal_temp) * BASE_POWER_RATIO; 
+		
+		//Абсолютное значение ошибки - масштабный коэффициент для усиления дифф. составляющей рядом с уставкой
+		float absErr;
+		if (Err >= 0) absErr = Err;
+		else absErr = -Err;
+		
+		float IPartB;
+		float PPartB;
+		float DPartB;
+		
+		IPartB = Ki * ErrSum;
+		PPartB = Kp * Err;
+		DPartB = Kd * dErr/(absErr + 5.0); //усиление дифф. составляющей при приближении к уставке
+		
+		power = BasePower + (IPartB + PPartB + DPartB) * 10.0; // c учетом масштабного коэффициента, чем ближе к заданию, тем сильнее диф. составляющая + "* 10.0" - костыль
+		
+		//Корректировка нелинейности отклика мощности
+		//Учитывается зависимость сопротивления нагревателя от температуры
+		power *= 1.0 + HEATER_RESITANCE_TEMP_COEFF * port_temp[SP_PORT_B];
+		
+		atomic //port_power используется в прерывании MAINS_REF_interrupt
+ 		{
+			if((power < 0) || (power != power))//Ограничение выдаваемой мощности снизу, power != power - это NaN
+			{
+				port_power[SP_PORT_B] = 0;
+				power = 0.0;
+			}
+			else if(power > HEATER_FULL_POWER)//Ограничение выдаваемой мощности сверху
+			{
+				port_power[SP_PORT_B] = HEATER_FULL_POWER;
+				power = HEATER_FULL_POWER;
+			}
+			else
+				port_power[SP_PORT_B] = power;
+		}
+		
+		PrevErr = Err;
+		PrevTcur = Tcur;
+		set state Wait;
+		
+		//Отладочный вывод
+		IPart = IPartB;
+		PPart = PPartB;
+		DPart = DPartB;
+		
+	}
+	state Wait
+	{
+		//Выдерживание заданного периода квантования регулятора
+		//Tq задано в секундах, таймаут - миллисекунды
+		timeout(1000.0 * port_reg_params[SP_PORT_B][REG_PARAM_TQ])
+		{
+			set state Control;
+		}
+	}
+	
+	state FS_STOP
+	{
+		stop process PortB_DetectHtrFailure;
+		port_power[SP_PORT_B]  = 0;
+	}
+}
+
+//=============================================================================
+// Процесс контроля обрыва нагревателя в порту B
+// Процесс сравнивает относительные температуры порта и модели (относительно температуры среды)
+// Нагреватель считается поврежденным, если порт длительное время работает значительно хуже модели
+// Критерий обрыва: отн. темп. порта значительно ниже отн. темп. модели на протяжении времени HEATER_FAILURE_TIMEOUT
+// Пороговое значение разности относительных температур складывается из постоянной составляющей HEATER_FAILURE_CONST
+// и составляющей, пропорциональной отн. температуре модели с коэффициентом HEATER_FAILURE_COEFF
+//=============================================================================
+process PortB_DetectHtrFailure : background
+{
+	float model_delta; 
+	float heater_delta;	
+	state FS_START
+	{
+		set state Monitor;
+	}
+	state Monitor
+	{
+		model_delta = HeaterModelT[SP_PORT_B] - internal_temp;//относительная температура модели
+		heater_delta = port_temp[SP_PORT_B] - internal_temp;//относительная температура порта
+		
+		//проверка выполнения условия обрыва - порт работает сильно хуже модели
+		if( (model_delta - heater_delta) > (model_delta * HEATER_FAILURE_COEFF + HEATER_FAILURE_CONST) )
+		{
+			//переход в состояние подозрения обрыва
+			set state FailureSuspected;
+		}
+	}
+	state FailureSuspected
+	{
+		//Проверка условия обрыва - порт работает сильно хуже модели
+		model_delta = HeaterModelT[SP_PORT_B] - internal_temp;//относительная температура модели
+		heater_delta = port_temp[SP_PORT_B] - internal_temp;//относительная температура порта
+		if((model_delta - heater_delta) < (model_delta*HEATER_FAILURE_COEFF + HEATER_FAILURE_CONST))
+		{
+			//Если условие больше не выполняется - возврат в штатный режим
+			set state Monitor;
+		}
+		
+		//отслеживание времени нахождения в состоянии подозрения обрыва
+		timeout(HEATER_FAILURE_TIMEOUT)
+		{
+			sp_port_status[SP_PORT_B] = SP_PORT_ERROR_HTR;//Состояние порта - обрыв нагревателя
+			if(UI_Menu active)
+				start process UI_Menu;//сброс процесса меню на начальную страницу
+			stop process DegasB;//остановка процесса дегазации
+			stop process PortB_Brezenham;
+			start process LongBuzz;		
+		}
+	}
+}
+ 
+//=============================================================================
+//Процесс моделирования поведения нагревателя порта B
+//Имитирует нагрев термостата и охлаждение через окружающую среду по формуле
+// dT = P*dt/C - K*(T - Tint)*dt
+// dT - приращение температуры модели
+// P - текущая мощность нагревателя
+// dt - временной промежуток
+// С - теплоемкость модели
+// K - коэффициент теплоотдачи
+// T - текущая температура модели
+// Tint - текущая температура окружающей среды (темп. внутри станции)
+//Задержка поступления тепла от нагревателя имитируется фильтрацией мощности нагрева
+//Учитывается нелинейность мощности, связанная с изменением сопротивления нагревателя
+//=============================================================================
+process HeaterModelB : background
+{
+	float T;
+	float Q;//кол-во теплоты
+	unsigned long start_time;
+	int RestartCounter = 0;
+	
+	float htr_full_power = HEATER_FULL_POWER;
+	
+	//Кольцевой буфер (очередь) для задержки реакции на мощность
+	const unsigned int POWER_NUM_SAMPLES = 12;
+	unsigned int Power_Buf[POWER_NUM_SAMPLES];
+	unsigned int Power_ptr;
+	unsigned long Power_sum;
+	
+	state FS_START
+	{
+		start_time = ic_ts_millis();
+		Q = 0;
+		HeaterModelT[SP_PORT_B] = T = port_temp[SP_PORT_B];//Синхронизация с реальным нагревателем
+		set state IntegratePower;
+	}
+	state IntegratePower
+	{
+		timeout(2000)
+		{
+			//фильтрация значения получаемой мощности с помощью кольцевого буфера
+			float pwr_num_samples = POWER_NUM_SAMPLES;
+			float pwr_offset = 0.001 * htr_full_power;
+			Power_sum -= Power_Buf[Power_ptr];
+			Power_sum += port_power[SP_PORT_B];
+			Power_Buf[Power_ptr] = port_power[SP_PORT_B];
+			Power_ptr++;
+			if(Power_ptr >= POWER_NUM_SAMPLES)
+				Power_ptr = 0;
+				
+			//значение получаемой мощности после фильтрации
+			float cur_power = Power_sum / pwr_num_samples;
+			//HM_Q = cur_power * 100.0 / htr_full_power;//отладочное значение для вывода на ПК
+			
+			//Вычисление времени с прошлой активации
+			unsigned long curr_time = ic_ts_millis();
+			float timelapse = (curr_time - start_time) / 1000.0;//переводим в секунды
+			
+			//Вычисление количества теплоты, полученного от нагревателя
+			Q = cur_power * timelapse / htr_full_power;
+			Q /= (1.0 + T * HEATER_RESITANCE_TEMP_COEFF);//Зависимость сопротивления нагревателя от температуры (в упрощенном виде)
+			
+			//температура модели относительно температуры окружающей среды
+			float deltaT = T - internal_temp;
+			
+			//Вычисление приращения температуры модели: тепло от нагревателя + охлаждение по Ньютону
+			T += Q / HM_C - deltaT * HM_K * timelapse;
+			HeaterModelT[SP_PORT_B] = T;//отладочное значение для вывода на ПК
+			
+			start_time = curr_time;
+			reset timeout;//set state IntegratePower;
+		}
+	}
+}
+ 

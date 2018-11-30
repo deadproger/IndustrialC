@@ -1,0 +1,107 @@
+#pragma once
+
+//=============================================================================
+//Гиперпроцесс внешнего прерывания по восходящему фронту опорного сигнала сети
+//=============================================================================
+hyperprocess MAINS_REF_interrupt
+{
+	vector = INT5_vect;
+	register = EIMSK;
+	bit = INT5;
+}
+
+//=============================================================================
+//Процесс управления мощностью нагревателя порта A по алгоритму Брезенхема
+//Активируется внешним прерыванием по восходящем фронту сигнала синхронизации 
+//сети 100Гц, ширина импульса 760 мкс, центр импульса совпадает с моментом
+//пересечения нуля синусоидальным сигналом сети 220 В
+//На каждом шаге принимается решение о пропуске очередной полуволны
+// - значение мощности нагревателя задается числом от 0 до 1
+// - на каждом шаге к ошибке прибавляется заданная мощность
+// - если ошибка >= 1, пропускаем полуволну, от ошибки отнимается 1
+// - если ошибка < 1, полуволну не пропускаем
+//=============================================================================
+process PortA_Brezenham : MAINS_REF_interrupt
+{
+	volatile unsigned int error;
+	state FS_START
+	{
+		error = 0;
+		set state Brezenham;
+	}
+	state Brezenham
+	{
+		error += port_power[SP_PORT_A];//накопление ошибки
+		if(error >= HEATER_FULL_POWER)
+		{
+			HEATER_PORT &= ~_BV(HEATER_A_PIN);//открытие тиристора - пропускаем полуволну
+			error -= HEATER_FULL_POWER;
+		}
+		else
+			HEATER_PORT |= _BV(HEATER_A_PIN);//закрытие тиристора - не пропускаем полуволну
+	} 
+	state FS_STOP
+	{
+		HEATER_PORT |= _BV(HEATER_A_PIN);
+	}
+}
+
+//=============================================================================
+//Процесс управления мощностью нагревателя порта B по алгоритму Брезенхема
+//=============================================================================
+process PortB_Brezenham : MAINS_REF_interrupt
+{
+	volatile unsigned int error;
+	state FS_START
+	{
+		error = 0;
+		set state Brezenham;
+		timeout(666)
+		{
+			set state Brezenham;
+		}
+	}
+	state Brezenham
+	{
+		error += port_power[SP_PORT_B];//накопление ошибки
+		if(error >= HEATER_FULL_POWER)
+		{
+			HEATER_PORT &= ~_BV(HEATER_B_PIN);//открытие тиристора - пропускаем полуволну
+			error -= HEATER_FULL_POWER;
+		}
+		else
+			HEATER_PORT |= _BV(HEATER_B_PIN);//закрытие тиристора - не пропускаем полуволну
+	} 
+	state FS_STOP
+	{
+		HEATER_PORT |= _BV(HEATER_B_PIN);
+	}
+}
+
+//=============================================================================
+//Процесс управления мощностью нагревателя порта C по алгоритму Брезенхема
+//=============================================================================
+process PortC_Brezenham : MAINS_REF_interrupt
+{
+	volatile unsigned int error;
+	state FS_START
+	{
+		error = 0;
+		set state Brezenham;
+	}
+	state Brezenham
+	{
+		error += port_power[SP_PORT_C];//накопление ошибки
+		if(error >= HEATER_FULL_POWER)
+		{
+			HEATER_PORT &= ~_BV(HEATER_C_PIN);//открытие тиристора - пропускаем полуволну
+			error -= HEATER_FULL_POWER;
+		}
+		else
+			HEATER_PORT |= _BV(HEATER_C_PIN);//закрытие тиристора - не пропускаем полуволну
+	} 
+	state FS_STOP
+	{
+		HEATER_PORT |= _BV(HEATER_C_PIN);
+	}
+}

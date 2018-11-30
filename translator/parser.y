@@ -50,7 +50,7 @@
     iCProgram* ic_program = NULL; /* AST root */
 	extern ParserContext* parser_context;
 
-	extern std::set<ProcGraphNode> proc_graph;
+	//extern std::set<ProcGraphNode> proc_graph;//DOT graph test
 
     extern int ic_lex();
 	int ic_error(const char *s);
@@ -248,7 +248,8 @@
 /***********************************************/
 /*                  DESTRUCTORS                */
 /***********************************************/
-//these are for killing all the lost tokens
+//these are to tell Bison how to properly clean up any non-terminals that
+//had been left astray after an error
 %destructor {} <token>
 %destructor 
 {
@@ -284,6 +285,7 @@
 %nonassoc XIF
 %nonassoc TELSE
 
+//operator precedences
 %left TLOR
 %left TLAND
 %left TOR
@@ -299,6 +301,30 @@
 /*************************************************************************************************/
 /*                                        GRAMMAR                                                */
 /*************************************************************************************************/
+//Bison uses flex to get next token (see tokens.l)
+//Below is language grammar expressed in BNF/WSN-like notation.
+//The notation is organized as follows:
+//<non-terminal> : <rule1> | <rule2> | ... | <ruleN> ;
+//Each rule has associated code that is executed when the rule is reduced
+//Reducing the rule means applying it. That is only possible after all its non-terminals have been reduced by some other rules. 
+//Bison parsing is done depth-first, i.e. AST leaves are the first ones to be reduced.
+/*
+Example (minimal IndustrialC program):
+process p1 : background
+{
+	state FS_START
+	{
+		;
+	}
+}
+
+With this example, the parser will descend through the program, process and 
+state definitions, down to the ";" statement. The rule for the ";" statement
+will then be reduced ( corresponding code executed). The parser will then go
+up, reducing the rules for each node, until it hits program - the AST root.
+So the code here kind'a executed from the bottom of AST to its top - keep that in mind.
+*/
+
 %%
 
 program		:	{
@@ -309,26 +335,18 @@ program		:	{
 				}
 				program_items_list 
 				{
-					//program scope is opened in ParserContext constructor, but closed here...
+					//program scope is opened in ParserContext constructor, but closed here
 					parser_context->close_scope();//end of the program - close the scope
 					$2;
 				}
 			;
 
-//nothing's passed further here, because items get added to the program directly when parsed
-program_items_list	:	program_items_list program_item  
-						{
-							$$ = $1;
-							$2;
-						}
-						|	program_item 
-						{
-							$$ = NULL;
-							$1;
-						}
+//nothing is really done here, because items get added to the program directly when parsed
+program_items_list	:	program_items_list program_item { $$ = $1; $2; }
+					|	program_item { $$ = NULL; $1; }
 					;
 
-program_item	:	var_declaration	
+program_item	:	var_declaration	//global var declarations
 				{
 					//split the declaration into separate variables and feed them to the program
 					//the variables are global, var_declaration is a simple list of iCVariable
@@ -338,7 +356,7 @@ program_item	:	var_declaration
 					delete $1;
 					$$ = NULL;
 				}
-				|	mcu_declaration	
+				|	mcu_declaration	// mcu declaraions are "vector", "register" and "bit" usually found in mcu-specific .ih
 				{
 					//check for redefinition: error message is generated inside check_identifier_defined (not a very explicit method...)
 					parser_context->check_identifier_defined(*$1);
@@ -351,7 +369,11 @@ program_item	:	var_declaration
 						if(NULL!=$1)ic_program->add_process($1);		
 						$$ = NULL;
 					}
-				|	hp_definition	{if(NULL!=$1)ic_program->add_hyperprocess($1);	$$ = NULL;}
+				|	hp_definition // hyperprocess definitions with hp name, vector, register & bit
+					{
+						if(NULL!=$1)ic_program->add_hyperprocess($1);
+						$$ = NULL;
+					}
 				|	c_code			{if(NULL!=$1)ic_program->add_mcu_declaration($1);	$$ = NULL;}
 				|	func_definition	{ic_program->add_function($1); $$ = NULL;}
 				;
@@ -361,6 +383,14 @@ program_item	:	var_declaration
 //are used to enable/disable the interrupt
 // * don't see the need for that midrule action here - look into and fix later
 //=================================================================================================
+/*
+hyperprocess <hp_name> 
+{
+	vector=<vec_name>;
+	register=<reg_name>;
+	bit=<bit_name>;
+}
+*/
 hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 					{
 						//check hyperprocess redefinition - if redefined, gen error and move on anyway
@@ -403,6 +433,7 @@ hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 //proc_body rule builds a list of states.
 //proc_def rule creates iCProcess w/o states, then copies the states into iCProcess later.
 //=================================================================================================
+//process <proc_name> : <hp_name> { <proc_body> }
 proc_def	:	TPROC TIDENTIFIER // 1 2
 				{
 					//check for process redefinition
@@ -417,7 +448,7 @@ proc_def	:	TPROC TIDENTIFIER // 1 2
 					//Create the iCProcess objects (w/o states or activator) and modify context
 					$<process>$ = new iCProcess(*$2, *parser_context);
 					parser_context->set_process($<process>$);//entering process definition
-					parser_context->open_scope(*$2);
+					parser_context->open_scope(*$2);// enter process scope
 					delete $2;
 				}
 				TCOLON TIDENTIFIER // 4 5
@@ -529,7 +560,7 @@ state		:	TSTATE TIDENTIFIER
 			;
 		
 //=================================================================================================
-//the state body is a list of block items and (probably) one timeout. or it can be nothing (empty)
+//the state body is a list of block items and (at most) one timeout. or it can be nothing (empty)
 //the state_body rule is needed so that the body could be empty.
 //state_items_list and state_block_item are needed to give special treatment to timeout
 //TODO: should be able to simply use block_items_list directly instead of state_body
@@ -604,7 +635,7 @@ c_code		:	TCCODELINE
 /*************************************************************************************************/     
 /*                                 S T A T E M E N T S                                           */     
 /*************************************************************************************************/
-statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
+statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state <state_name>;
 				{
 					const iCProcess* proc = parser_context->get_process();
 					if(NULL == proc)
@@ -620,7 +651,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}			
-			|	TSTART TPROC TIDENTIFIER TSEMIC //start process proc_name;
+			|	TSTART TPROC TIDENTIFIER TSEMIC //start process <proc_name>;
 				{
 					const iCProcess* proc = parser_context->get_process();
 					if(NULL == proc)
@@ -634,12 +665,12 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 						parser_context->add_to_second_pass($$); // to check if process was defined
 
 						//add edge to the process graph (for DOT generation)
-						proc_graph.insert(ProcGraphNode(proc->name, *$3));
+						//proc_graph.insert(ProcGraphNode(proc->name, *$3));//DOT graph test
 					}
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}	
-			|	TSTOP TPROC TIDENTIFIER TSEMIC //stop process proc_name;
+			|	TSTOP TPROC TIDENTIFIER TSEMIC //stop process <proc_name>;
 				{
 					const iCProcess* proc = parser_context->get_process();
 					if(NULL == proc)
@@ -653,7 +684,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 						parser_context->add_to_second_pass($$); // to check if process was defined
 
 						//add edge to the process graph (for DOT generation)
-						proc_graph.insert(ProcGraphNode(proc->name, *$3));
+						//proc_graph.insert(ProcGraphNode(proc->name, *$3));//DOT graph test
 					}
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
@@ -674,14 +705,14 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state state_name;
 					$1;$2;$3;//suppress unused value warning
 				}
 			|	expression_statement //e.g. "a = b + c - d;"
-			|	TSTART THYPERPROCESS TIDENTIFIER TSEMIC //start hyperprocess hp_name;
+			|	TSTART THYPERPROCESS TIDENTIFIER TSEMIC //start hyperprocess <hp_name>;
 				{
 					$$ = new iCStartHPStatement(*$3, *parser_context); 
 					parser_context->add_to_second_pass($$); // to check if HP was defined
 					delete $3;
 					$1;$2;$4;//suppress unused value warning
 				}
-			|	TSTOP THYPERPROCESS TIDENTIFIER TSEMIC //stop hyperprocess hp_name;
+			|	TSTOP THYPERPROCESS TIDENTIFIER TSEMIC //stop hyperprocess <hp_name>;
 				{
 					$$ = new iCStopHPStatement(*$3, *parser_context); 
 					parser_context->add_to_second_pass($$); // to check if HP was defined
@@ -939,9 +970,10 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 			 |	TLPAREN expr TRPAREN {$$ = new iCPrimaryExpression($2, *parser_context);$1;$3;}
 			 |	TIDENTIFIER TACTIVE
 				{
-					const iCProcess* proc = parser_context->get_process();
+					//DOT graph test
+					//const iCProcess* proc = parser_context->get_process();
 					//add edge to the process graph (for DOT generation)
-					proc_graph.insert(ProcGraphNode(proc->name, *$1));
+					//proc_graph.insert(ProcGraphNode(proc->name, *$1));
 
 					$$ = new iCProcStatusCheck(*$1, true, *parser_context);
 					delete $1;
@@ -950,9 +982,10 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 				}
 			 |	TIDENTIFIER TPASSIVE 
 				{
-					const iCProcess* proc = parser_context->get_process();
+					//DOT graph test
+					//const iCProcess* proc = parser_context->get_process();
 					//add edge to the process graph (for DOT generation)
-					proc_graph.insert(ProcGraphNode(proc->name, *$1));
+					//proc_graph.insert(ProcGraphNode(proc->name, *$1));
 
 					$$ = new iCProcStatusCheck(*$1, false, *parser_context);
 					delete $1; 

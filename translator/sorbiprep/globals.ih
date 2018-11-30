@@ -1,0 +1,265 @@
+#pragma once
+
+//=============================================================================
+//Порты и выводы ATmega128
+//=============================================================================
+#define BUZZER_PORT		PORTB
+#define BUZZER_DDR		DDRB
+#define BUZZER_PIN		PB7
+
+#define SPI_PORT	PORTB
+#define SPI_DDR		DDRB
+#define SPI_PIN		PINB
+#define SPI_SCK		PB1
+#define SPI_MOSI	PB2
+#define SPI_MISO	PB3
+#define SPI_SS		PB0
+#define SPI_CS_DDR			DDRG
+#define SPI_CS_PORT			PORTG
+#define AD7792_CS_PIN		PG0
+#define ADT7320_CS_PIN		PG1
+#define DISPLAY_CS_PIN		PG2
+
+#define MAINS_REF_DDR	DDRE
+#define MAINS_REF_PIN	PINE5
+
+#define HEATER_PORT		PORTB
+#define HEATER_DDR		DDRB
+#define HEATER_A_PIN	PB4
+#define HEATER_B_PIN	PB5
+#define HEATER_C_PIN	PB6
+
+#define KEYBOARD_DDR		DDRA
+#define KEYBOARD_PORT		PINA
+#define BUTTON_A_PIN		PA0
+#define BUTTON_B_PIN		PA1
+#define BUTTON_C_PIN		PA2
+#define BUTTON_UP_PIN		PA3
+#define BUTTON_DOWN_PIN		PA4
+#define BUTTON_ENTER_PIN	PA5
+
+#define LED_DDR				DDRC
+#define LED_PORT			PORTC
+#define LED_A_RED_PIN		PC0
+#define LED_A_GRN_PIN		PC1
+#define LED_B_RED_PIN		PC2
+#define LED_B_GRN_PIN		PC3
+#define LED_C_RED_PIN		PC4
+#define LED_C_GRN_PIN		PC5
+
+//Буфер вывода текста на ПК через UART
+unsigned const int PRINT_BUFFER_SIZE = 128;
+volatile char print_buffer[PRINT_BUFFER_SIZE];
+volatile int print_buffer_index;
+volatile int print_buffer_length;
+
+//Код символа "градус" в символьном ОЗУ (DDRAM) ЖК-экрана  
+const unsigned char DEGREE_SYM_CODE	=	2;
+
+//Считанные состояния клавиш
+bool BUTTON_UP;
+bool BUTTON_DOWN;
+bool BUTTON_A;
+bool BUTTON_B;
+bool BUTTON_C;
+bool BUTTON_ENTER;
+
+//Флаги событий нажатия и зажатия клавиш
+//Каждый флаг выставляется и сбрасывается только одним процессом, читается произвольным количеством процессов
+//Запись и чтение происходят внутри одного (фонового) гиперпроцесса
+//При возникновении события, флаг выставляется на один такт гиперпроцесса, затем сбрасывается
+bool button_up_pressed;
+bool button_down_pressed;
+bool setup_switch_combination = false;
+bool button_A_pressed;
+bool button_A_held;
+bool button_B_pressed;
+bool button_B_held;
+bool button_C_pressed;
+bool button_C_held;
+bool button_Enter_pressed;
+bool button_Enter_held;
+
+//ВременнЫе значения обработки клавиши "Enter" и клавиш выбора порта "A", "B", "C", мс
+const unsigned int BUTTON_HOLD_TIME_MS	=	1000	;//Время нажатия, через которое клавиша считается зажатой
+
+//ВременнЫе значения обработки клавиш "вверх" и "вниз", мс
+const unsigned int BUTTON_SPD0_TIME_MS	=	200		;//Время нажатия, через которое наступает залипание
+const unsigned int BUTTON_SPD1_TIME_MS 	=	300		;//Период срабатывания в режиме залипания
+const unsigned int BUTTON_SPD2_TIME_MS	=	2000	;//Время нажатия в режиме залипания, после которого включается ускоренная промотка
+const unsigned int BUTTON_SPD3_TIME_MS 	=	50		;//Период срабатывания в режиме ускоренной промотки
+
+//Параметры мигания участком символьного экрана (задаются перед запуском процесса мигания)
+unsigned char blink_start_pos = 0;//позиция первого символа в мигающем участке (0..15)
+unsigned char blink_end_pos = 0;//позиция последнего символа в мигающем участке (0..15)
+const unsigned int BLINK_PERIOD_MS = 400;//Период мигания символов в режиме редактирования параметров (мс)
+
+//Параметры звукового сигнала
+const unsigned int SHORT_BUZZ_DURATION_MS = 100;//Длительность короткого звукового сигнала, мс
+const unsigned int LONG_BUZZ_DURATION_MS = 500;//Длительность длинного звукового сигнала, мс
+unsigned char buzz_port = 0; // Номер порта дегазации для процесса PortBuzz;
+
+//Индексы портов дегазации для массивов PORT_NAME, DegasTemp, DegasTime
+const unsigned int SP_PORT_A		=	0;
+const unsigned int SP_PORT_B		=	1;
+const unsigned int SP_PORT_C		=	2;
+const unsigned int NUM_PORTS		=	3;
+
+//Общие параметры пользовательского и настроечного интерфейсов
+const unsigned int EDIT_TIMEOUT_MS	= 	4000;//Таймаут редактирования параметров дегазации, мс
+const unsigned int UI_UPDATE_PERIOD_MS	=	40;//Период опроса клавиатура, обновления ЖК-экрана и светодиодов, мс
+char Display_text[17]	= "                ";//Верхняя строка символьного индикатора
+char Blink_text[17]		= "                ";//Буфер процесса мигания
+char Display_line_2[17]	= "                ";//Нижняя строка символьного индикатора
+unsigned char UI_port;//Текущий индекс порта дегазации
+const char PORT_NAME[NUM_PORTS] = {'A', 'B', 'C',};//Обозначения портов дегазации для вывода на символьный индикатор
+
+//Значения температуры дегазации, град. Цельсия
+//Шаг задания, наименьшее, наибольшее и начальное значения
+const unsigned int STEP_TEMP	 	= 	5;
+const unsigned int MIN_TEMP 		= 	40;
+const unsigned int MAX_TEMP 		= 	400;
+const unsigned int DEFAULT_TEMP 	= 	50; /* 100 */
+
+//Значения времени дегазации, мин
+//Шаг задания, наименьшее, наибольшее и начальное значения
+const unsigned int STEP_TIME 		= 	5;
+const unsigned int MIN_TIME 		= 	10;
+const unsigned int MAX_TIME 		= 	360;
+const unsigned int DEFAULT_TIME 	= 	90;
+
+//Шаг и границы задания температуры внутри станции в настроечном интерфейсе
+const float STEP_INT_TEMP			=	0.05;
+const float MIN_INT_TEMP			=	0.0;
+const float MAX_INT_TEMP			=	80.0;
+
+//Постоянные, используемые при вычислении значений температуры в портах прибора и внутри станции
+const unsigned int ADC_TC_OPEN_THRESHOLD = 65500; // Пороговое значение для обнаружение обрыва теромпары
+const unsigned int TC_OPEN_TIMEOUT = 500; // Время превышения порогового значения при обрывае термопары
+const float AD7792_VREF_MV = 1170.0;//1700мВ - опорное напряжение АЦП в мВ
+const float ADC_SCALE_MAX = 65535.0;//максимум шкалы АЦП
+const float AD7792_PORT_GAIN = 64.0;//коэффициент усиления для сигналов с термопар
+const float TC_SEEBECK = 0.041; //Коэффициент термопары, мВ/°С 
+const unsigned int FILTER_SAMPLE_NUM = 10;//Длина окна фильтрации данных с АЦП и датчика температуры, задана в отсчетах
+
+//Заданные значения температуры в портах
+unsigned int DegasTemp[NUM_PORTS] = {DEFAULT_TEMP, DEFAULT_TEMP, DEFAULT_TEMP};
+
+//Заданные значения времени дегазации в портах
+unsigned int DegasTime[NUM_PORTS] = {DEFAULT_TIME, DEFAULT_TIME, DEFAULT_TIME,};
+
+//Флаги готовности данных с АЦП и данные с АЦП
+//Выставляются процессом ReadADC, сбрасываются процессами, читающими данные,
+//ReadTempPortA, ReadTempPortB и ReadTempPortA
+bool PortSampleReady[NUM_PORTS];  
+unsigned int PortSample[NUM_PORTS];
+
+//Значения температуры в портах после фильтрации, °С
+float port_temp[NUM_PORTS];
+char port_temp_str[NUM_PORTS][16];//Температура в портах в строковом представлении
+
+//Значение температуры внутри станции, °С
+float internal_temp;
+char internal_temp_str[16];//Температура внутри станции в строковом представлении
+
+//Калибровочный коэфициент температуры внутри станции
+const float DEFAULT_INT_TEMP_CALIB_OFFSET = -4.72;
+float int_temp_calib_offset = DEFAULT_INT_TEMP_CALIB_OFFSET;//калибровочное смещение значения температуры внутри станции
+
+//Заданная мощность нагревателя в порту A
+volatile unsigned int port_power[NUM_PORTS] = {0, 0, 0,};
+
+// Постоянные ПИД регулирования
+const unsigned int HEATER_FULL_POWER = 10000;//0xffff >> 1;
+const float BASE_POWER_RATIO = HEATER_FULL_POWER * 0.0005; // эмпирический факт для нагрева на 1 градус нужно 0.07 % полной мощности (реально 0.075)
+//const unsigned int HEATER_BREAK_CONTROL_MIN_POWER = HEATER_FULL_POWER * 0.03; // минимальная мощность при которой отслеживается обрыв нагревателя
+
+//Смещения нуля в портах
+const unsigned int DEFAULT_PORT_ZERO = 32767;
+volatile unsigned int port_zero_values[NUM_PORTS];
+const unsigned int PORT_ZERO_STEP = 1;//Шаг изменения смещения нуля в режиме ручной подстройки
+const unsigned int PORT_ZERO_MIN = 0;//Минимальное значение смещения нуля
+const unsigned int PORT_ZERO_MAX = 65535;//Максимальное значене смещения нуля
+const unsigned int PORT_ZERO_NUM_SAMPLES = 200;//Количество отсчетов для усреднения при автоматическом выставлении смещения нуля
+const unsigned int PORT_ZERO_SET_TIMEOUT = 5000;//Максимально допустимое время автоматического выставления смещения нуля
+
+//Значения по умолчанию для настроечных параметров порта
+const float DEFAULT_REG_PARAM_K 	= 1.0; 		/*Коррекция термопары*/
+const float DEFAULT_REG_PARAM_DT 	= 1.0;  	/*Скорость нагрева °С/сек*/
+const float DEFAULT_REG_PARAM_KP	= 5.0;  	/*Пропорциональный коэффициент регулятора*/
+const float DEFAULT_REG_PARAM_KI 	= 7.0;   	/*Интегральный коэффициент регулятора*/
+const float DEFAULT_REG_PARAM_KD 	= 2.0;   	/*Дифференциальный коэффициент регулятора*/
+const float DEFAULT_REG_PARAM_TQ 	= 2.0;  	/* Период квантования регулятора*/
+
+//Настроечные параметры порта
+#define REG_PARAM_K		0	/*Коррекция термопары*/
+#define REG_PARAM_DT 	1	/*Скорость нагрева °С/мин*/
+#define REG_PARAM_KP 	2	/*Пропорциональный коэффициент регулятора*/
+#define REG_PARAM_KI 	3	/*Интегральный коэффициент регулятора*/
+#define REG_PARAM_KD 	4	/*Дифференциальный коэффициент регулятора*/
+#define REG_PARAM_TQ 	5	/* Период квантования регулятора*/
+const float REG_PARAM_TQ_MIN = 0.0;
+#define NUM_REG_PARAMS 	6
+float port_reg_params[NUM_PORTS][NUM_REG_PARAMS];
+const char REG_PARAM_NAMES[NUM_REG_PARAMS][3] = { "K ", "dt", "Kp", "Ki", "Kd",  "Tq"};//Названия параметров регулирования
+const char REG_PARAM_UNITS[NUM_REG_PARAMS][7] = {"     ", "\2C/сек", "      ", "      ", "      ",  "сек   "};//Единицы измерения параметров регулирования
+const float REG_PARAMS_STEP = 0.01;//Шаг изменения параметров регулирования (общий)
+const float REG_PARAMS_MIN = 0.0;//Минимальное значение параметров регулирования (общее)
+const float REG_PARAMS_MAX = 99.99;//Максимальное значение параметров регулирования
+
+//Коэффициент увеличения шага в режиме ускоренной промотки
+const float DEFAULT_SCROLL_SPEED_MULTIPLIER = 1.0;
+const float SCROLL_SPEED_MULTIPLIER_MAX = 100.0;
+const float SCROLL_SPEED_MULTIPLIER_STEP = 0.1;
+float scroll_speed_multiplier = DEFAULT_SCROLL_SPEED_MULTIPLIER;
+
+//Уставки ПИД-регуляторов в портах
+float port_pid_setpoints[NUM_PORTS] = {0.0, 0.0, 0.0,};
+
+//Состояния портов дегазации
+const unsigned char SP_PORT_READY 		= 0;
+const unsigned char SP_PORT_HEATING		= 1;
+const unsigned char SP_PORT_DEGAS 		= 2;
+const unsigned char SP_PORT_FINISHED 	= 3;
+const unsigned char SP_PORT_ERROR_TC	= 4;
+const unsigned char SP_PORT_ERROR_HTR	= 5;
+unsigned char sp_port_status[NUM_PORTS];
+
+//Адреса параметров порта и параметров регулирования в энергонезависимой памяти
+//1 - байт проверки первого запуска
+//2 - sizeof(int)
+//3 - количество параметров типа int - температура, время, смещение нуля
+//4 - sizeof(float)
+//NUM_REG_PARAMS - количество параметров типа int
+#define PORT_TEMP_EEPROM_ADDR(port) 				(1 + port * ( 2 * 3 +  4 * NUM_REG_PARAMS))
+#define PORT_TIME_EEPROM_ADDR(port) 				(1 + port * ( 2 * 3 +  4 * NUM_REG_PARAMS) + 2)
+#define PORT_ZERO_EEPROM_ADDR(port)					(1 + port * ( 2 * 3 +  4 * NUM_REG_PARAMS) + 2 + 2)
+#define PORT_REG_PARAM_EEPROM_ADDR(port, param) 	(1 + port * ( 2 * 3 +  4 * NUM_REG_PARAMS) + 2 + 2 + 2 + param * 4)
+#define INT_TEMP_CALIB_EEPROM_ADDR				 	(1 + NUM_PORTS * ( 2 * 3 +  4 * NUM_REG_PARAMS))
+
+//Коэффициент зависимости сопротивления нагревателя от температуры
+const float HEATER_RESITANCE_TEMP_COEFF = 0.0032;
+
+// Отладочные переменные для вывода на ПК
+float IPart, PPart, DPart;
+
+//Параметры модели нагревателя
+float HM_C = 0.18;//теплоемкость - чем больше, тем медленнее нагревается
+float HM_K = 0.003;//теплопроводность - чем больше, тем быстрее остывает
+float HeaterModelT[NUM_PORTS];//Текущая температура модели нагревателя
+
+//Параметры обнаружения обрыва нагревателя
+const float HEATER_FAILURE_COEFF = 0.1;
+const float HEATER_FAILURE_CONST = 20.0;
+const unsigned long HEATER_FAILURE_TIMEOUT = 10000;
+
+unsigned long degas_start_time[NUM_PORTS];//время запуска отсчета времени дегазации, мс
+unsigned long degas_elapsed_time[NUM_PORTS];//время с момента начала отсчета времени дегазации, мс
+
+
+
+
+
+
+
+

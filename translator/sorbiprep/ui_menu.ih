@@ -1,0 +1,243 @@
+#pragma once
+
+//=============================================================================
+//Процесс обработки меню пользовательского интерфейса
+//Меню представляет собой список параметров, перелистываемых клавишами вверх/вниз
+//По  нажатию клавиши Enter производится переход в режим корректировки параметра
+//В режиме корректировки значение параметра изменяется клавишами вверх/вниз
+//В режиме корректировки отключается выбор порта клавишами A/B/C
+//Выход из режима корректировки осуществляется:
+// - по нажатию клавиши Enter с сохранением нового значения параметра
+// - по таймауту с сохранением прежнего значения
+//Порядок параметров в списке:
+// - Temp.int - температура внутри станции 				
+// - Time.dg  - заданное время дегазации в порту	
+// - Temp.ust - заданная температура дегазации в порту	
+// - Строка состояния порта - текущая температура, статус (ON/OFF/ERROR etc.)			
+//По запуску процесс отображает самый нижний параметр в списке
+//Параметры Temp.int и Time.dg задаются отдельно для каждого порта
+//=============================================================================
+process UI_Menu : background
+{	
+	unsigned int new_temp;//редактируемое значение температуры
+	unsigned int new_time;//редактируемое значение времени
+
+	state FS_START
+	{
+		start process UI_PortSelection;
+		set state DisplayPortStatus;
+	}
+	
+	state DisplayPortStatus // Отображение состояния порта
+	{	
+		if(SP_PORT_READY == sp_port_status[UI_port])
+			sprintf(Display_text, "%c:%5s%cC Готов ", PORT_NAME[UI_port], port_temp_str[UI_port], DEGREE_SYM_CODE);
+		else if(SP_PORT_HEATING == sp_port_status[UI_port])
+			sprintf(Display_text, "%c:%5s%cC Нагрев", PORT_NAME[UI_port], port_temp_str[UI_port], DEGREE_SYM_CODE);
+		else if(SP_PORT_DEGAS == sp_port_status[UI_port])
+			sprintf(Display_text, "%c:%5s%cC %3uмин", PORT_NAME[UI_port], port_temp_str[UI_port], DEGREE_SYM_CODE, degas_elapsed_time[UI_port]/60000);
+		else if(SP_PORT_FINISHED == sp_port_status[UI_port])
+			sprintf(Display_text, "%c:%5s%cC Готов ", PORT_NAME[UI_port], port_temp_str[UI_port], DEGREE_SYM_CODE);
+		else if(SP_PORT_ERROR_TC == sp_port_status[UI_port])
+			sprintf(Display_text, "%c:Обрыв измер-ля", PORT_NAME[UI_port]);
+		else if(SP_PORT_ERROR_HTR == sp_port_status[UI_port])
+			sprintf(Display_text, "%c:Обрыв нагр-ля ", PORT_NAME[UI_port]);
+		
+		if(button_down_pressed)
+			set state DisplayIntTemp;
+		if(button_up_pressed)
+			set state DisplayTemp;
+	}
+	
+	/*
+	state DisplayPower
+	{
+		sprintf(Display_text, "%c:Мощ-сть= %5u", PORT_NAME[UI_port], port_power[UI_port]);
+		
+		if(button_up_pressed)
+			set state DisplayTemp;
+		if(button_down_pressed)
+			set state DisplayPortStatus;
+			
+		if(button_Enter_pressed)
+		{
+			stop process UI_PortSelection;
+			stop process UI_Setup_Switching;//запрет переключения между интерфейсами
+			blink_start_pos = 10;
+			blink_end_pos = 15;
+			start process Blink;
+			set state EditPower;
+			new_temp = port_power[UI_port];
+		}
+	}
+	state EditPower
+	{
+		sprintf(Display_text, "%c:Мощ-сть= %5u", PORT_NAME[UI_port], new_temp);
+		
+		if(button_Enter_pressed)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayPower;
+			port_power[UI_port] = new_temp;
+		}
+		
+		if(button_up_pressed)
+		{
+			if(new_temp > 10000 - 1000)
+				new_temp = 10000;
+			else
+				new_temp += 1000;
+				
+			start process Blink;
+			set state EditPower;
+		}
+		if(button_down_pressed)
+		{
+			if(new_temp < 1000)
+				new_temp = 0;
+			else
+				new_temp -= 1000;
+				
+			start process Blink;
+			set state EditPower;
+		}
+			
+		timeout(EDIT_TIMEOUT_MS)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayPower;
+		}
+	}
+	*/
+	
+	state DisplayTemp // Отображение заданной температуры дегазации в порту
+	{
+		sprintf(Display_text, "%c:Темп.уст=%3u%cC", PORT_NAME[UI_port], DegasTemp[UI_port], DEGREE_SYM_CODE);
+		if(button_up_pressed)
+			set state DisplayTime;
+		if(button_down_pressed)
+			set state DisplayPortStatus;
+		if(button_Enter_pressed)
+		{
+			stop process UI_PortSelection;
+			stop process UI_Setup_Switching;//запрет переключения между интерфейсами
+			blink_start_pos = 11;
+			blink_end_pos = 13;
+			start process Blink;
+			set state EditTemp;
+			new_temp = DegasTemp[UI_port];
+		}
+	}
+	
+	state DisplayTime // Отображение заданного времени дегазации в порту
+	{
+		sprintf(Display_text, "%c:Врем.дг=%3uмин", PORT_NAME[UI_port], DegasTime[UI_port]);
+		if(button_up_pressed)
+			set state DisplayIntTemp;
+		if(button_down_pressed)
+			set state DisplayTemp;
+		if(button_Enter_pressed)
+		{
+			stop process UI_PortSelection;
+			stop process UI_Setup_Switching;//запрет переключения между интерфейсами
+			blink_start_pos = 10;
+			blink_end_pos = 12;
+			start process Blink;
+			set state EditTime;
+			new_time = DegasTime[UI_port];
+		}
+	}
+	
+	state EditTemp // Редактирование температуры дегазации порта
+	{
+		sprintf(Display_text, "%c:Темп.уст=%3u%cC", PORT_NAME[UI_port], new_temp, DEGREE_SYM_CODE);
+		if(button_Enter_pressed)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayTemp;
+			DegasTemp[UI_port] = new_temp;
+			EEPROM_write_int(PORT_TEMP_EEPROM_ADDR(UI_port), DegasTemp[UI_port]);
+		}
+		if(button_up_pressed)
+		{
+			new_temp += STEP_TEMP;
+			if(new_temp > MAX_TEMP)
+				new_temp = MAX_TEMP;
+				
+			start process Blink;
+			reset timeout;//set state EditTemp;
+		}
+		if(button_down_pressed)
+		{
+			new_temp -= STEP_TEMP;
+			if(new_temp < MIN_TEMP)
+				new_temp = MIN_TEMP;
+				
+			start process Blink;
+			reset timeout;//set state EditTemp;
+		}
+			
+		timeout(EDIT_TIMEOUT_MS)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayTemp;
+		}
+	}
+	
+	state EditTime // Редактирование времени дегазации порта
+	{
+		sprintf(Display_text, "%c:Врем.дг=%3uмин", PORT_NAME[UI_port], new_time);
+		if(button_Enter_pressed)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayTime;
+			DegasTime[UI_port] = new_time;
+			EEPROM_write_int(PORT_TIME_EEPROM_ADDR(UI_port), DegasTime[UI_port]);
+		}
+		
+		if(button_up_pressed)
+		{
+			new_time += STEP_TIME;
+			if(new_time > MAX_TIME)
+				new_time = MAX_TIME;
+			start process Blink;
+			reset timeout;//set state EditTime;
+		}
+		if(button_down_pressed)
+		{
+			new_time -= STEP_TIME;
+			if(new_time < MIN_TIME)
+				new_time = MIN_TIME;
+			start process Blink;
+			reset timeout;//set state EditTime;
+		}
+			
+		timeout(EDIT_TIMEOUT_MS)
+		{
+			start process UI_PortSelection;
+			start process UI_Setup_Switching;
+			stop process Blink;
+			set state DisplayTime;
+		}
+	}
+	
+	state DisplayIntTemp // Отображение температуры внутри станции
+	{
+		sprintf(Display_text, "Темп.внт=%5s%cC*", internal_temp_str, DEGREE_SYM_CODE);
+		if(button_down_pressed)
+			set state DisplayTime;
+		if(button_up_pressed)
+			set state DisplayPortStatus;
+	}
+	
+}

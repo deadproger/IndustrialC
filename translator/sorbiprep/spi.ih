@@ -1,0 +1,82 @@
+#pragma once
+
+//=============================================================================
+//Подпрограмма записи 8 бит через аппаратный SPI
+//=============================================================================
+inline void WriteByteSPI(unsigned char byte)
+{
+	SPDR = byte;					//Load byte to Data register
+	while(!(SPSR & (1<<SPIF))); 	// Wait for transmission complete
+}
+
+//=============================================================================
+//Подпрограмма записи 8 бит через аппаратный SPI
+//=============================================================================
+inline void Write16SPI(unsigned int data)
+{
+	//most significant bit is sent first
+	//first 6 bits in data will be shifted to nowhere by the slave
+	SPDR = data >> 8; //msb
+	while(!(SPSR & (1<<SPIF))); // wait SPI ready
+	
+	SPDR = data & 0xff;
+	while(!(SPSR & (1<<SPIF))); // wait SPI ready
+}
+
+//=============================================================================
+//Подпрограмма передачи 12-битных команд на символьный индикатор
+//=============================================================================
+inline void SendCmdSPI(unsigned char cmd)
+{
+	unsigned int data = cmd;
+	data <<= 6;
+	
+	SPDR = data >> 8; //msb
+	while(!(SPSR & (1<<SPIF))); // wait SPI ready
+	
+	SPDR = data & 0xff; 
+	while(!(SPSR & (1<<SPIF))); // wait SPI ready
+}
+
+//=============================================================================
+//Подпрограмма передачи 12-битных данных на символьный индикатор
+//=============================================================================
+inline void SendDataSPI(unsigned char d)
+{
+	unsigned int data = d + $$512U$$;
+	data <<= 6;
+	
+	SPDR = data >> 8; //msb
+	while(!(SPSR & (1<<SPIF))); // wait SPI ready
+	
+	SPDR = data & 0xff;
+	while(!(SPSR & (1<<SPIF))); // wait SPI ready
+}
+
+//=============================================================================
+//Подпрограмма чтения 8 бит через аппаратный SPI
+//=============================================================================
+inline unsigned char ReadByteSPI(unsigned char addr)
+{
+	SPDR = addr;					//Load byte to Data register
+	while(!(SPSR & (1<<SPIF))); 	// Wait for transmission complete 
+	addr=SPDR;
+	$return $addr;
+}
+
+//=============================================================================
+//Подпрограмма чтения 16 бит через аппаратный SPI
+//=============================================================================
+inline unsigned int Read16SPI(unsigned char addr)
+{
+	unsigned int data;
+	data = 0;
+	SPDR = addr;					//Load byte to Data register
+	while(!(SPSR & (1<<SPIF))); 	// Wait for transmission to complete 
+	data=SPDR;
+	data<<=8;
+	SPDR = addr;					//Load byte to Data register
+	while(!(SPSR & (1<<SPIF))); 	// Wait for transmission to complete 
+	data|=SPDR;
+	$return $data;
+}

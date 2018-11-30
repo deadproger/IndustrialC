@@ -1,0 +1,161 @@
+#pragma once
+
+//Таблица перекодировки кириллических символов для символьного индикатора 
+unsigned char rus_code[] = {
+'A', 160, 'B', 161, 224, 'E', 163, 164, 165, 166,
+'K', 167, 'M', 'H', 'O', 168, 'P', 'C', 'T', 169,
+170, 'X', 225, 171, 172, 226, 173, 174, 'b', 175,
+176, 177, 'a', 178, 179, 180, 227, 'e', 182, 183,
+184, 185, 186, 187, 188, 189, 'o', 190, 'p', 'c',
+191, 'y', 228, 'x', 229, 192, 193, 230, 194, 195,
+196, 197, 198, 199};
+
+//=============================================================================
+//Команды контроллера WS0010 символьного индикатора 
+//=============================================================================
+const unsigned char DISPLAY_FUNC_SET  		=	0b00100010	;
+const unsigned char DISPLAY_8_BIT 			=	0b00010000	;
+const unsigned char DISPLAY_TWO_LINES 		=	0b00001000	;
+const unsigned char DISPLAY_FONT_5x8		=	0b00000000	;
+const unsigned char DISPLAY_ON_OFF_CTRL 	=	0b00001000	;
+const unsigned char DISPLAY_ON				=	0b00000100	;
+const unsigned char DISPLAY_CLEAR_CMD 		=	0b00000001	;
+const unsigned char DISPLAY_ENTRY_MODE_SET 	=	0b00000100	;
+const unsigned char DISPLAY_INCREMENT		=	0b00000010	;
+const unsigned char DISPLAY_SET_DDRAM_ADDR	=	0b10000000	;
+//const unsigned char LCD_SET_CGRAM_ADDR	=	0x40		;
+const unsigned long DISPLAY_CS_DELAY_US = 10;
+
+//Адрес символа "градус" в графическом ОЗУ (CGRAM) контроллера символьного
+//Изображение кадого символа в CGRAM занимает 8 байт
+//Адрес символа в CGRAM вычисляется как его код в DDRAM, умноженный на 8
+const unsigned char DISPLAY_DEGREE_SYM_ADDR = 	DEGREE_SYM_CODE * 8; 
+
+//Изображение символа "градус", размещаемое в графическом ОЗУ (CGRAM) ЖК-экрана
+//Изображение занимает 8 байт, каждый байт соответствует строке
+//Старшие 5 бит в каждом байте соответствуют столбцам в изображении
+//1 - пиксель горит, 0 - пиксель выключен
+const char degree_symbol[] = 
+{
+	0b00110,
+	0b01001,
+	0b01001,
+	0b00110,
+	0b00000,
+	0b00000,
+	0b00000,
+	0b00000,
+};
+
+//=============================================================================
+//Инициализация символьного индикатора
+//=============================================================================
+inline void InitDisplay()
+{
+	//Display Clear
+	_delay_ms(10);
+	SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+	SendCmdSPI(0b00000001);
+	SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+
+	//Function Set
+	_delay_ms(10);
+	SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+	SendCmdSPI(0b00111010);
+	SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+	
+	//Display ON/OFF CONTROL
+	_delay_ms(10);
+	SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+	SendCmdSPI(0b00001100);
+	SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+	
+	//Display Clear
+	_delay_ms(10);
+	SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+	SendCmdSPI(0b00000001);
+	SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+	
+	//Display home
+	_delay_ms(10);
+	SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+	SendCmdSPI(0b00000010);
+	SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+	
+	//Entry Mode Set
+	_delay_ms(10);
+	SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+	SendCmdSPI(0b00000110);
+	SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+	
+	_delay_ms(10);
+	
+	//Загрузка изображения символа
+	//Изображение состоит из 8 рядов по 5 бит каждый (младшие биты)
+	for(int i=0;i<8;i++)
+	{
+		SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);_delay_us(DISPLAY_CS_DELAY_US);
+		SendCmdSPI(0b01000000 + DISPLAY_DEGREE_SYM_ADDR + i);//Задание адреса в CGRAM для загрузки символа "градус"
+		_delay_us(DISPLAY_CS_DELAY_US);SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+		_delay_ms(1);
+		
+		SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);_delay_us(DISPLAY_CS_DELAY_US);
+		SendDataSPI(degree_symbol[i]);
+		_delay_us(DISPLAY_CS_DELAY_US);SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+		_delay_ms(1);
+	}
+}
+
+inline void UpdateDisplay(char display_text_buffer[17])
+{
+	//Вывод текста на символьный идикатор
+	for(unsigned int i=0;i<16;i++)
+	{
+		//Перекодировка кириллицы
+		unsigned char c = display_text_buffer[i];
+		if(c >= $$(unsigned char)'А'$$)
+			c = rus_code[c - (unsigned char)'А'];
+	
+		//Set DDRAM Address
+		SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SendCmdSPI(0b10000000 + i);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		
+		//Write Character
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SendDataSPI(c);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+		_delay_us(DISPLAY_CS_DELAY_US);
+	}
+	
+	for(unsigned int i=0;i<16;i++)
+	{
+		//Перекодировка кириллицы
+		unsigned char c = Display_line_2[i];
+		if(c >= $$(unsigned char)'А'$$)
+			c = rus_code[c - $$(unsigned char)'А'$$];
+	
+		//Set DDRAM Address
+		SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SendCmdSPI(0b10000000 + 64 + i);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		
+		//Write Character
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SPI_CS_PORT &= ~_BV(DISPLAY_CS_PIN);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SendDataSPI(c);
+		_delay_us(DISPLAY_CS_DELAY_US);
+		SPI_CS_PORT |= _BV(DISPLAY_CS_PIN);
+		_delay_us(DISPLAY_CS_DELAY_US);
+	}
+}

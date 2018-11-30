@@ -1,0 +1,76 @@
+#pragma once
+
+//=============================================================================
+//Процесс отладочного вывода на ПК через UART-интерфейс
+//=============================================================================
+process TestPrint : background
+{
+	unsigned int address;
+	state FS_START
+	{
+		char SP_PORT_A_str [10]; 
+		dtostrf(port_pid_setpoints[SP_PORT_B], 6, 2, SP_PORT_A_str);
+		
+		char IPart_str[16];
+		char PPart_str[16];
+		char DPart_str[16];
+		char HM_Q_str[16];
+		char HM_T_str[16];
+		
+		dtostrf(IPart, 6, 2, IPart_str);
+		dtostrf(PPart*0.5, 6, 2, PPart_str);
+		dtostrf(DPart, 6, 2, DPart_str);
+		dtostrf(port_power[SP_PORT_B] / 100.0, 6, 2, HM_Q_str);
+		dtostrf(HeaterModelT[SP_PORT_B], 6, 2, HM_T_str);
+	
+		//$sprintf((char*)$print_buffer, "%s %s %s %s %s %s %s\n", $SP_PORT_A_str, $port_temp_str[$SP_PORT_B], $IPart_str, $PPart_str, $DPart_str, $HM_Q_str, $HM_T_str);
+		sprintf((char*)print_buffer, "%s %s %s %s %s %s %s\n", SP_PORT_A_str, port_temp_str[SP_PORT_B], IPart_str, PPart_str, DPart_str, HM_Q_str, HM_T_str);
+		//$sprintf((char*)$print_buffer, "%s %s %s %s \n", $SP_PORT_A_str, $port_temp_str[$SP_PORT_A], $HM_Q_str, $HM_T_str);
+		print_buffer_length = $$strlen((char*)$print_buffer)$$;
+		print_buffer_index = 0;
+	
+		start process Print;
+		start hyperprocess USART_DataRegisterEmpty_interrupt;
+		set state Delay;
+		
+	}
+	state Delay
+	{
+		timeout(2000)
+		{
+			set state FS_START;
+		}
+	}
+}
+
+//=============================================================================
+//Гиперпроцесс прерывания Data Register Empty аппаратного USART
+//=============================================================================
+hyperprocess USART_DataRegisterEmpty_interrupt
+{
+	vector = USART0_UDRE_vect;
+	register = UCSR0B;
+	bit = UDRIE0;
+}
+
+//=============================================================================
+//Процесс отправки строки через аппаратный USART
+//=============================================================================
+process Print : USART_DataRegisterEmpty_interrupt
+{
+	state FS_START
+	{
+		if(print_buffer_index < print_buffer_length)
+		{
+			UDR0 = print_buffer[print_buffer_index];
+			print_buffer_index++;
+		}
+		else
+		{
+			stop process;
+			stop hyperprocess;
+		}
+	}
+}
+
+

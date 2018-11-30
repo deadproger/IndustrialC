@@ -2,7 +2,10 @@
 del industrialc.exe
 win_bison --report=all --report-file=bisonreport -d -o parser.cpp parser.y 
 win_flex -otokens.cpp tokens.l 
+win_bison --report=all --report-file=bisonprepreport -d -oprep_parser.cpp prep_parser.y 
+win_flex -oprep_tokens.cpp prep_tokens.l 
 g++ -static-libgcc -static-libstdc++ -oindustrialc parser.cpp tokens.cpp main.cpp ^
+prep_parser.cpp prep_tokens.cpp ^
 CCode.cpp ^
 CCodeStatement.cpp ^
 CodeGenContext.cpp ^
