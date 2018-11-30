@@ -41,6 +41,7 @@
 	#include "iCAtomicBlock.h"
 	#include "iCJumpStatement.h"
 	#include "iCResetTimeoutStatement.h"
+	#include "iCRestartStatement.h"
 
 	#include <stdio.h>
 	#include <stdarg.h> 
@@ -190,7 +191,7 @@
 %token <string> TAND_ASSGN		"&="		
 %token <string> TXOR_ASSGN		"^="		
 %token <string> TOR_ASSGN		"|="	
-
+%token <token>	TRESTART		"restart"
 
 /***********************************************/
 /*                   NODES                     */
@@ -779,6 +780,7 @@ statement	:	TSET TSTATE TIDENTIFIER TSEMIC //set state <state_name>;
 			|	TRETURN TSEMIC		{ $$ = new iCJumpStatement("return",	NULL,	*parser_context);		delete $1; $2; }
 			|	TBREAK TSEMIC		{ $$ = new iCJumpStatement("break",		NULL,	*parser_context); 		delete $1; $2; }
 			|	TCONTINUE TSEMIC	{ $$ = new iCJumpStatement("continue",	NULL,	*parser_context);		delete $1; $2; }
+			|	TRESTART TSEMIC { $$ = new iCRestartStatement(*parser_context); $1;$2;}
 			;
 
 //subroutine to open a "for" loop scope before parsing the init statement

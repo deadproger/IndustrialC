@@ -41,6 +41,7 @@ process Initialization : background
 				;
 		}
 	
+		restart;
 	
 		//Настройка направления работы выводов CS и выставление всех сигналов CS в 1
 		SPI_CS_PORT |= _BV(ADT7320_CS_PIN) | _BV(AD7792_CS_PIN) | _BV(DISPLAY_CS_PIN);
@@ -97,6 +98,8 @@ process Initialization : background
 		unsigned int address = 0;
 		if(0 != EEPROM_read_byte(address))
 		{
+			restart;
+		
 			EEPROM_write_byte(address, 0); address += 1;
 			
 			for(int i=0;i<NUM_PORTS;i++)

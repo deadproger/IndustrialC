@@ -48,7 +48,8 @@ iCIterationStatement.cpp ^
 iCAtomicBlock.cpp ^
 iCJumpStatement.cpp ^
 iCResetTimeoutStatement.cpp ^
-iCCastExpression.cpp 
+iCCastExpression.cpp ^
+iCRestartStatement.cpp 
 @echo --------------------------------Done-------------------------------------
 
  

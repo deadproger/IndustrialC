@@ -398,6 +398,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCRestartStatement.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCRestartStatement.h"
+					>
+				</File>
+				<File
 					RelativePath="..\iCSelectionStatement.cpp"
 					>
 				</File>

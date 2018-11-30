@@ -68,6 +68,8 @@ const int IC_TAB_SIZE = 4;
 "true"					return TOKEN(TTRUE			);
 "false"					return TOKEN(TFALSE	 		);
 
+"restart"				return TOKEN(TRESTART		);
+
 "void"					SAVE_TOKEN; return TVOID	 ;
 "char"					SAVE_TOKEN; return TCHAR	 ;
 "int"					SAVE_TOKEN; return TINT		 ;
