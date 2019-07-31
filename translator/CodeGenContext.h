@@ -1,6 +1,7 @@
 #pragma once
 
 #include "iCNode.h"
+#include "iCProcTypeInstantiation.h"
 class iCProcess;
 class iCState;
 
@@ -60,7 +61,9 @@ public:
 	void leave_ISR(){_in_ISR = false;}
 	bool in_ISR()const{return _in_ISR;}
 
+	//todo: unite process and instantiation
 	iCProcess* process; //current process, does not own
+	iCProcTypeInstantiation* proctype_instantiation; //current proctype instantiation, does not own
 	iCState* state; //current state, does not own
 	const iCHyperprocessMap* hps;//map of HPs - the program itself - does not own
 

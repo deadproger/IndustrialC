@@ -9,13 +9,25 @@
 //=================================================================================================
 void iCState::gen_code(CodeGenContext& context)
 {
+	std::cout << "iCState::gen_code " << name << std::endl;
 #ifdef ICDEBUG_TRACE
 	std::cout<<"iCState::gen_code " << name << "...";
 	std::cout.flush();
 #endif
 
-	std::string state_name = special ? name : (context.process->name + name);
-
+	//todo: use same parent for process and proctype instantiation?
+	std::string state_name;
+	if (special)
+	{
+		state_name = name;
+	} else
+	{
+		if (NULL != context.process)
+			state_name = context.process->name + name;
+		else
+			state_name = context.proctype_instantiation->name + name;
+	}
+	
 	//update context
 	context.state = this;
 
@@ -115,6 +127,25 @@ iCState::iCState( const std::string& name, const ParserContext& context )
 {
 	line_num = context.line();
 }
+
+/*iCState::iCState(const iCState& state)
+{
+	//iCNode fields
+	this->line_num = state.line_num;
+	this->col_num = state.col_num;
+	this->filename = state.filename;
+
+	//iCState fields
+	this->timeout = state.timeout; //ptr
+	this->isr_driven = state.isr_driven;
+	this->special = state.special;
+	this->name = state.name;
+	this->block_items = iCBlockItemsList();
+	for (iCBlockItemsList::const_iterator i = state.block_items.begin(); i < state.block_items.end(); i++)
+	{
+		this->block_items.push_back(*i); //ptr
+	}
+}*/
 
 //=================================================================================================
 //

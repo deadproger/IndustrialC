@@ -14,11 +14,12 @@ class iCState : public iCNode
 	iCTimeout* timeout;//owns if present
 	bool isr_driven;
 public:
-	bool special;
+	bool special; //if it's state which doesn't need prefix before name (START_STATE_NAME and STOP_START_NAME)
 	std::string name;
 	iCBlockItemsList block_items;
 
 	iCState(const std::string& name, const ParserContext& context);
+	//iCState(const iCState&);
 	virtual ~iCState();
 	void set_timeout(iCTimeout* timeout_statement)
 	{

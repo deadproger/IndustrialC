@@ -9,7 +9,14 @@
 void iCTimeout::gen_code( CodeGenContext& context )
 {
 	ICASSERT(!context.in_ISR());
-	bool need_atomic_block = context.process->is_isr_driven() || context.process->is_isr_referenced();
+
+	iCProcess* proc = context.process;
+	if (NULL == proc)
+	{
+		proc = context.proctype_instantiation;
+	}
+
+	bool need_atomic_block = proc->is_isr_driven() || proc->is_isr_referenced();
 
 	//if process time can be modified from ISR, copy it atomically and use the copy
 	if(need_atomic_block)
@@ -18,7 +25,7 @@ void iCTimeout::gen_code( CodeGenContext& context )
 		context.atomic_header();
 		context.to_code_fmt("%s = %s[%s].%s;",	C_COMMON_BKG_PROC_TIME,
 												C_PROC_ARRAY_NAME,
-												context.process->name.c_str(),
+												proc->name.c_str(),
 												C_STATE_TIME_ATTR_NAME);
 		context.atomic_footer();
 	}
@@ -29,7 +36,7 @@ void iCTimeout::gen_code( CodeGenContext& context )
 	if(need_atomic_block)
 		context.to_code_fmt("if((%s - %s) >= ",C_SYS_TIME_CUR_NAME, C_COMMON_BKG_PROC_TIME);
 	else
-		context.to_code_fmt("if((%s - %s[%s].%s) >= ",C_SYS_TIME_CUR_NAME, C_PROC_ARRAY_NAME, context.process->name.c_str(), C_STATE_TIME_ATTR_NAME);
+		context.to_code_fmt("if((%s - %s[%s].%s) >= ",C_SYS_TIME_CUR_NAME, C_PROC_ARRAY_NAME, proc->name.c_str(), C_STATE_TIME_ATTR_NAME);
 	
 	period->gen_code(context);
 	context.to_code_fmt(")");
@@ -51,6 +58,17 @@ void iCTimeout::gen_code( CodeGenContext& context )
 	context.indent();
 	context.to_code_fmt("}");
 }
+
+//iCTimeout::iCTimeout(const iCTimeout& timeout)
+//{
+//	//iCNode fields
+//	this->line_num = timeout.line_num;
+//	this->col_num = timeout.col_num;
+//	this->filename = timeout.filename;
+//
+//	this->period = timeout.period; //ptr
+//	this->body;
+//}
 
 //=================================================================================================
 //

@@ -17,9 +17,9 @@ public:
 	void mark_isr_referenced() const {const_cast<iCProcess*>(this)->isr_referenced = true;}//hack
 	bool is_isr_referenced()const{return isr_referenced;}
 
-    std::string name; 
+	std::string name;
 	std::string activator;
-    StateList states;
+	iCStateList states;
 	const iCState* start_state; //does not own
 	const iCState* stop_state; //does not own
 	
@@ -32,7 +32,7 @@ public:
 		if(0 != activator.compare("background"))
 			isr_driven = true;
 	}
-	void add_states(const StateList& states);
+	void add_states(const iCStateList& states);
 	bool has_state(const std::string& state_name) const;
 	bool is_isr_driven() const {return isr_driven;}
 	virtual void gen_code(CodeGenContext& context);

@@ -42,7 +42,6 @@ void iCRestartStatement::gen_code(CodeGenContext& context)
 iCRestartStatement::iCRestartStatement( const ParserContext& context )
 :	iCNode(context)
 {
-	std::cout<<"restart;"<<std::endl;
 	proc = context.get_process();
 	if(NULL == proc)
 		err_msg("\"restart\" used outside of process");

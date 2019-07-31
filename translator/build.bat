@@ -19,6 +19,7 @@ iCInteger.cpp ^
 icmemory.cpp ^
 iCPostfixExpression.cpp ^
 iCPrimaryExpression.cpp ^
+iCProcType.cpp ^
 iCProcess.cpp ^
 iCProcStatusCheck.cpp ^
 iCProgram.cpp ^
@@ -49,7 +50,11 @@ iCAtomicBlock.cpp ^
 iCJumpStatement.cpp ^
 iCResetTimeoutStatement.cpp ^
 iCCastExpression.cpp ^
-iCRestartStatement.cpp 
+iCRestartStatement.cpp ^
+iCProcTypeInstantiation.cpp ^
+iCIdentifierInProcType.cpp ^
+iCProcTypeParam.cpp ^
+iCProcTypeParamUsage.cpp
 @echo --------------------------------Done-------------------------------------
 
  

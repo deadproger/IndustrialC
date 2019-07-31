@@ -40,7 +40,8 @@ const int IC_TAB_SIZE = 4;
 
 " "+					;
 "\t"					{parser_context->to_prev_column(); parser_context->tab_column(IC_TAB_SIZE);}
-"\n"					parser_context->inc_line_num(); 	
+"\n"					parser_context->inc_line_num();
+"proctype"              return TOKEN(TPROCTYPE);
 "process"				return TOKEN(TPROC			);
 "state"					return TOKEN(TSTATE			);
 "set"					return TOKEN(TSET			);

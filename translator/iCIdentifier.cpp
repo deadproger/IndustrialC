@@ -10,6 +10,7 @@ void iCIdentifier::gen_code(CodeGenContext& context)
 {
 	context.set_location(line_num, filename);
 
+	//todo: use get_scoped_name method
 	if(NULL != scope)
 	if(!scope->name.empty())
 	{

@@ -1,6 +1,7 @@
 #include "iCProgram.h"
 #include "CodeGenContext.h"
 #include "iCHyperprocess.h"
+#include "iCProcType.h"
 #include "iCProcess.h"
 #include "iCState.h"
 #include "iCFunction.h"
@@ -15,6 +16,7 @@ ParserContext* parser_context = NULL; //externed in parser.h
 //=================================================================================================
 void iCProgram::gen_code(CodeGenContext& context)
 {
+	std::cout<<"iCProgram entered gen_code, procs size=" << procs.size() << std::endl;
 	//stub definitions
 	context.to_code_fmt("%s\n\n", C_STUB_DEFS);
 
@@ -33,7 +35,7 @@ void iCProgram::gen_code(CodeGenContext& context)
 		(*i)->gen_code(context);
 
 	//variable declarations
-	for(std::list<iCVariable*>::iterator i=var_list.begin();i!=var_list.end();i++)
+	for(iCVariablesList::iterator i=var_list.begin();i!=var_list.end();i++)
 		(*i)->gen_code(context);
 
 	//function definitions
@@ -43,11 +45,18 @@ void iCProgram::gen_code(CodeGenContext& context)
 	//context.code<<std::endl;
 	context.to_code_fmt("\n");
 
+	//todo: remove this
+    //proctypes definitions
+    for (iCProctypeMap::iterator i = proctypes.begin(); i != proctypes.end(); i++)
+    {
+        i->second->gen_code(context);
+    }
+
 	//process names enumerator
 	std::ostringstream proc_subroutines;
 	context.to_code_fmt("enum %s\n{\n", C_PROC_ENUM_NAME);
 	context.indent_depth++;
-	for(iCProcessList::iterator i=procs.begin();i!=procs.end();i++)
+	for(iCProcessMap::iterator i=procs.begin();i!=procs.end();i++)
 	{
 		iCProcess* proc = i->second;
 		const std::string& proc_name = proc->name;
@@ -67,7 +76,7 @@ void iCProgram::gen_code(CodeGenContext& context)
 
 	context.flush();
 
-	for(iCProcessList::iterator i=procs.begin();i!=procs.end();i++)
+	for(iCProcessMap::iterator i=procs.begin();i!=procs.end();i++)
 	{
 		iCProcess* proc = i->second;
 		const std::string& proc_name = proc->name;
@@ -77,7 +86,7 @@ void iCProgram::gen_code(CodeGenContext& context)
 			//state names enumerators
 			unsigned int state_id = 3;
 			context.to_code_fmt("enum %s_STATES\n{\n", proc_name.c_str());
-			for(StateList::const_iterator s=proc->states.begin();s!=proc->states.end();s++)
+			for(iCStateList::const_iterator s=proc->states.begin();s!=proc->states.end();s++)
 			{
 				iCState& state = **s;
 				if(!state.special)
@@ -175,21 +184,63 @@ void iCProgram::gen_code(CodeGenContext& context)
 //=================================================================================================
 iCProgram::~iCProgram()
 {
+	std::cout << "iCProgram destructor called" << std::endl;
+
 	//clear the hyperprocesses
-	for(iCHyperprocessMap::iterator i=hps.begin();i!=hps.end();i++)
-		delete i->second;	
+	for (iCHyperprocessMap::iterator i=hps.begin(); i!=hps.end(); i++)
+		delete i->second;
+
+    //clear proctypes
+    for (iCProctypeMap::iterator i = proctypes.begin(); i != proctypes.end(); i++)
+        delete i->second;
 
 	//clear mcu declarations
-	for(iCDeclarationList::iterator i=mcu_decls.begin();i!=mcu_decls.end();i++)
-		delete *i;	
+	for (iCDeclarationList::iterator i=mcu_decls.begin(); i!=mcu_decls.end(); i++)
+		delete *i;
 
 	//clear functions
-	for(std::list<iCFunction*>::iterator i=func_list.begin();i!=func_list.end();i++)
-		delete *i;	
+	for (std::list<iCFunction*>::iterator i=func_list.begin(); i!=func_list.end(); i++)
+		delete *i;
 
 	//clear variables
-	for(std::list<iCVariable*>::iterator i=var_list.begin();i!=var_list.end();i++)
+	for (iCVariablesList::iterator i=var_list.begin(); i!=var_list.end(); i++)
 		delete *i;
+
+	std::cout << "iCProgram: ended destructor" << std::endl;
+}
+
+void iCProgram::add_proctype(iCProcType* proctype)
+{
+    //printf("entered add_proctype\n");
+    if (NULL == proctype)
+    {
+        std::cout << "iCProgram::add_proctype: NULL proctype" << std::endl;
+        return;
+    }
+	if (proctype_defined(proctype->name))
+	{
+		printf("iCProgram::add_proctype: proctype %s already exists\n", proctype->name.c_str());
+		delete proctype;
+		return;
+	}
+	//proctypes.insert(proctype->name, proctype);
+	proctypes[proctype->name] = proctype;
+    //printf("proctypes size=%d\n", proctypes.size());
+}
+
+void iCProgram::add_proctype_instantiation(iCProcTypeInstantiation* instantiation)
+{
+	if (NULL == instantiation)
+	{
+		std::cout << "iCProgram::add_proctype_instantiation: NULL instantiation" << std::endl;
+		return;
+	}
+
+	//todo: uncomment and check this
+	/*if (NULL == first_bkgrnd_process && 0 == instantiation->activator.compare("background"))
+		first_bkgrnd_process = instantiation;*/
+
+	proctype_instantiations[instantiation->name] = instantiation;
 }
 
 //=================================================================================================
@@ -197,6 +248,7 @@ iCProgram::~iCProgram()
 //=================================================================================================
 void iCProgram::add_process( iCProcess* proc )
 {
+	printf("iCProgram entered add_process, name=%s\n", proc->name.c_str());
 	//redefined process
 	if(NULL == proc)
 	{
@@ -204,6 +256,7 @@ void iCProgram::add_process( iCProcess* proc )
 		return;
 	}
 
+	//todo: what if all procs are parameterized?
 	if(NULL == first_bkgrnd_process && 0==proc->activator.compare("background"))
 		first_bkgrnd_process = proc;
 
@@ -225,6 +278,51 @@ void iCProgram::add_process( iCProcess* proc )
 bool iCProgram::hp_defined( const std::string& activator )
 {
 	return hps.count(activator);
+}
+
+bool iCProgram::proctype_defined(const std::string& proctype_name)
+{
+	return proctypes.count(proctype_name);
+}
+
+const iCProcType* iCProgram::find_proctype(const std::string& proctype_name) const
+{
+	iCProctypeMap::const_iterator proctype = proctypes.find(proctype_name);
+	if (proctypes.end() == proctype)
+	{
+		return NULL;
+	}
+	return proctype->second;
+}
+
+bool iCProgram::proctype_instance_defined(const std::string& instance_name) const
+{
+	return proctype_instantiations.end() != proctype_instantiations.find(instance_name);
+}
+
+const iCProcTypeInstantiation* iCProgram::find_proctype_instance(const std::string& instance_name) const
+{
+	iCProctypeInstantiationMap::const_iterator instance = proctype_instantiations.find(instance_name);
+	if (proctype_instantiations.end() == instance)
+	{
+		return NULL;
+	}
+	return instance->second;
+}
+
+bool iCProgram::proc_defined(const std::string& proc_name) const
+{
+	return procs.end() != procs.find(proc_name);
+}
+
+const iCProcess* iCProgram::find_proc(const std::string& proc_name)const
+{
+	iCProcessMap::const_iterator proc = procs.find(proc_name);
+	if (procs.end() == proc)
+	{
+		return NULL;
+	}
+	return proc->second;
 }
 
 //=================================================================================================
@@ -265,25 +363,4 @@ const iCHyperprocess* iCProgram::get_hp( const std::string& hp_name ) const
 	if(hps.end() != hp)
 		return hp->second;
 	return NULL;
-}
-
-//=================================================================================================
-//
-//=================================================================================================
-bool iCProgram::proc_defined( const std::string& proc_name ) const
-{
-	return procs.end() != procs.find(proc_name);
-}
-
-void iCProgram::second_pass()
-{
-	
-}
-
-const iCProcess* iCProgram::find_proc( const std::string& proc_name )const
-{
-	iCProcessList::const_iterator proc = procs.find(proc_name);
-	if(procs.end() == proc)
-		return NULL;
-	else return proc->second;
 }

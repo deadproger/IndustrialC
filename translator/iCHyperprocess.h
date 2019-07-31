@@ -16,7 +16,7 @@ public:
 	std::string int_ctrl_bit;
 	unsigned long line_num;
 	std::string activator;
-	iCProcessList procs;
+	iCProcessMap procs;
 
 	iCHyperprocess(const std::string& activator, const ParserContext& context);
 	virtual ~iCHyperprocess();

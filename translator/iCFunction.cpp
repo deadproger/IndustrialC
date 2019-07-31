@@ -20,7 +20,7 @@ iCFunction::iCFunction( const std::string& name,
 
 iCFunction::~iCFunction()
 {
-	for(std::list<iCVariable*>::iterator i=params.begin();i!=params.end();i++)
+	for(iCVariablesList::iterator i=params.begin();i!=params.end();i++)
 	{
 		delete *i;
 	}
@@ -55,7 +55,7 @@ void iCFunction::gen_code( CodeGenContext& context )
 
 	//params
 	context.to_code("(");
-	for(std::list<iCVariable*>::iterator i=params.begin();i!=params.end();i++)
+	for(iCVariablesList::iterator i=params.begin();i!=params.end();i++)
 	{
 		if(params.begin() != i)
 			context.to_code(", ");
@@ -64,14 +64,14 @@ void iCFunction::gen_code( CodeGenContext& context )
 		//no indentation, no initializer, semicolon or newline at the end
 		iCVariable* var = *i;
 		context.set_location(var->line_num, var->filename);
-		for(iCStringList::iterator i=var->type_specs.begin();i!=var->type_specs.end();i++)
+		for(iCStringList::iterator j=var->type_specs.begin();j!=var->type_specs.end();j++)
 		{
-			context.to_code_fmt("%s ", (*i).c_str());
+			context.to_code_fmt("%s ", (*j).c_str());
 		}
 		context.to_code_fmt(var->full_name.c_str());
-		for(std::vector<iCExpression*>::iterator i=var->array_dimensions.begin();i!=var->array_dimensions.end();i++)
+		for(std::vector<iCExpression*>::iterator j=var->array_dimensions.begin();j!=var->array_dimensions.end();j++)
 		{
-			iCExpression* dimension = *i;
+			iCExpression* dimension = *j;
 			context.to_code("[");
 			if(NULL != dimension)
 				dimension->gen_code(context);

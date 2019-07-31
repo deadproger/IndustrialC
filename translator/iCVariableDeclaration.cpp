@@ -8,7 +8,7 @@
 //=================================================================================================
 void iCVariableDeclaration::gen_code( CodeGenContext& context )
 {
-	for(std::list<iCVariable*>::iterator i=vars.begin();i!=vars.end();i++)
+	for(iCVariablesList::iterator i=vars.begin();i!=vars.end();i++)
 	{
 		iCVariable* var = *i;
 		if(NULL != var)

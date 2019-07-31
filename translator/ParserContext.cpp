@@ -1,6 +1,7 @@
 #include "ParserContext.h"
 #include "iCScope.h"
 #include "iCVariable.h"
+#include "iCProcTypeParam.h"
 
 extern bool had_errors;
 
@@ -9,6 +10,7 @@ extern bool had_errors;
 //=================================================================================================
 ParserContext::ParserContext()
 	:	program(NULL),
+		proctype(NULL),
 		process(NULL),
 		state(NULL),
 		line_num(1),
@@ -28,6 +30,7 @@ ParserContext::ParserContext()
 //=================================================================================================
 ParserContext::~ParserContext()
 {
+	std::cout << "ParserContext entered destructor" << std::endl;
 	delete root_scope; //the scope tree recursively deletes itself (see iCScope destructor)
 }
 
@@ -61,6 +64,11 @@ void ParserContext::add_var_to_scope(iCVariable* decl)
 	current_scope->vars.push_back(decl);
 }
 
+void ParserContext::add_proctype_param_to_scope(iCProcTypeParam* param)
+{
+	current_scope->proctype_params.push_back(param);
+}
+
 //=================================================================================================
 //
 //=================================================================================================
@@ -75,6 +83,11 @@ void ParserContext::add_state_to_scope(const std::string& name)
 void ParserContext::add_proc_to_scope(const std::string& name)
 {
 	current_scope->processes.insert(name);
+}
+
+void ParserContext::add_proctype_to_scope(const std::string& name)
+{
+	current_scope->proctypes.insert(name);
 }
 
 //=================================================================================================
@@ -134,6 +147,21 @@ const iCScope* ParserContext::get_proc_scope(const std::string& name)const
 	return NULL;
 }
 
+const iCScope* ParserContext::get_proctype_scope(const std::string& name) const
+{
+	iCScope* scope = current_scope;
+	while (NULL != scope)
+	{
+		std::set<std::string>::iterator it = scope->proctypes.find(name);
+		if (scope->proctypes.end() != it)
+			return scope;
+
+		//go up the scope tree
+		scope = scope->prev_scope;
+	}
+	return NULL;
+}
+
 //=================================================================================================
 //
 //=================================================================================================
@@ -148,6 +176,22 @@ void ParserContext::add_mcu_decl_to_scope( const std::string& name )
 void ParserContext::add_func_to_scope( const std::string& name )
 {
 	root_scope->funcs.insert(name);
+}
+
+const iCScope* ParserContext::get_proctype_param_scope(const std::string& identifier) const
+{
+	iCScope* scope = current_scope;
+
+	while (NULL != scope)
+	{
+		//todo: simple search for now - replace with a map or with binary search
+		for (iCProcTypeParamList::iterator i = scope->proctype_params.begin(); i != scope->proctype_params.end(); i++)
+			if (0 == (*i)->name.compare(identifier))
+				return scope;
+
+		//go up the scope tree
+		scope = scope->prev_scope;
+	}
 }
 
 //=================================================================================================
@@ -172,7 +216,7 @@ const iCScope* ParserContext::get_mcu_decl_scope( const std::string& mcu_decl ) 
 }
 
 //=================================================================================================
-//
+//Find iCScope where function func is declared. If such iCScope doesn't exist then return NULL.
 //=================================================================================================
 const iCScope* ParserContext::get_func_scope( const std::string& func ) const
 {
@@ -180,7 +224,7 @@ const iCScope* ParserContext::get_func_scope( const std::string& func ) const
 
 	while(NULL != scope)
 	{
-		//Check if it's an mcu identifier (vector, register or bit) declared in this scope
+		//Check if it's an function name declared in this scope
 		std::set<std::string>::iterator it = scope->funcs.find(func);
 		if(scope->funcs.end() != it)
 			return scope;
@@ -237,12 +281,14 @@ iCVariable* ParserContext::get_var( const std::string& identifier ) const
 //=================================================================================================
 void ParserContext::check_identifier_defined( const std::string& identifier )
 {
+	const iCScope* proctype_param_scope = get_proctype_param_scope(identifier);
 	const iCScope* var_scope = get_var_scope(identifier);
 	const iCScope* mcu_decl_scope = get_mcu_decl_scope(identifier);									
 	const iCScope* func_scope = get_func_scope(identifier);
-	if(NULL != var_scope || NULL != mcu_decl_scope || NULL != func_scope)
+	if(NULL != proctype_param_scope || NULL != var_scope || NULL != mcu_decl_scope || NULL != func_scope)
 	{
-		const iCScope* scope = (NULL != var_scope)?var_scope:((NULL != mcu_decl_scope)?mcu_decl_scope:func_scope);
+		const iCScope* scope = (NULL != proctype_param_scope)?proctype_param_scope:
+			((NULL != var_scope)?var_scope:((NULL != mcu_decl_scope)?mcu_decl_scope:func_scope));
 		err_msg("symbol redefinition: %s already defined in %s",
 			identifier.c_str(), scope->name.empty()?"this scope":scope->name.c_str());
 	}

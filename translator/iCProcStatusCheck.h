@@ -10,6 +10,8 @@ class iCProgram;
 //=================================================================================================
 class iCProcStatusCheck : public iCExpression
 {
+	bool proc_is_proctype_param = false;
+	const iCProcTypeParam *proctype_param = NULL; //where to take value from if started_proc_name is proctype param
 public:
 	std::string proc_name;
 	bool active;

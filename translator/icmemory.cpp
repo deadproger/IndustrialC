@@ -52,10 +52,10 @@ inline void ic_mem_delete(void* ptr)
 }
 
 //for C++11+ comment out the throws
-void* operator new(std::size_t sz)throw (std::bad_alloc) {return ic_mem_new(sz);}
-void* operator new[](std::size_t sz)throw (std::bad_alloc) {return ic_mem_new(sz);}
-void operator delete(void* ptr)throw (){ic_mem_delete(ptr);}
-void operator delete[](void* ptr)throw (){ic_mem_delete(ptr);}
+void* operator new(std::size_t sz)/*throw (std::bad_alloc)*/ {return ic_mem_new(sz);} //modify these lines
+void* operator new[](std::size_t sz)/*throw (std::bad_alloc)*/ {return ic_mem_new(sz);} //modify these lines
+void operator delete(void* ptr)throw (){ic_mem_delete(ptr);} //these lines shouldn't be modified
+void operator delete[](void* ptr)throw (){ic_mem_delete(ptr);} //these lines shouldn't be modified
 
 #endif /*ICDEBUG*/
 

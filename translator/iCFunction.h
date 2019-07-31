@@ -15,7 +15,7 @@ public:
 	iCStringList type_specs;//owns
 	std::string name;
 	std::string full_name;
-	std::list<iCVariable*> params;//owns
+	iCVariablesList params;//owns
 	iCStatement *body; //owns
 	const iCScope* scope;//doesn't own, scope where the func was defined
 
@@ -29,7 +29,7 @@ public:
 		for(iCStringList::const_iterator i=type_specs_.begin();i!=type_specs_.end();i++)
 			type_specs.push_back(*i);
 	}
-	void set_params(const std::list<iCVariable*>& params_list) { params = params_list; }
+	void set_params(const iCVariablesList& params_list) { params = params_list; }
 	virtual void gen_code(CodeGenContext& context);
 
 #ifdef DEBUG

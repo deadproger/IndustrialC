@@ -9,6 +9,7 @@
 //=================================================================================================
 void iCHyperprocess::gen_code( CodeGenContext& context )
 {
+	std::cout << "iCHyperprocess: gen_code for " << this->activator << std::endl;
 #ifdef ICDEBUG_TRACE
 	std::cout<<"iCHyperprocess::gen_code " << activator << "...";
 	std::cout.flush();
@@ -31,7 +32,7 @@ void iCHyperprocess::gen_code( CodeGenContext& context )
 	}
 
 	//processes
-	for(iCProcessList::iterator j=procs.begin();j!=procs.end();j++)
+	for(iCProcessMap::iterator j=procs.begin();j!=procs.end();j++)
 		j->second->gen_code(context);
 
 	//ISR footer
@@ -53,7 +54,7 @@ void iCHyperprocess::gen_code( CodeGenContext& context )
 //=================================================================================================
 void iCHyperprocess::gen_timeout_code( CodeGenContext& context )
 {
-	for(iCProcessList::iterator j=procs.begin();j!=procs.end();j++)
+	for(iCProcessMap::iterator j=procs.begin();j!=procs.end();j++)
 	{
 		iCProcess* proc = j->second;
 		if(proc->has_timeouts())
@@ -89,7 +90,7 @@ iCHyperprocess::iCHyperprocess( const std::string& activator, const ParserContex
 //=================================================================================================
 iCHyperprocess::~iCHyperprocess()
 {
-	for(iCProcessList::iterator i=procs.begin();i!=procs.end();i++)
+	for(iCProcessMap::iterator i=procs.begin();i!=procs.end();i++)
 	{
 		delete i->second;
 	}

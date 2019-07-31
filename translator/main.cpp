@@ -8,7 +8,7 @@
 #include <fstream>
 #include <typeinfo>
 
-extern iCProgram* ic_program ;
+extern iCProgram* ic_program;
 extern int ic_parse();
 //extern int ic_prep_parse();//Preprocessor test
 extern FILE *ic_in;
@@ -75,15 +75,18 @@ int main(int argc, char **argv)
 			(*i)->second_pass();
 		}
 
-		//5: code generation
-		//Every node has a gen_code function, calling gen_code of its subnodes
-		//All code generation is done via CodeGenContext methods
-		std::ofstream output_file;
-		output_file.open(output_filename.c_str());
-		CodeGenContext context(output_file, ic_program->get_hps());
-		std::cout<<"generating code..."<<std::endl;
-		ic_program->gen_code(context);
-		output_file.close();
+		if (!had_errors)
+		{
+			//5: code generation
+			//Every node has a gen_code function, calling gen_code of its subnodes
+			//All code generation is done via CodeGenContext methods
+			std::ofstream output_file;
+			output_file.open(output_filename.c_str());
+			CodeGenContext context(output_file, ic_program->get_hps());
+			std::cout << "generating code..." << std::endl;
+			ic_program->gen_code(context);
+			output_file.close();
+		}
 	}
 
 	delete ic_program;
