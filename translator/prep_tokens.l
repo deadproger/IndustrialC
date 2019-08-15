@@ -20,7 +20,7 @@
 											SAVE_TOKEN;
 											std::string* str = ic_prep_lval.string;
 											str->erase(str->end()-1, str->end()); // trim the newline
-											std::cout<<"include is \""<<*str<<"\""<<std::endl;
+											//std::cout<<"include is \""<<*str<<"\""<<std::endl;//debug
 										}
 "/*"					BEGIN(COMMENT);
 <COMMENT>"*/"			BEGIN(INITIAL);

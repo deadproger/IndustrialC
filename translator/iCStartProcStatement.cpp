@@ -12,8 +12,7 @@
 //=================================================================================================
 void iCStartProcStatement::second_pass()
 {
-	std::cout << "iCStartProcStatement::second_pass called, proc_is_proctype_param=" 
-		<< proc_is_proctype_param << std::endl;
+	//std::cout << "iCStartProcStatement::second_pass called, proc_is_proctype_param=" << proc_is_proctype_param << std::endl;//debug
 
 	if (!proc_is_proctype_param)
 	{
@@ -80,7 +79,9 @@ iCStartProcStatement::iCStartProcStatement( const std::string& proc_name, const 
 	:	started_proc_name(proc_name),
 		program(context.get_program()),
 		iCNode(context),
-		in_isr(context.in_isr())
+		in_isr(context.in_isr()),
+		proc_is_proctype_param(false), 
+		proctype_param(NULL)
 {
 	//proctype params names have higher priority than global process names
 	if (NULL != context.get_proctype())
@@ -90,7 +91,7 @@ iCStartProcStatement::iCStartProcStatement( const std::string& proc_name, const 
 		{
 			if (0 == (*i)->name.compare(proc_name))
 			{
-				std::cout << "id " << proc_name << " is proctype param" << std::endl;
+				//std::cout << "id " << proc_name << " is proctype param" << std::endl;//Nefedov debug
 				proctype_param = *i;
 				proc_is_proctype_param = true;
 				break;

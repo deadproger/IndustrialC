@@ -464,7 +464,7 @@ hp_definition	:	THYPERPROCESS TIDENTIFIER // 1  2
 proctype_def : TPROCTYPE TIDENTIFIER 
 				TLPAREN TRPAREN 
 				{
-					printf("parser: entered proctype_def without parameters rule\n");
+					//printf("parser: entered proctype_def without parameters rule\n");//NEFEDOV DEBUG
 					//check for proctype redefinition
 					if (ic_program->proctype_defined(*$2)) //todo: replace with parser_context->get_proctype_scope ?
 						parser_context->err_msg("process type redefinition: %s already defined", $2->c_str());
@@ -497,7 +497,7 @@ proctype_def : TPROCTYPE TIDENTIFIER
 				| TPROCTYPE TIDENTIFIER //version with parameters
 				TLPAREN proctype_param_list TRPAREN
 				{
-					printf("parser: entered proctype_def with parameters rule\n");
+					//printf("parser: entered proctype_def with parameters rule\n");//NEFEDOV DEBUG
 					//check for proctype redefinition
 					if (ic_program->proctype_defined(*$2)) //todo: replace with parser_context->get_proctype_scope ?
 						parser_context->err_msg("process type redefinition: %s already defined", $2->c_str());
@@ -557,7 +557,7 @@ proctype_param_list: proctype_param_list TCOMMA TIDENTIFIER
 //process type instantiation
 proctype_instantiation: TIDENTIFIER TIDENTIFIER TLPAREN TRPAREN TSEMIC
 						{
-							printf("parser: entered proctype_instantiation rule\n");
+							//printf("parser: entered proctype_instantiation rule\n");//NEFEDOV DEBUG
 							//check for process redefinition
 							const iCScope* scope = parser_context->get_proc_scope(*$2);
 							if (NULL != scope)
@@ -580,7 +580,7 @@ proctype_instantiation: TIDENTIFIER TIDENTIFIER TLPAREN TRPAREN TSEMIC
 						}
 						| TIDENTIFIER TIDENTIFIER TLPAREN ident_list TRPAREN TSEMIC
 						{
-							printf("parser: entered proctype_instantiation rule\n");
+							//printf("parser: entered proctype_instantiation rule\n");//NEFEDOV DEBUG
 							//check for process redefinition
 							const iCScope* scope = parser_context->get_proc_scope(*$2);
 							if (NULL != scope)
@@ -698,13 +698,13 @@ proc_body	: proc_body state
 				iCProcType* proctype = parser_context->modify_proctype();
 				if (NULL == proctype) //proc_body belongs to non-parameterized process
 				{
-					std::cout << "parser.body+var_decl branch: proc_body belongs to non-parameterized process" << std::endl;
+					//std::cout << "parser.body+var_decl branch: proc_body belongs to non-parameterized process" << std::endl;//debug
 					for (iCVariablesList::iterator i = vars->begin(); i != vars->end(); i++)
 						ic_program->add_variable(*i);
 				}
 				else //proc_body belongs to proctype
 				{
-					std::cout << "parser.body+var_decl branch: proc_body belongs to proctype, proctype_name=" << proctype->name << std::endl;
+					//std::cout << "parser.body+var_decl branch: proc_body belongs to proctype, proctype_name=" << proctype->name << std::endl;//debug
 					for (iCVariablesList::iterator i = vars->begin(); i != vars->end(); i++)
 						proctype->add_variable(*i);
 				}
@@ -725,13 +725,13 @@ proc_body	: proc_body state
 				iCProcType* proctype = parser_context->modify_proctype();
 				if (NULL == proctype) //proc_body belongs to non-parameterized process
 				{
-					std::cout << "parser.var_decl branch: proc_body belongs to non-parameterized process" << std::endl;
+					//std::cout << "parser.var_decl branch: proc_body belongs to non-parameterized process" << std::endl;//debug
 					for (iCVariablesList::iterator i = vars->begin(); i != vars->end(); i++)
 						ic_program->add_variable(*i);
 				}
 				else //proc_body belongs to proctype
 				{
-					std::cout << "parser.var_decl branch: proc_body belongs to proctype, proctype_name=" << proctype->name << std::endl;
+					//std::cout << "parser.var_decl branch: proc_body belongs to proctype, proctype_name=" << proctype->name << std::endl;//debug
 					for (iCVariablesList::iterator i = vars->begin(); i != vars->end(); i++)
 						proctype->add_variable(*i);
 				}
@@ -1229,7 +1229,7 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 								const iCProcType* proctype = parser_context->get_proctype();
 								if (NULL != proctype) 
 								{
-									std::cout << "parser.y proctype is not null" << std::endl;
+									//std::cout << "parser.y proctype is not null" << std::endl;//debug
 
 									bool var_belongs_to_proctype = false; //var is inside proctype but it's not state local var
 									iCVariablesList var_list = proctype->get_variables();
@@ -1237,7 +1237,7 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 									{
 										if (0 == (*i)->name.compare(*$1))
 										{
-											std::cout << "var " << *$1 << " in proctype and out state" << std::endl;
+											//std::cout << "var " << *$1 << " in proctype and out state" << std::endl;//debug
 											$$ = new iCIdentifierInProcType(*$1, var->scope, *parser_context);
 											var_belongs_to_proctype = true;
 											break;
@@ -1245,7 +1245,7 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 									}
 									if (!var_belongs_to_proctype)
 									{
-										std::cout << "var "<< *$1 <<" in proctype and in state" << std::endl;
+										//std::cout << "var "<< *$1 <<" in proctype and in state" << std::endl;//debug
 										$$ = new iCIdentifier(*$1, var->scope, *parser_context);
 									}
 								}

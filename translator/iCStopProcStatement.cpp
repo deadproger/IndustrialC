@@ -58,8 +58,11 @@ iCStopProcStatement::iCStopProcStatement( const std::string& proc_name, const Pa
 	:	proc_name(proc_name),
 		program(context.get_program()),
 		iCNode(context),
-		in_isr(context.in_isr())//,
+		in_isr(context.in_isr()),
+		stop_self_in_proctype(false), 
+		proc_is_proctype_param(false)//,
 		//proc(NULL)
+
 {
 	//proctype params names have higher priority than global process names
 	if (NULL != context.get_proctype())
@@ -69,7 +72,7 @@ iCStopProcStatement::iCStopProcStatement( const std::string& proc_name, const Pa
 		{
 			if (0 == (*i)->name.compare(proc_name))
 			{
-				std::cout << "id " << proc_name << " is proctype param" << std::endl;
+				//std::cout << "id " << proc_name << " is proctype param" << std::endl;//debug
 				proctype_param = *i;
 				proc_is_proctype_param = true;
 				break;
@@ -80,11 +83,15 @@ iCStopProcStatement::iCStopProcStatement( const std::string& proc_name, const Pa
 	line_num = context.line();
 }
 
+//=================================================================================================
 //for stopping self in proctype when instance name is unknown
+//=================================================================================================
 iCStopProcStatement::iCStopProcStatement(const ParserContext& context)
 	: program(context.get_program()),
 	iCNode(context),
-	in_isr(context.in_isr())
+	in_isr(context.in_isr()),
+	stop_self_in_proctype(false), 
+	proc_is_proctype_param(false)
 {
 	stop_self_in_proctype = true;
 	line_num = context.line();

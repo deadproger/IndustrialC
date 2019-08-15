@@ -8,7 +8,7 @@
 //=================================================================================================
 void iCProcess::gen_code(CodeGenContext& context)
 {
-	std::cout << "iCProcess::gen_code " << name << std::endl;
+	//std::cout << "iCProcess::gen_code " << name << std::endl;//debug
 #ifdef ICDEBUG_TRACE
 	std::cout<<"iCProcess::gen_code " << name << "...";
 	std::cout.flush();

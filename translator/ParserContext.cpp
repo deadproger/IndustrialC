@@ -30,7 +30,7 @@ ParserContext::ParserContext()
 //=================================================================================================
 ParserContext::~ParserContext()
 {
-	std::cout << "ParserContext entered destructor" << std::endl;
+	//std::cout << "ParserContext entered destructor" << std::endl;//debug
 	delete root_scope; //the scope tree recursively deletes itself (see iCScope destructor)
 }
 

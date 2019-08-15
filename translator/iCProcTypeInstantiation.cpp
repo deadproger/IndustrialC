@@ -12,8 +12,7 @@ iCProcTypeInstantiation::iCProcTypeInstantiation(iCProgram* program, const std::
 	const std::string& instance_name, const iCIdentifierList& arg_list, const ParserContext& context)
 	: program(program), proctype_name(proctype_name), arg_list(arg_list), iCProcess(instance_name, context)
 {
-	printf("iCProcTypeInstantiation constructor, proctype_name = %s, instance_name = %s\n",
-		proctype_name.c_str(), instance_name.c_str());
+	//printf("iCProcTypeInstantiation constructor, proctype_name = %s, instance_name = %s\n", proctype_name.c_str(), instance_name.c_str());//debug
 }
 
 iCProcTypeInstantiation::~iCProcTypeInstantiation()
@@ -39,7 +38,7 @@ void iCProcTypeInstantiation::second_pass()
 
 void iCProcTypeInstantiation::gen_code(CodeGenContext& context)
 {
-	std::cout << "iCProcTypeInstantiation.gen_code called for " << name << std::endl;
+	//std::cout << "iCProcTypeInstantiation.gen_code called for " << name << std::endl;//debug
 
 	//update context
 	context.proctype_instantiation = this;
@@ -66,6 +65,7 @@ void iCProcTypeInstantiation::gen_code(CodeGenContext& context)
 		//state names enumerators
 		unsigned int state_id = 3;
 		context.to_code_fmt("enum %s_STATES\n{\n", name.c_str());
+		//iterate through states list
 		for (iCStateList::const_iterator s = state_list.begin(); s != state_list.end(); s++)
 		{
 			iCState& state = **s;
@@ -83,7 +83,7 @@ void iCProcTypeInstantiation::gen_code(CodeGenContext& context)
 	{
 		iCVariable *var = *i;
 		var->full_name = name + "_" + (*i)->name; //todo: changing field of var for every instance is not ok
-		std::cout << "iCProcTypeInstantiation: instance var full_name=" << var->full_name << std::endl;
+		//std::cout << "iCProcTypeInstantiation: instance var full_name=" << var->full_name << std::endl;//debug
 
 		context.disable_indentation();
 		var->gen_code(context);
@@ -115,5 +115,5 @@ void iCProcTypeInstantiation::gen_code(CodeGenContext& context)
 	//update context
 	context.proctype_instantiation = NULL;
 
-	std::cout << "iCProcTypeInstantiation.gen_code ended for " << name << std::endl;
+	//std::cout << "iCProcTypeInstantiation.gen_code ended for " << name << std::endl;//debug
 }

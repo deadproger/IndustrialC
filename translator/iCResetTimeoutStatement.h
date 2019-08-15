@@ -10,7 +10,7 @@ class ParserContext;
 class iCResetTimeoutStatement : public iCStatement
 {
 	//bool in_isr;
-	bool in_proctype = false;
+	bool in_proctype;// = false;
 public:
 	const iCProcess* proc; // does not own
 	const iCProcType* proctype; // does not own

@@ -9,7 +9,7 @@
 //=================================================================================================
 void iCHyperprocess::gen_code( CodeGenContext& context )
 {
-	std::cout << "iCHyperprocess: gen_code for " << this->activator << std::endl;
+	//std::cout << "iCHyperprocess: gen_code for " << this->activator << std::endl;//debug
 #ifdef ICDEBUG_TRACE
 	std::cout<<"iCHyperprocess::gen_code " << activator << "...";
 	std::cout.flush();
@@ -71,7 +71,7 @@ void iCHyperprocess::add_proc(iCProcess* proc)
 {
 	if(NULL == proc)
 	{
-		std::cout<<"NULL process in hyperprocess add_proc"<<std::endl;
+		//std::cout<<"NULL process in hyperprocess add_proc"<<std::endl;//debug
 		return;
 	}
 	procs[proc->name] = proc;

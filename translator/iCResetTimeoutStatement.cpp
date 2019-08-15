@@ -37,7 +37,8 @@ void iCResetTimeoutStatement::gen_code(CodeGenContext& context)
 //=================================================================================================
 iCResetTimeoutStatement::iCResetTimeoutStatement( const ParserContext& context )
 :	//proc_name(proc_name),
-	iCNode(context)//,
+	iCNode(context),
+	in_proctype(false)//,
 	//in_isr(context.in_isr())
 {
 	proc = context.get_process();

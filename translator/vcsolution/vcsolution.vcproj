@@ -514,6 +514,30 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCProcType.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCProcType.h"
+					>
+				</File>
+				<File
+					RelativePath="..\iCProcTypeInstantiation.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCProcTypeInstantiation.h"
+					>
+				</File>
+				<File
+					RelativePath="..\iCProcTypeParam.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCProcTypeParam.h"
+					>
+				</File>
+				<File
 					RelativePath="..\iCProgram.cpp"
 					>
 				</File>
@@ -608,6 +632,10 @@
 						Name="VCCLCompilerTool"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\proctype.ic"
+				>
 			</File>
 		</Filter>
 		<File

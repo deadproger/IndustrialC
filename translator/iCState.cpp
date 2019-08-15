@@ -9,7 +9,7 @@
 //=================================================================================================
 void iCState::gen_code(CodeGenContext& context)
 {
-	std::cout << "iCState::gen_code " << name << std::endl;
+	//std::cout << "iCState::gen_code " << name << std::endl;//debug
 #ifdef ICDEBUG_TRACE
 	std::cout<<"iCState::gen_code " << name << "...";
 	std::cout.flush();

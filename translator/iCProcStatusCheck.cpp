@@ -44,7 +44,9 @@ iCProcStatusCheck::iCProcStatusCheck( const std::string& proc_name, bool active,
 	:	proc_name(proc_name),
 		active(active),
 		program(context.get_program()),
-		iCNode(context)
+		iCNode(context),
+		proc_is_proctype_param(false),
+		proctype_param(NULL)
 {
 	//proctype params names have higher priority than global process names
 	if (NULL != context.get_proctype())
@@ -54,7 +56,7 @@ iCProcStatusCheck::iCProcStatusCheck( const std::string& proc_name, bool active,
 		{
 			if (0 == (*i)->name.compare(proc_name))
 			{
-				std::cout << "id " << proc_name << " is proctype param" << std::endl;
+				//std::cout << "id " << proc_name << " is proctype param" << std::endl;//debug
 				proctype_param = *i;
 				proc_is_proctype_param = true;
 				break;

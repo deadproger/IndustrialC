@@ -16,7 +16,7 @@ ParserContext* parser_context = NULL; //externed in parser.h
 //=================================================================================================
 void iCProgram::gen_code(CodeGenContext& context)
 {
-	std::cout<<"iCProgram entered gen_code, procs size=" << procs.size() << std::endl;
+	//std::cout<<"iCProgram entered gen_code, procs size=" << procs.size() << std::endl;//debug
 	//stub definitions
 	context.to_code_fmt("%s\n\n", C_STUB_DEFS);
 
@@ -184,7 +184,7 @@ void iCProgram::gen_code(CodeGenContext& context)
 //=================================================================================================
 iCProgram::~iCProgram()
 {
-	std::cout << "iCProgram destructor called" << std::endl;
+	//std::cout << "iCProgram destructor called" << std::endl;//debug
 
 	//clear the hyperprocesses
 	for (iCHyperprocessMap::iterator i=hps.begin(); i!=hps.end(); i++)
@@ -206,20 +206,20 @@ iCProgram::~iCProgram()
 	for (iCVariablesList::iterator i=var_list.begin(); i!=var_list.end(); i++)
 		delete *i;
 
-	std::cout << "iCProgram: ended destructor" << std::endl;
+	//std::cout << "iCProgram: ended destructor" << std::endl;//debug
 }
 
 void iCProgram::add_proctype(iCProcType* proctype)
 {
-    //printf("entered add_proctype\n");
+    //printf("entered add_proctype\n");//NEFEDOV DEBUG
     if (NULL == proctype)
     {
-        std::cout << "iCProgram::add_proctype: NULL proctype" << std::endl;
+        //std::cout << "iCProgram::add_proctype: NULL proctype" << std::endl;//debug
         return;
     }
 	if (proctype_defined(proctype->name))
 	{
-		printf("iCProgram::add_proctype: proctype %s already exists\n", proctype->name.c_str());
+		//printf("iCProgram::add_proctype: proctype %s already exists\n", proctype->name.c_str());//NEFEDOV DEBUG
 		delete proctype;
 		return;
 	}
@@ -232,7 +232,7 @@ void iCProgram::add_proctype_instantiation(iCProcTypeInstantiation* instantiatio
 {
 	if (NULL == instantiation)
 	{
-		std::cout << "iCProgram::add_proctype_instantiation: NULL instantiation" << std::endl;
+		//std::cout << "iCProgram::add_proctype_instantiation: NULL instantiation" << std::endl;//debug
 		return;
 	}
 
@@ -248,11 +248,11 @@ void iCProgram::add_proctype_instantiation(iCProcTypeInstantiation* instantiatio
 //=================================================================================================
 void iCProgram::add_process( iCProcess* proc )
 {
-	printf("iCProgram entered add_process, name=%s\n", proc->name.c_str());
+	//printf("iCProgram entered add_process, name=%s\n", proc->name.c_str());//NEFEDOV DEBUG
 	//redefined process
 	if(NULL == proc)
 	{
-		std::cout<<"iCProgram::add_process: NULL proc"<<std::endl;
+		//std::cout<<"iCProgram::add_process: NULL proc"<<std::endl;//debug
 		return;
 	}
 

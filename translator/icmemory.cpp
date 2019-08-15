@@ -11,7 +11,7 @@
 #ifdef ICDEBUG
 
 unsigned long ptrs_index = 0;
-void* ptrs[0xffffff];
+void* ptrs[0xffffff];//16MB
 
 unsigned long num_allocated_ptrs = 0;
 inline void* ic_mem_new(std::size_t sz)
@@ -52,8 +52,8 @@ inline void ic_mem_delete(void* ptr)
 }
 
 //for C++11+ comment out the throws
-void* operator new(std::size_t sz)/*throw (std::bad_alloc)*/ {return ic_mem_new(sz);} //modify these lines
-void* operator new[](std::size_t sz)/*throw (std::bad_alloc)*/ {return ic_mem_new(sz);} //modify these lines
+void* operator new(std::size_t sz)throw (std::bad_alloc) {return ic_mem_new(sz);} //modify these lines
+void* operator new[](std::size_t sz)throw (std::bad_alloc) {return ic_mem_new(sz);} //modify these lines
 void operator delete(void* ptr)throw (){ic_mem_delete(ptr);} //these lines shouldn't be modified
 void operator delete[](void* ptr)throw (){ic_mem_delete(ptr);} //these lines shouldn't be modified
 
