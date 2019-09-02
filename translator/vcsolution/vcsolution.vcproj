@@ -266,6 +266,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\iCIdentifierInProcType.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCIdentifierInProcType.h"
+					>
+				</File>
+				<File
 					RelativePath="..\iCInteger.cpp"
 					>
 				</File>
@@ -311,6 +319,14 @@
 				</File>
 				<File
 					RelativePath="..\iCProcStatusCheck.h"
+					>
+				</File>
+				<File
+					RelativePath="..\iCProcTypeParamUsage.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\iCProcTypeParamUsage.h"
 					>
 				</File>
 				<File

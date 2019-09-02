@@ -1,5 +1,7 @@
 @echo --------------------------------Build------------------------------------
 del industrialc.exe
+del parser.cpp
+del parser.hpp
 win_bison --report=all --report-file=bisonreport -d -o parser.cpp parser.y 
 win_flex -otokens.cpp tokens.l 
 win_bison --report=all --report-file=bisonprepreport -d -oprep_parser.cpp prep_parser.y 

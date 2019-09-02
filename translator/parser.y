@@ -555,8 +555,9 @@ proctype_param_list: proctype_param_list TCOMMA TIDENTIFIER
 			};
 
 //process type instantiation
-proctype_instantiation: TIDENTIFIER TIDENTIFIER TLPAREN TRPAREN TSEMIC
-						{
+//with no arguments
+proctype_instantiation: TIDENTIFIER TIDENTIFIER TLPAREN TRPAREN // 1 2 3 4
+						{// 5
 							//printf("parser: entered proctype_instantiation rule\n");//NEFEDOV DEBUG
 							//check for process redefinition
 							const iCScope* scope = parser_context->get_proc_scope(*$2);
@@ -568,18 +569,44 @@ proctype_instantiation: TIDENTIFIER TIDENTIFIER TLPAREN TRPAREN TSEMIC
 							}
 
 							iCIdentifierList* empty_arg_list = new iCIdentifierList();
-							$$ = new iCProcTypeInstantiation(ic_program, *$1, *$2, *empty_arg_list, *parser_context);
-							$$->set_hp("background"); //todo: other hyperprocesses
+							$<proctype_instantiation>$ = new iCProcTypeInstantiation(ic_program, *$1, *$2, *empty_arg_list, *parser_context);
+							//$$->set_hp("background"); //todo: other hyperprocesses
 							parser_context->add_proc_to_scope(*$2);
-							parser_context->add_to_second_pass($$);
+							parser_context->add_to_second_pass($<proctype_instantiation>$);
+
+							//delete $6;//TODO: use the hp name 
 
 							delete $1;
 							delete $2;
 							delete empty_arg_list;
-							$3; $4; $5;
+							$3; $4;
 						}
-						| TIDENTIFIER TIDENTIFIER TLPAREN ident_list TRPAREN TSEMIC
+						TCOLON TIDENTIFIER TSEMIC// 6 7 8
 						{
+							$$ = $<proctype_instantiation>5;
+
+							//hyperprocess defined check - hp needs to be defined beforehand
+							//TODO: relax this requirement, check hp defined on second pass
+							if(!ic_program->hp_defined(*$7)){
+								parser_context->err_msg("undefined hyperprocess: %s", $7->c_str());
+							}
+							
+							//set process hp
+							$<proctype_instantiation>$->set_hp(*$7);
+
+							/*if($<process>3->is_isr_driven())
+								parser_context->enter_isr();*/
+
+							
+
+							delete $7;//hp name
+
+							$6;$8;
+						}
+
+						//with arguments
+						| TIDENTIFIER TIDENTIFIER TLPAREN ident_list TRPAREN // 1 2 3 4 5
+						{ // 6
 							//printf("parser: entered proctype_instantiation rule\n");//NEFEDOV DEBUG
 							//check for process redefinition
 							const iCScope* scope = parser_context->get_proc_scope(*$2);
@@ -589,17 +616,36 @@ proctype_instantiation: TIDENTIFIER TIDENTIFIER TLPAREN TRPAREN TSEMIC
 								parser_context->err_msg("process redefinition: %s already defined in %s",
 									$2->c_str(), scope->name.empty() ? "this scope" : scope->name.c_str());
 							}
-
-							$$ = new iCProcTypeInstantiation(ic_program, *$1, *$2, *$4, *parser_context);
-							$$->set_hp("background"); //todo: other hyperprocesses
+							$<proctype_instantiation>$ = new iCProcTypeInstantiation(ic_program, *$1, *$2, *$4, *parser_context);
+							//$$->set_hp("background"); //todo: other hyperprocesses
 							parser_context->add_proc_to_scope(*$2);
-							parser_context->add_to_second_pass($$);
+							parser_context->add_to_second_pass($<proctype_instantiation>$);
+							//delete $7;//TODO use hp name
 
 							delete $1;
 							delete $2;
 							delete $4;
-							$3; $5; $6;
-						};
+							$3; $5; //$6; $8;
+						}
+						TCOLON TIDENTIFIER TSEMIC// 7 8 9
+						{
+							$$ = $<proctype_instantiation>6;
+							//hyperprocess defined check - hp needs to be defined beforehand
+							//TODO: relax this requirement, check hp defined on second pass
+							if(!ic_program->hp_defined(*$8)){
+								parser_context->err_msg("undefined hyperprocess: %s", $8->c_str());
+							}
+							//set process hp
+							$<proctype_instantiation>$->set_hp(*$8);
+							/*if($<process>3->is_isr_driven())
+								parser_context->enter_isr();*/
+
+							
+							delete $8;//hp name
+							$7;$9;
+
+						}
+						;
 
 //iCIdentifierList*
 ident_list: ident_list TCOMMA TIDENTIFIER
@@ -1187,6 +1233,7 @@ primary_expr : TTRUE   {$$ = new iCLogicConst(true, *parser_context); $1;}
 							const iCProcType* proctype = parser_context->get_proctype();
 							if (NULL != proctype)
 							{
+								//search the proctype params ist for the id name
 								bool id_is_proctype_param = false;
 								iCProcTypeParamList params_list = proctype->get_params();
 								for (iCProcTypeParamList::iterator i = params_list.begin(); i != params_list.end(); i++)

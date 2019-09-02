@@ -51,14 +51,21 @@ void iCProcTypeInstantiation::gen_code(CodeGenContext& context)
 	}
 
 	//assign process instance arguments to proctype params
+	// a proctype has a single list of param objects, each param has a param name stored in iCIdentifier::name
+	// and a current "value" or argument name, stored in the original_value and scoped_value fields
+	// every time we gen code for instance, the value fields are rewritten (param name stays the same)
 	iCProcTypeParamList params = proctype->get_params();
 	for (std::pair<iCProcTypeParamList::iterator, iCIdentifierList::iterator> i(params.begin(), arg_list.begin());
 		i.first != params.end(); ++i.first, ++i.second)
 	{
 		(*i.first)->original_value = (*i.second)->name;
 		(*i.first)->scoped_value = (*i.second)->get_scoped_name();
+
+		//std::cout<<"name="<<(*i.first)->name<<"\t"<<"original_value="<<(*i.first)->original_value<<std::endl; //DEBUG
 	}
 
+	//gen state names enum
+	//TODO: state enums must be generated beforehand in global code
 	iCStateList state_list = proctype->get_states();
 	if (2 <= state_list.size())//proctype has states other than FS_START
 	{
@@ -78,6 +85,8 @@ void iCProcTypeInstantiation::gen_code(CodeGenContext& context)
 		context.to_code_fmt("};\n\n");
 	}
 
+	//gen declarations for process-declared variables
+	//TODO: process-declared vars have global semantics and must be declared beforehand in global code
 	iCVariablesList var_list = proctype->get_variables();
 	for (iCVariablesList::iterator i = var_list.begin(); i != var_list.end(); i++)
 	{

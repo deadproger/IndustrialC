@@ -30,7 +30,10 @@ public:
 	{
 		activator = hp_name;
 		if(0 != activator.compare("background"))
+		{
 			isr_driven = true;
+			//std::cout<<"isr_driven"<<std::endl;//DEBUG
+		}
 	}
 	void add_states(const iCStateList& states);
 	bool has_state(const std::string& state_name) const;
