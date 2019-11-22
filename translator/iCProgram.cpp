@@ -145,12 +145,26 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.indent_depth++;
 
 	//System time update
+	/*
 	context.to_code_fmt("\n");
 	context.indent();
 	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
 	context.indent_depth++;
 	context.indent();
 	context.to_code_fmt("%s", C_SYS_TIME_UPDATE);
+	context.to_code_fmt("\n");
+	context.indent_depth--;
+	context.indent();
+	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_END);
+	*/
+	//Changed cause the whole ic_ts_millis execution took too much time inside a critical section 20191122
+	context.to_code_fmt("\n");context.indent();
+	context.to_code_fmt("unsigned long sys_time_temp = ic_ts_millis();");
+	context.to_code_fmt("\n");context.indent();
+	context.to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
+	context.indent_depth++;
+	context.indent();
+	context.to_code_fmt("SysTime_cur = sys_time_temp;", C_SYS_TIME_UPDATE);
 	context.to_code_fmt("\n");
 	context.indent_depth--;
 	context.indent();
