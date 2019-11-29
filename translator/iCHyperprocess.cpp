@@ -4,6 +4,29 @@
 #include "ParserContext.h"
 
 
+int iCHyperprocess::wcet()
+{
+	std::cout<<"iCHyperprocess::wcet"<<std::endl;
+	int w=0;
+	for(iCProcessMap::iterator i=procs.begin();i!=procs.end();i++)
+	{
+		if(NULL != i->second)
+			w += (i->second)->wcet();
+	}
+	std::cout<<"iCHyperprocess \n"<<w<<std::endl;//debaga
+	return w;
+}
+
+std::vector<iCNode*> iCHyperprocess::get_issues()
+{
+	std::vector<iCNode*> issues;// = static_cast< std::vector<iCNode*> >(block_items);
+	for(iCProcessMap::iterator i=procs.begin();i!=procs.end();i++)
+	{
+		issues.push_back(i->second);
+	}
+	return issues;
+}
+
 //=================================================================================================
 //Code generator
 //=================================================================================================

@@ -11,6 +11,25 @@ class ParserContext;
 
 ParserContext* parser_context = NULL; //externed in parser.h
 
+int iCProgram::wcet()
+{
+	std::cout<<"iCProgram::wcet"<<std::endl;
+	int w = hps["background"]->wcet();
+	std::cout<<"iCProgram \n"<<w<<std::endl;//debaga
+	return w;
+		
+}
+
+std::vector<iCNode*> iCProgram::get_issues()
+{
+	std::vector<iCNode*> issues;// = static_cast< std::vector<iCNode*> >(block_items);
+	for(iCHyperprocessMap::iterator i=hps.begin();i!=hps.end();i++)
+	{
+		issues.push_back(i->second);
+	}
+	return issues;
+}
+
 //=================================================================================================
 //Code generator
 //=================================================================================================

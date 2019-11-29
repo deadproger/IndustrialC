@@ -26,6 +26,10 @@ public:
 	void set_params(const std::string& int_vec,
 					const std::string& int_reg,
 					const std::string& int_bit){int_vector = int_vec; int_ctrl_register = int_reg; int_ctrl_bit = int_bit;}
+					
+	virtual std::vector<iCNode*> get_issues();		
+
+	virtual int wcet();
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCHyperprocess activator: " + activator;}

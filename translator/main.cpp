@@ -88,6 +88,9 @@ int main(int argc, char **argv)
 			output_file.close();
 		}
 	}
+	
+	//int w = ic_program->wcet();
+	//std::cout<<"program wcrt is " << w << std::endl;
 
 	delete ic_program;
 	delete parser_context;

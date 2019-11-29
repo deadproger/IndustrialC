@@ -3,6 +3,33 @@
 #include "ParserContext.h"
 #include "iCState.h"
 
+int iCProcess::wcet()
+{
+	std::cout<<"iCProcess::wcet"<<std::endl;
+	int max_w = 0;
+	for(iCStateList::iterator i=states.begin();i!=states.end();i++)
+	{
+		if(NULL != *i)
+		{
+			int sw = (*i)->wcet();
+			if(max_w < sw)
+				max_w = sw;
+		}
+	}
+	std::cout<<"iCProcess \n"<<max_w<<std::endl;//debaga
+	return max_w;
+}
+
+std::vector<iCNode*> iCProcess::get_issues()
+{
+	std::vector<iCNode*> issues;// = static_cast< std::vector<iCNode*> >(block_items);
+	for(iCStateList::iterator i=states.begin();i!=states.end();i++)
+	{
+		issues.push_back(*i);
+	}
+	return issues;
+}
+
 //=================================================================================================
 //Code generator
 //=================================================================================================

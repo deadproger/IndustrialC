@@ -1,209 +1,43 @@
 
-#define F_CPU 16000000L
 
-#include "sorbiprep/atmega128.ih"
-
-$ #include <avr/io.h>
-$ #include <util/delay.h>
-$ #include <stdint.h>
-$ #include <stdio.h>
-$ #include <string.h>
-$ #include <stdlib.h>
-$ #include <math.h>
-
-#include "sorbiprep/globals.ih"
-#include "sorbiprep/spi.ih"
-#include "sorbiprep/ui_subroutines.ih"
-#include "sorbiprep/EEPROM.ih"
-#include "sorbiprep/ad7792.ih"
-#include "sorbiprep/adt7320.ih"
-
-void asdasd(int a, int b, int c);
-//=============================================================================
-//Процесс инициализации
-//=============================================================================
-process Initialization : background
+process blah : background
 {
-	//$int aasd, asd;
-	//$aasd = asd;
-	//$
-	
 	state FS_START
 	{
-		int a;$//aaasas
-		switch(a)
+		int a, b, c,d,e;
+		a = b+c;
+		a += a;
+		if(a)
 		{
-			case 1:
-				a = 1;
-			case 2:
-				a+=a;
-			case 3:
-				;
-		}
-	
-		restart;
-	
-		//Настройка направления работы выводов CS и выставление всех сигналов CS в 1
-		SPI_CS_PORT |= _BV(ADT7320_CS_PIN) | _BV(AD7792_CS_PIN) | _BV(DISPLAY_CS_PIN);
-		SPI_CS_DDR |= _BV(ADT7320_CS_PIN) | _BV(AD7792_CS_PIN) | _BV(DISPLAY_CS_PIN);//CS
-		SPI_CS_PORT |= _BV(ADT7320_CS_PIN) | _BV(AD7792_CS_PIN) | _BV(DISPLAY_CS_PIN);
-		
-		//Настройка направления работы портов для чтения с клавиатуры и вывода на светодиоды и звуковой излучатель
-		KEYBOARD_DDR = 0x00;
-		PORTA = 0xff;
-		LED_DDR = 0xff;
-		LED_PORT = 0x00;
-		BUZZER_DDR |= _BV(BUZZER_PIN);
-		
-		//Настройка вывода опорного сигнала сети на вход
-		MAINS_REF_DDR &= ~_BV(MAINS_REF_PIN);
-		
-		//Настройка выводов управления нагревателями
-		HEATER_DDR 	|= _BV(HEATER_A_PIN) | _BV(HEATER_B_PIN) | _BV(HEATER_C_PIN);
-		HEATER_PORT |= _BV(HEATER_A_PIN) | _BV(HEATER_B_PIN) | _BV(HEATER_C_PIN);
-		
-		//настройка внешнего прерывания INT5 на срабатывание по восходящему фронту сигнала синхронизации сети
-		EICRB |= _BV(ISC50) | _BV(ISC51);
-	
-		//Настройка таймера 2 для выдачи ШИМ 2.5кГц, скважность 2 (50%)
-		OCR2 = 127;
-		//TCCR2 = _BV(WGM21) | _BV(CS21) | _BV(CS20);//делитель 1/64, режим CTC (сброс по сравнению)
-		TCCR2 = _BV(WGM21) | _BV(WGM20) | _BV(CS21) | _BV(CS20);//делитель 1/1024, fast-pwm
-		
-		//Инициализация аппаратного SPI
-		SPI_DDR |= _BV(SPI_SCK) | _BV(SPI_MOSI) | _BV(SPI_SS);//MOSI, SCK, SS на выход
-		SPSR |= _BV(SPI2X);//двойная скорость SPI
-		SPCR = _BV(SPE) | _BV(MSTR) | _BV(CPOL) | _BV(CPHA);
-		
-		//Инициализация аппаратного USART
-		unsigned int ubrr = 8; //115200 baud
-		UBRR0H =  ubrr >> 8;
-		UBRR0L =  ubrr;
-		UCSR0B = _BV(TXEN0);
-		UCSR0C = _BV(UCSZ00) | _BV(UCSZ01);
-		
-		//Инициализация символьного индикатора
-		InitDisplay();
-		sprintf(Display_text,   "Инициализация   ");
-		sprintf(Display_line_2, "Подождите...    ");
-		
-		start process UpdateUI;
-		set state InitEEPROM;
-	}
-	
-	state InitEEPROM
-	{
-		//Запись значений параметров в энергонезависимую память при первом запуске
-		//Байт по адресу 0 служит для обнаружения ситуации первого запуска
-		unsigned int address = 0;
-		if(0 != EEPROM_read_byte(address))
-		{
-			restart;
-		
-			EEPROM_write_byte(address, 0); address += 1;
-			
-			for(int i=0;i<NUM_PORTS;i++)
+			if(a)
 			{
-				EEPROM_write_int(address, DEFAULT_TEMP		); address += 2;
-				EEPROM_write_int(address, DEFAULT_TIME		); address += 2;
-				EEPROM_write_int(address, DEFAULT_PORT_ZERO	); address += 2;
+				a;
+				b;
+			}
+			else
+			{
+				b;c;d;
+			}
+			
+			
+			if(c)
+			{
+				d=e-c;
+				d=e-c;
+				d=e-c;
+				d=e-c;
+				d=e-c;
+			}
+			else
+			{
+				e;
+			}
 				
-				EEPROM_write_float(address, DEFAULT_REG_PARAM_K 	); address += 4;
-				EEPROM_write_float(address, DEFAULT_REG_PARAM_DT	); address += 4; 
-				EEPROM_write_float(address, DEFAULT_REG_PARAM_KP	); address += 4;
-				EEPROM_write_float(address, DEFAULT_REG_PARAM_KI 	); address += 4;
-				EEPROM_write_float(address, DEFAULT_REG_PARAM_KD 	); address += 4;
-				EEPROM_write_float(address, DEFAULT_REG_PARAM_TQ 	); address += 4;
-			}
-			EEPROM_write_float(address, DEFAULT_INT_TEMP_CALIB_OFFSET	); address += 4;
 		}
-		
-		//Чтение значений параметров из энергонезависимой памяти
-		address = 1;
-		for(int i=0;i<NUM_PORTS;i++)
+		else
 		{
-			DegasTemp[i]	 	= EEPROM_read_int(address); address += 2;
-			DegasTime[i] 		= EEPROM_read_int(address); address += 2;
-			port_zero_values[i] = EEPROM_read_int(address); address += 2;
-			for(int j=0;j<NUM_REG_PARAMS;j++)
-			{
-				port_reg_params[i][j] = EEPROM_read_float(address); address += 4;
-			}
+			a++;
 		}
-		int_temp_calib_offset = EEPROM_read_float(address);
-		set state InitADC;
-	}
-	
-	state InitADC
-	{	
-		ADT7320_Init();
 		
-		//Запуск процесса чтения температуры внутри станции
-		start process ReadIntTemp;
-		
-		//Инициализация и калибровка АЦП AD7792
-		AD7792_Reset();
-		AD7792_CalibrateChannel(AD7792_CHANNEL0);
-		AD7792_CalibrateChannel(AD7792_CHANNEL1);
-		AD7792_CalibrateChannel(AD7792_CHANNEL2);
-		
-		//Запуск процессов чтения температуры с АЦП
-		start process ReadADC;
-		start process ReadTempPortA;
-		start process ReadTempPortB;
-		start process ReadTempPortC;
-
-		set state WaitDataCorrect;
-	}
-	state WaitDataCorrect
-	{
-		timeout(1000)
-		{
-			start process ButtonUp;
-			start process ButtonDown;
-			start process ButtonsUpDownHoldDetect;
-			start process ButtonA;
-			start process ButtonB;
-			start process ButtonC;
-			start process ButtonEnter;
-			start process UI_Menu;
-			start process UI_Setup_Switching;
-			
-			//Процессы управления нагревателями работают все время
-			//Вне процесса дегазации задана нулевая мощность
-			start process PortA_Brezenham;
-			start process PortB_Brezenham;
-			start process PortC_Brezenham;
-			start hyperprocess MAINS_REF_interrupt;
-			
-			start process TestPrint;
-			start process DisplayLine2;
-			
-			start process HeaterModelA;
-			start process HeaterModelB;
-			start process HeaterModelC;
-			
-			start process LongBuzz;
-			
-			stop process;//остановка процесса инициализации
-		}
 	}
 }
-
-#include "sorbiprep/adc.ih"
-#include "sorbiprep/ui.ih"
-#include "sorbiprep/Brezenham.ih"
-#include "sorbiprep/temp_controlA.ih"
-#include "sorbiprep/temp_controlB.ih"
-#include "sorbiprep/temp_controlC.ih"
-#include "sorbiprep/print.ih"
-
-
-
-
-
-
-
-
-
-

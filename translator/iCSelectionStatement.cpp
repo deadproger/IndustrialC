@@ -2,6 +2,22 @@
 #include "CodeGenContext.h"
 #include "ParserContext.h"
 
+int iCIfElseStatement::wcet()
+{
+	//body
+	//else_body
+	int w;
+	int w1 = body->wcet();
+	int w2 = else_body->wcet();
+	if(w1 > w2)
+		w = w1;
+	else 
+		w = w2;
+	std::cout<<"iCIfElseStatement "<<w<<std::endl;//debaga
+	return w;
+}
+
+
 //=================================================================================================
 //
 //=================================================================================================

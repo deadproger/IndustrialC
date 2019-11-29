@@ -1,6 +1,18 @@
 #include "iCCompoundStatement.h"
 #include "CodeGenContext.h"
 
+int iCCompoundStatement::wcet()
+{
+	
+	int w = 0;
+	for(iCBlockItemsList::iterator i=block_items.begin();i!=block_items.end();i++)
+	{
+		w += (*i)->wcet();
+	}
+	std::cout<<"iCCompoundStatement "<<w<<std::endl;//debaga
+	return w;
+}
+
 //=================================================================================================
 //
 //=================================================================================================

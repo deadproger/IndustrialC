@@ -35,6 +35,10 @@ public:
 	void set_isr_driven(){isr_driven = true;}
 	bool has_timeout(){return NULL != timeout;}
 	void gen_timeout_code(CodeGenContext& context);
+	
+	virtual std::vector<iCNode*> get_issues();
+	
+	virtual int wcet();
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCState name: " + name;}

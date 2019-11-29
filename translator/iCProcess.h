@@ -41,6 +41,10 @@ public:
 	virtual void gen_code(CodeGenContext& context);
 	void gen_timeout_code(CodeGenContext& context);
 	bool has_timeouts()const{return _has_timeouts;}
+	
+	virtual std::vector<iCNode*> get_issues();	
+	
+	virtual int wcet();
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCVariable name: " + name;}

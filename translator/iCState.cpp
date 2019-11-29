@@ -4,6 +4,42 @@
 #include "ParserContext.h"
 #include "iCTimeout.h"
 
+
+int iCState::wcet()
+{
+	std::cout<<"iCState::wcet"<<std::endl;
+	int w = 0;
+	for(iCBlockItemsList::iterator i=block_items.begin();i!=block_items.end();i++)
+	{
+		if(NULL != *i)
+			w += (*i)->wcet();
+	}
+	std::cout<<"iCState \n"<<w<<std::endl;//debaga
+	return w;
+}
+
+
+std::vector<iCNode*> iCState::get_issues()
+{
+	std::vector<iCNode*> issues;// = static_cast< std::vector<iCNode*> >(block_items);
+	for(iCBlockItemsList::iterator i=block_items.begin();i!=block_items.end();i++)
+	{
+		issues.push_back(*i);
+	}
+	
+	if(NULL != timeout)
+	{
+		issues.push_back(timeout);
+	}
+	
+	return issues;
+	
+	/*
+	
+	*/
+
+}
+
 //=================================================================================================
 //Code generator
 //=================================================================================================

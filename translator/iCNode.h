@@ -27,6 +27,10 @@ public:
 
 	virtual void gen_code(CodeGenContext& context) = 0;
 	virtual void second_pass() {}
+	
+	virtual std::vector<iCNode*> get_issues() {};
+	
+	virtual int wcet() {return 0;};
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCNode";}

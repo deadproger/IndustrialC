@@ -31,6 +31,8 @@ public:
 		: iCSelectionStatement(context, body, expr), iCNode(context), else_body(else_body) {}
 	virtual ~iCIfElseStatement();
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual int wcet();
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCIfElseStatement";}

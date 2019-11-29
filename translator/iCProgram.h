@@ -50,6 +50,10 @@ public:
 	const iCProcess* find_proc(const std::string& proc_name)const;
 	virtual void gen_code(CodeGenContext& context);
 	virtual void second_pass() {}
+	
+	virtual std::vector<iCNode*> get_issues();
+	
+	virtual int wcet();
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCProgram"}
