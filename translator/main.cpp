@@ -21,6 +21,7 @@ extern bool had_errors;
 extern bool gen_line_markers;
 
 //std::set<ProcGraphNode> proc_graph;//DOT graph test
+int wcet(iCNode* node);
 
 int main(int argc, char **argv)
 {

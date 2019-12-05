@@ -19,6 +19,8 @@ public:
 						 const ParserContext& context);
 	virtual ~iCIterationStatement();
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual ICNODE_TYPE node_type() { return ICITERATIONSTATEMENT; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCIterationStatement";}

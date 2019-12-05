@@ -15,6 +15,8 @@ public:
 	iCCastExpression(const std::string& type_name, iCExpression* expr, const ParserContext& context);
 	~iCCastExpression();
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual ICNODE_TYPE node_type() { return ICCASTEXPRESSION; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCCastExpression";}

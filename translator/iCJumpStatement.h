@@ -17,6 +17,8 @@ public:
 	virtual ~iCJumpStatement();
 
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual ICNODE_TYPE node_type() { return ICJUMPSTATEMENT; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCJumpStatement";}

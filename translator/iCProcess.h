@@ -45,6 +45,8 @@ public:
 	virtual std::vector<iCNode*> get_issues();	
 	
 	virtual int wcet();
+	
+	virtual ICNODE_TYPE node_type() { return ICPROCESS; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCVariable name: " + name;}

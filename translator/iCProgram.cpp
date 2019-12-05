@@ -13,9 +13,9 @@ ParserContext* parser_context = NULL; //externed in parser.h
 
 int iCProgram::wcet()
 {
-	std::cout<<"iCProgram::wcet"<<std::endl;
+	//std::cout<<"iCProgram::wcet"<<std::endl;
 	int w = hps["background"]->wcet();
-	std::cout<<"iCProgram \n"<<w<<std::endl;//debaga
+	//std::cout<<"iCProgram \n"<<w<<std::endl;//debaga
 	return w;
 		
 }

@@ -1,0 +1,14 @@
+#define PORT_TEMP_EEPROM_ADDR(port) 				(1 + port * ( 2 * 3 +  4 * NUM_REG_PARAMS))
+#define PORT_TIME_EEPROM_ADDR(port) 				(1 + port * ( 2 * 3 +  4 * NUM_REG_PARAMS) + 2)
+PORT_TIME_EEPROM_ADDR(UI_port)
+
+
+//asdasdasdasd
+//qweqweqeqweqwe
+//qwetgdasdsgssss
+
+//fqergyjyresfg
+//ergynddfgeeeee
+
+//asdfwweere
+

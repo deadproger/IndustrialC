@@ -6,14 +6,14 @@
 
 int iCHyperprocess::wcet()
 {
-	std::cout<<"iCHyperprocess::wcet"<<std::endl;
+	//std::cout<<"iCHyperprocess::wcet"<<std::endl;
 	int w=0;
 	for(iCProcessMap::iterator i=procs.begin();i!=procs.end();i++)
 	{
 		if(NULL != i->second)
 			w += (i->second)->wcet();
 	}
-	std::cout<<"iCHyperprocess \n"<<w<<std::endl;//debaga
+	//std::cout<<"iCHyperprocess \n"<<w<<std::endl;//debaga
 	return w;
 }
 

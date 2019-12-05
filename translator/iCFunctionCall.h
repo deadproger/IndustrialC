@@ -19,6 +19,8 @@ public:
 	~iCFunctionCall();
 	void set_args(const std::vector<iCExpression*>& arguments) { args = arguments; }
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual ICNODE_TYPE node_type() { return ICFUNCTIONCALL; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCFunctionCall";}

@@ -20,6 +20,8 @@ public:
 	virtual void gen_code(CodeGenContext& context);
 	void second_pass();
 
+	virtual ICNODE_TYPE node_type() { return ICPROCSTATUSCHECK; }
+
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCProcStatusCheck";}
 #endif//DEBUG

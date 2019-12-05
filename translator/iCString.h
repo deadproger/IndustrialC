@@ -16,6 +16,8 @@ public:
 	iCString(const std::string& str, const ParserContext& context);
 	~iCString(){}
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual ICNODE_TYPE node_type() { return ICSTRING; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCString";}

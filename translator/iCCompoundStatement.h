@@ -20,6 +20,8 @@ public:
 	iCBlockItemsList& get_block_items(){return block_items;}//a crutch
 	
 	virtual int wcet();
+	
+	virtual ICNODE_TYPE node_type() { return ICCOMPOUNDSTATEMENT; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCCompoundStatement";}

@@ -12,6 +12,8 @@ public:
 	iCUnaryExpression(const std::string& op, iCExpression* expr, const ParserContext& context) : op(op), expr(expr), iCNode(context) {}
 	~iCUnaryExpression();
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual ICNODE_TYPE node_type() { return ICUNARYEXPRESSION; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCUnaryExpression";}

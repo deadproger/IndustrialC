@@ -16,6 +16,8 @@ public:
 	virtual ~iCTimeout();
 	void set_items(const iCBlockItemsList& items) {body = items;}
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual ICNODE_TYPE node_type() { return ICTIMEOUT; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCTimeout";}

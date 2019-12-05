@@ -18,6 +18,8 @@ public:
 	{	std::cout<<"iCExpressionStatement\n";//debaga
 		return 1;
 	}//STUB
+	
+	virtual ICNODE_TYPE node_type() { return ICEXPRESSIONSTATEMENT; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCExpressionStatement";}

@@ -14,6 +14,8 @@ public:
 	iCExpression *expr; // owns
 	iCSelectionStatement( const ParserContext& context, iCStatement *body, iCExpression *expr );
 	virtual ~iCSelectionStatement();
+	
+	virtual ICNODE_TYPE node_type() { return ICSELECTIONSTATEMENT; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCSelectionStatement";}
@@ -33,6 +35,8 @@ public:
 	virtual void gen_code(CodeGenContext& context);
 	
 	virtual int wcet();
+	
+	virtual ICNODE_TYPE node_type() { return ICIFELSESTATEMENT; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCIfElseStatement";}
@@ -47,6 +51,8 @@ class iCSwitchStatement : public iCSelectionStatement
 public:
 	iCSwitchStatement( const ParserContext& context, iCStatement *body, iCExpression *expr ) :	iCSelectionStatement (context, body, expr), iCNode(context) {}
 	virtual void gen_code(CodeGenContext& context);
+
+	virtual ICNODE_TYPE node_type() { return ICSWITCHSTATEMENT; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCSwitchStatement";}

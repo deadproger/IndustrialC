@@ -13,6 +13,8 @@ public:
 	iCPrimaryExpression(iCExpression* expr, const ParserContext& context) : expr(expr), iCNode(context) {}
 	 ~iCPrimaryExpression();
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual ICNODE_TYPE node_type() { return ICPRIMARYEXPRESSION; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCPrimaryExpression";}

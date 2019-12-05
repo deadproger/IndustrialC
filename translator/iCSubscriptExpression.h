@@ -22,6 +22,8 @@ public:
 	~iCSubscriptExpression();
 	virtual void gen_code(CodeGenContext& context);
 
+	virtual ICNODE_TYPE node_type() { return ICSUBSCRIPTEXPRESSION; }
+
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCSubscriptExpression";}
 #endif//DEBUG

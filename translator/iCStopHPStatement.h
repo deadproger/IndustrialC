@@ -19,4 +19,6 @@ public:
 	virtual ~iCStopHPStatement(){}
 	virtual void gen_code(CodeGenContext& context);
 	virtual void second_pass();
+	
+	virtual ICNODE_TYPE node_type() { return ICSTOPHPSTATEMENT; }
 };

@@ -9,6 +9,69 @@ class iCIdentifierInProcType;
 class iCProcTypeParam;
 class iCProcTypeInstantiation;
 
+enum ICNODE_TYPE
+{
+	CCODE 						,
+	CCODELINE 					,
+
+	ICASSIGNMENTEXPRESSION 		,
+	ICBINARYEXPRESSION     		,
+	ICCASTEXPRESSION 			,
+	ICDOUBLE         			,
+	ICEXPRESSION 				,
+	ICPOSTFIXEXPRESSION         ,
+	ICPRIMARYEXPRESSION         ,
+	ICIDENTIFIER                ,
+	ICSTRING                    ,
+	ICSUBSCRIPTEXPRESSION       ,
+	ICLOGICCONST                ,
+	ICINTEGER 					,
+	ICUNARYEXPRESSION       	,
+	ICPROCSTATUSCHECK       	,
+                            	
+	ICATOMICBLOCK           	,
+	CCODESTATEMENT          	,
+	ICCASESTATEMENT         	,
+	ICCOMPOUNDSTATEMENT 		,
+	ICDEFAULTSTATEMENT  		,
+	ICEXPRESSIONSTATEMENT 		,
+	ICFUNCTIONCALL      		,
+	ICIFELSESTATEMENT   		,
+	ICITERATIONSTATEMENT		, 
+	ICJUMPSTATEMENT     		,
+	ICRESETTIMEOUTSTATEMENT 	,
+	ICRESTARTSTATEMENT      	,
+	ICSELECTIONSTATEMENT    	,
+	ICSTARTHPSTATEMENT      	,
+	ICSTARTPROCSTATEMENT    	,
+	ICSTATEMENT             	,
+	ICSTATETRANSITION       	,
+	ICSTOPHPSTATEMENT 			,
+	ICSTOPPROCSTATEMENT     	,
+	ICSWITCHSTATEMENT       	,
+	ICTIMEOUT               	,
+                            	
+	ICDECLARATION           	,
+	ICFUNCTION              	,
+	ICHYPERPROCESS 				,
+	ICINITIALIZER           	,
+	ICMCUIDENTIFIER         	,
+	ICNODE                  	,
+	ICPROCESS               	,
+	ICPROGRAM               	,
+	ICPROGRAMITEM           	,
+	ICPROGRAMITEMSLIST 			,
+	ICSTATE                 	,
+	ICVARIABLE              	,
+	ICVARIABLEDECLARATION   	,
+                            	
+	ICIDENTIFIERINPROCTYPE  	,
+	ICPROCTYPE              	,
+	ICPROCTYPEINSTANTIATION 	,
+	ICPROCTYPEPARAM 			,
+	ICPROCTYPEPARAMUSAGE 		,
+};
+
 //=================================================================================================
 //Base class for all AST nodes
 //=================================================================================================
@@ -28,9 +91,11 @@ public:
 	virtual void gen_code(CodeGenContext& context) = 0;
 	virtual void second_pass() {}
 	
-	virtual std::vector<iCNode*> get_issues() {};
+	virtual std::vector<iCNode*> get_issues() {std::vector<iCNode*> issues; return issues;};
 	
-	virtual int wcet() {return 0;};
+	virtual int wcet() { return 0; }
+	
+	virtual ICNODE_TYPE node_type() { return ICNODE; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCNode";}

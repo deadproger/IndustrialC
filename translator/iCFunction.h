@@ -31,6 +31,8 @@ public:
 	}
 	void set_params(const iCVariablesList& params_list) { params = params_list; }
 	virtual void gen_code(CodeGenContext& context);
+	
+	virtual ICNODE_TYPE node_type() { return ICFUNCTION; }
 
 #ifdef DEBUG
 	virtual const std::string& identify() const { return "iCFunction name: " + name;}
