@@ -33,7 +33,15 @@ class ParserContext
 	unsigned long start_col;
 	unsigned long end_col;
 	std::string filename;
+	
+	std::string pre_comment;
+	std::string post_comment;
+	int latest_token;
+	
 public:
+
+	bool had_token_since_newline;//used to discern between pre- and post- types of annotating comments
+
 	//used for critical section placement decisions
 	bool in_isr() const {return _in_isr && !_in_timeout;}
 	void enter_isr() {_in_isr = true;}
@@ -74,7 +82,7 @@ public:
 		second_pass_nodes.insert(node);
 	}
 
-	void inc_line_num() {line_num++; end_col = start_col = 1;}
+	void inc_line_num() { line_num++; end_col = start_col = 1; had_token_since_newline = false; }
 	void inc_column(int shift){start_col = end_col; end_col += shift;}
 	void dec_column(int shift){start_col = end_col; end_col -= shift;}
 	void to_prev_column(){end_col = start_col;}
@@ -83,6 +91,12 @@ public:
 	void reset_column() {start_col = end_col = 1;}
 	void set_file(const std::string& filename) {this->filename = filename;}
 	const std::string& file_name() const {return filename;}
+	
+	void set_latest_token(int token) { latest_token=token; had_token_since_newline = true; }//called in TOKEN macro in lexer
+	void set_pre_comment(const std::string& cmt) { pre_comment = cmt; }
+	void set_post_comment(const std::string& cmt) { post_comment = cmt; }
+	const std::string grab_pre_comment() { std::string rtv =  pre_comment; pre_comment.clear(); return rtv; } 
+	const std::string grab_post_comment() { std::string rtv =  post_comment; post_comment.clear(); return rtv; } 
 
 	void err_msg(const char* format, ...)const;
 

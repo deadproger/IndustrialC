@@ -124,7 +124,7 @@ void CodeGenContext::atomic_header()
 	indent();
 	to_code_fmt("%s\n", C_ATOMIC_BLOCK_START);
 	indent_depth++;
-	indent();
+	//indent();
 }
 
 //=================================================================================================

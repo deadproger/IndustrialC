@@ -28,6 +28,9 @@ iCSelectionStatement::iCSelectionStatement( const ParserContext& context, iCStat
 {
 	if(NULL != expr)
 		line_num = expr->line_num;
+	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }
 
 //=================================================================================================
@@ -35,6 +38,14 @@ iCSelectionStatement::iCSelectionStatement( const ParserContext& context, iCStat
 //=================================================================================================
 void iCIfElseStatement::gen_code( CodeGenContext& context )
 {
+	//Add pre comment
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
+	
 	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 

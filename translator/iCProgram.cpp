@@ -11,6 +11,8 @@ class ParserContext;
 
 ParserContext* parser_context = NULL; //externed in parser.h
 
+//extern bool procs_as_funcs;
+
 int iCProgram::wcet()
 {
 	//std::cout<<"iCProgram::wcet"<<std::endl;
@@ -128,6 +130,15 @@ void iCProgram::gen_code(CodeGenContext& context)
 	context.to_code_fmt("%s %s[%s];\n\n", C_PROC_DATA_STRUCT_NAME, C_PROC_ARRAY_NAME, C_PROC_ENUM_NUM);
 	context.indent_depth--;
 
+	//gen proc functions for all procs in the program and timeouts for ISR-driven procs
+	if(context.procs_as_funcs)
+	{
+		for(iCHyperprocessMap::iterator i=hps.begin();i!=hps.end();i++)
+		{
+			i->second->gen_proc_funcs(context);
+		}
+	}
+
 	//interrupt hyperprocesses
 	for(iCHyperprocessMap::iterator i=hps.begin();i!=hps.end();i++)
 	{
@@ -139,7 +150,7 @@ void iCProgram::gen_code(CodeGenContext& context)
 				std::cout<<"warning: hyperprocess "<< hp->activator <<" has no processes defined"<<std::endl;
 			}
 			if("background" != hp->activator)
-				i->second->gen_code(context);
+				hp->gen_code(context);
 		}
 	}
 

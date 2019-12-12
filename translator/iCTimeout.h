@@ -11,7 +11,7 @@ class iCTimeout : public iCStatement
 	iCExpression* period; // owns
 	iCBlockItemsList body; // owns
 public:
-	iCTimeout(iCExpression* period, const ParserContext& context) : period(period), iCNode(context) {}
+	iCTimeout(iCExpression* period, const ParserContext& context);
 	//iCTimeout(const iCTimeout& timeout);
 	virtual ~iCTimeout();
 	void set_items(const iCBlockItemsList& items) {body = items;}

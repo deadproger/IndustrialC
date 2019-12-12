@@ -19,6 +19,8 @@ std::string output_filename = "output.cpp";
 extern ParserContext* parser_context;
 extern bool had_errors;
 extern bool gen_line_markers;
+bool procs_as_funcs = false;
+bool retain_comments = false;
 
 //std::set<ProcGraphNode> proc_graph;//DOT graph test
 int wcet(iCNode* node);
@@ -35,6 +37,10 @@ int main(int argc, char **argv)
 	for(int i=1;i<argc-1;i++)
 		if("-no-line-markers" == std::string(argv[i]))
 			gen_line_markers = false;
+		else if("-procs-as-funcs" == std::string(argv[i]))
+			procs_as_funcs = true;
+		else if("-retain-comments" == std::string(argv[i]))
+			retain_comments = true;
 		else if("-o" == std::string(argv[i]) && i+1 < argc)
 			output_filename = argv[++i];
 
@@ -84,6 +90,8 @@ int main(int argc, char **argv)
 			std::ofstream output_file;
 			output_file.open(output_filename.c_str());
 			CodeGenContext context(output_file, ic_program->get_hps());
+			context.procs_as_funcs = procs_as_funcs;
+			context.retain_comments = retain_comments;
 			std::cout << "generating code..." << std::endl;
 			ic_program->gen_code(context);
 			output_file.close();

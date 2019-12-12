@@ -32,6 +32,14 @@ void iCStartHPStatement::gen_code( CodeGenContext& context )
 	if(NULL == hp) 
 		return;
 
+	//Add pre comment
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
+	
 	//add atomic block if in background loop
 	if(!context.in_ISR())
 		context.atomic_header();
@@ -39,7 +47,7 @@ void iCStartHPStatement::gen_code( CodeGenContext& context )
 	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 	context.indent();
-	context.to_code_fmt("SET_BIT(%s, %s);\n", hp->int_ctrl_register.c_str(), hp->int_ctrl_bit.c_str());
+	context.to_code_fmt("SET_BIT(%s, %s);", hp->int_ctrl_register.c_str(), hp->int_ctrl_bit.c_str());
 
 	//atomic block footer
 	if(!context.in_ISR())
@@ -55,4 +63,7 @@ iCStartHPStatement::iCStartHPStatement( const std::string& hp_name, const Parser
 		iCNode(context)
 {
 	line_num = context.line();
+	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }

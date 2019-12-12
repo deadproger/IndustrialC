@@ -30,6 +30,54 @@ std::vector<iCNode*> iCProcess::get_issues()
 	return issues;
 }
 
+/*
+//=================================================================================================
+//Alternative code generator - generates process code as an inline function
+//=================================================================================================
+void iCProcess::gen_code_func(CodeGenContext& context)
+{
+	//update context
+	context.process = this;
+
+	//Add comments
+	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
+	context.to_code_fmt("//Process: %s\n", name.c_str());
+	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
+	
+	//Add pre comment
+	context.to_code_fmt("%s", pre_comment.c_str());
+	
+	//Function header
+	context.to_code_fmt("inline void %s()\n{\n", name.c_str());
+	context.indent_depth++;
+	
+	context.set_location(line_num, filename);
+	
+	//Process header
+	context.indent();
+	context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME, name.c_str(), C_STATE_FUNC_ATTR_NAME);
+	context.indent();
+	context.to_code_fmt("{\n");
+	context.indent_depth++;
+
+	//states
+	for(iCStateList::iterator i=states.begin();i!=states.end();i++)
+		(*i)->gen_code(context);
+
+	//process footer
+	context.indent_depth--;
+	context.indent();
+	context.to_code_fmt("}  //process %s\n\n", name.c_str());
+	
+	//Function footer
+	context.indent_depth--;
+	context.to_code_fmt("}\n");
+
+	//update context
+	context.process = NULL;
+}
+*/
+
 //=================================================================================================
 //Code generator
 //=================================================================================================
@@ -48,8 +96,22 @@ void iCProcess::gen_code(CodeGenContext& context)
 	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
 	context.to_code_fmt("//Process: %s\n", name.c_str());
 	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
+	
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		//Add pre comment
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
+	
+	if(context.procs_as_funcs)
+	{
+		//Function header
+		context.to_code_fmt("inline void %s_proc()\n{\n", name.c_str());
+		context.indent_depth++;
+	}
+	
 	context.set_location(line_num, filename);
-
+	
 	//Process header
 	context.indent();
 	context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME, name.c_str(), C_STATE_FUNC_ATTR_NAME);
@@ -65,6 +127,13 @@ void iCProcess::gen_code(CodeGenContext& context)
 	context.indent_depth--;
 	context.indent();
 	context.to_code_fmt("}  //process %s\n\n", name.c_str());
+
+	if(context.procs_as_funcs)
+	{
+		//Function footer
+		context.indent_depth--;
+		context.to_code_fmt("}\n");
+	}
 
 	//update context
 	context.process = NULL;
@@ -91,6 +160,13 @@ void iCProcess::gen_timeout_code( CodeGenContext& context )
 	context.to_code_fmt("//Process %s timeouts\n", name.c_str());
 	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
 
+	if(context.procs_as_funcs)
+	{
+		//Function header
+		context.to_code_fmt("inline void %s_timeout()\n{\n", name.c_str());
+		context.indent_depth++;
+	}
+
 	//process header
 	context.indent();
 	context.to_code_fmt("switch(%s[%s].%s)\n", C_PROC_ARRAY_NAME, name.c_str(), C_STATE_FUNC_ATTR_NAME);
@@ -107,6 +183,13 @@ void iCProcess::gen_timeout_code( CodeGenContext& context )
 	context.indent_depth--;
 	context.indent();
 	context.to_code_fmt("}  //process %s\n\n", name.c_str());
+	
+	if(context.procs_as_funcs)
+	{
+		//Function footer
+		context.indent_depth--;
+		context.to_code_fmt("}\n");
+	}
 
 	//update context
 	context.process = NULL;
@@ -145,6 +228,9 @@ iCProcess::iCProcess( const std::string& name, const ParserContext& context ) :	
 	isr_referenced(false)
 {
 	line_num = context.line();
+	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }
 
 //=================================================================================================

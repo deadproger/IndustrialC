@@ -83,6 +83,9 @@ public:
 	unsigned long line_num;
 	unsigned long col_num;
 	std::string filename;
+	
+	std::string pre_comment;
+	std::string post_comment;
 
 	iCNode(){}
 	iCNode(const ParserContext& context);

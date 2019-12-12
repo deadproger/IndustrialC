@@ -27,6 +27,8 @@ public:
 					const std::string& int_reg,
 					const std::string& int_bit){int_vector = int_vec; int_ctrl_register = int_reg; int_ctrl_bit = int_bit;}
 					
+	void gen_proc_funcs( CodeGenContext& context );
+					
 	virtual std::vector<iCNode*> get_issues();		
 
 	virtual int wcet();

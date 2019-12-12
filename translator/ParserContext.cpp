@@ -20,7 +20,9 @@ ParserContext::ParserContext()
 		current_scope(NULL),
 		func(NULL),
 		_in_isr(false),
-		_in_timeout(false)
+		_in_timeout(false),
+		had_token_since_newline(false),
+		latest_token(0)
 {
 	current_scope = root_scope = new iCScope("program");
 }

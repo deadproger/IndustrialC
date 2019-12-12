@@ -13,7 +13,8 @@ iCJumpStatement::iCJumpStatement(const std::string& op,
 		op(op),
 		expr(expr)
 {
-	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }
 
 //=================================================================================================
@@ -21,6 +22,14 @@ iCJumpStatement::iCJumpStatement(const std::string& op,
 //=================================================================================================
 void iCJumpStatement::gen_code( CodeGenContext& context )
 {
+	//Add pre comment
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
+	
 	context.set_location(line_num, filename);
 	context.indent();
 	context.to_code_string(op);

@@ -55,6 +55,14 @@ void iCStartProcStatement::gen_code(CodeGenContext& context)
 
 	bool need_atomic_block = !context.in_ISR() && (started_proc->is_isr_driven() || started_proc->is_isr_referenced());
 
+	//Add pre comment
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
+
 	//add atomic block if in background loop
 	if(need_atomic_block)
 		context.atomic_header();
@@ -65,7 +73,7 @@ void iCStartProcStatement::gen_code(CodeGenContext& context)
 
 	/*if(in_isr)
 		context.to_code_fmt("//in ISR");*/
-	context.to_code_fmt("\n");
+	//context.to_code_fmt("\n");
 
 	//atomic block footer
 	if(need_atomic_block)
@@ -100,4 +108,7 @@ iCStartProcStatement::iCStartProcStatement( const std::string& proc_name, const 
 	}
 
 	line_num = context.line();
+	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }

@@ -12,12 +12,18 @@
 
 #include "parser.hpp"
 
-#define SAVE_TOKEN ic_lval.string = new std::string(ic_text, ic_leng)
-#define TOKEN(t) (ic_lval.token = t)
-//extern "C" int ic_wrap() { return 0; }
 extern ParserContext* parser_context;
 
+#define SAVE_TOKEN ic_lval.string = new std::string(ic_text, ic_leng)
+//#define TOKEN(t) (ic_lval.token = t)
+int TOKEN(int t) {parser_context->set_latest_token(t); return ic_lval.token = t;}
+
+//extern "C" int ic_wrap() { return 0; }
+
+
 const int IC_TAB_SIZE = 4;
+
+std::string comment_acc;//test
 
 #define YY_USER_ACTION parser_context->inc_column(ic_leng);
 
@@ -35,6 +41,9 @@ const int IC_TAB_SIZE = 4;
 
 
 %x SKIP_TO_NEWLINE
+
+%x comment
+%x inl_comment
 
 %%
 
@@ -189,7 +198,57 @@ const int IC_TAB_SIZE = 4;
 \$/\n						/*parser_context->inc_line_num();*/
 
 
+ /****************************************************************************/
+ /*                    C O M M E N T S                                       */
+ /****************************************************************************/
+ /*TODO: these comments can be stored for use in further translation*/
+"//".*						{ 
+								comment_acc.append(ic_text);//test
+								//if(pp_retain_comments)
+								//	fputs(yytext, output_file);
+								BEGIN(inl_comment);
+							}
+<inl_comment>\n				{  
+								comment_acc.append(ic_text);//test
+								if(parser_context->had_token_since_newline)
+									parser_context->set_post_comment(comment_acc);
+								else
+									parser_context->set_pre_comment(comment_acc);
+								comment_acc.clear();
+								parser_context->inc_line_num();
+								BEGIN(INITIAL);
+							}
+ /*merge consequent inline comments*/
+<inl_comment>\n[ \t]*"//".* { 
+								comment_acc.append(ic_text);//test
+								parser_context->inc_line_num();
+							} 
 
+"/*"				{ 
+						comment_acc.append(ic_text);
+						BEGIN(comment); 
+					}
+<comment>\n			{ 
+						comment_acc.append(ic_text);
+						parser_context->inc_line_num();
+					}
+<comment>.			{
+						comment_acc.append(ic_text);
+					}
+<comment>"*/"		{ 
+						comment_acc.append(ic_text);
+						if(parser_context->had_token_since_newline)
+							parser_context->set_post_comment(comment_acc);
+						else
+							parser_context->set_pre_comment(comment_acc);
+						comment_acc.clear();
+						BEGIN(INITIAL); 
+					}
+ /*merge consequent multiline comments*/
+<comment>"*/"[ \t]*\n?[ \t]*"/*" 	{
+										comment_acc.append(ic_text);
+										parser_context->inc_line_num();
+									} 
 
 .                       	printf("Unknown token at line %ul\n", parser_context->line()); yyterminate();
 

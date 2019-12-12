@@ -17,6 +17,9 @@ iCIterationStatement::iCIterationStatement(iCStatement* init,
 		body(body)
 {
 	line_num = init->line_num;
+	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }
 
 //=================================================================================================
@@ -28,6 +31,14 @@ void iCIterationStatement::gen_code( CodeGenContext& context )
 	std::cout<<"iCIterationStatement::gen_code ...";
 	std::cout.flush();
 #endif
+
+	//Add pre comment
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
 
 	context.set_location(line_num, filename);
 

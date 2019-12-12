@@ -3,6 +3,14 @@
 #include "iCProcess.h"
 #include "ParserContext.h"
 
+iCTimeout::iCTimeout(iCExpression* period, const ParserContext& context) 
+	:	period(period),
+		iCNode(context) 
+{
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
+}
+
 //=================================================================================================
 //Code generator
 //=================================================================================================
@@ -15,6 +23,14 @@ void iCTimeout::gen_code( CodeGenContext& context )
 	{
 		proc = context.proctype_instantiation;
 	}
+	
+	//Add pre comment
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
 
 	bool need_atomic_block = proc->is_isr_driven() || proc->is_isr_referenced();
 
@@ -23,6 +39,7 @@ void iCTimeout::gen_code( CodeGenContext& context )
 	{
 		//atomically fetch the process's time
 		context.atomic_header();
+		context.indent();
 		context.to_code_fmt("%s = %s[%s].%s;",	C_COMMON_BKG_PROC_TIME,
 												C_PROC_ARRAY_NAME,
 												proc->name.c_str(),

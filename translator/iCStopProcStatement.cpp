@@ -24,6 +24,14 @@ void iCStopProcStatement::second_pass()
 //=================================================================================================
 void iCStopProcStatement::gen_code(CodeGenContext& context)
 {
+	//Add pre comment
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
+	
 	context.set_location(line_num, filename);
 	context.indent();
 	if (stop_self_in_proctype) //if it's stopping self process from proctype when process instance name is unknown
@@ -48,7 +56,7 @@ void iCStopProcStatement::gen_code(CodeGenContext& context)
 	}
 	/*if(in_isr)
 		context.to_code_fmt("//in ISR");*/
-	context.to_code_fmt("\n");
+	//context.to_code_fmt("\n");
 }
 
 //=================================================================================================
@@ -81,6 +89,9 @@ iCStopProcStatement::iCStopProcStatement( const std::string& proc_name, const Pa
 	}
 
 	line_num = context.line();
+	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }
 
 //=================================================================================================

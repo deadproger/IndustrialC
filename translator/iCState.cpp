@@ -67,6 +67,13 @@ void iCState::gen_code(CodeGenContext& context)
 	//update context
 	context.state = this;
 
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		//Add pre comment
+		context.indent();
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
+
 	context.set_location(line_num, filename);
 
 	//state header
@@ -162,6 +169,9 @@ iCState::iCState( const std::string& name, const ParserContext& context )
 		timeout(NULL)
 {
 	line_num = context.line();
+	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }
 
 /*iCState::iCState(const iCState& state)

@@ -42,6 +42,8 @@ public:
 	void gen_timeout_code(CodeGenContext& context);
 	bool has_timeouts()const{return _has_timeouts;}
 	
+	//void gen_code_func(CodeGenContext& context);
+	
 	virtual std::vector<iCNode*> get_issues();	
 	
 	virtual int wcet();

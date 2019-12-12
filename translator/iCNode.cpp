@@ -11,6 +11,7 @@ iCNode::iCNode( const ParserContext& context )
 	col_num(context.column()),
 	filename(context.file_name())
 {
+	
 	//ICASSERT(!filename.empty());
 }
 

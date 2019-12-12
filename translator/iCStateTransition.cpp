@@ -23,6 +23,14 @@ void iCStateTransition::second_pass()
 //=================================================================================================
 void iCStateTransition::gen_code(CodeGenContext& context)
 {
+	//Add pre comment
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		context.to_code_fmt("\n");
+		context.indent();
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
+	
 	//context.to_code_fmt("\n");
 	context.set_location(line_num, filename);
 	context.indent();
@@ -61,5 +69,8 @@ iCStateTransition::iCStateTransition( const std::string& state_name, const Parse
 		warning_msg("state transition to the same state - use \"reset timeout;\" instead");
 	
 	line_num = context.line();
+	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }
 

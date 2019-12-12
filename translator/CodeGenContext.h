@@ -34,10 +34,10 @@ class CodeGenContext
 public:
 	CodeGenContext(std::ostream& code, const iCHyperprocessMap* hps)
 		:	process(NULL), state(NULL), indent_depth(0), code(code), hps(hps),
-			cur_line_num(0), _in_ISR(false), indent_enabled(true){}
+			cur_line_num(0), _in_ISR(false), indent_enabled(true), procs_as_funcs(false), retain_comments(false){}
 	CodeGenContext(std::ostream& code)
 		:	process(NULL), state(NULL), indent_depth(0), code(code), hps(NULL),
-			cur_line_num(0), _in_ISR(false), indent_enabled(true){}
+			cur_line_num(0), _in_ISR(false), indent_enabled(true), procs_as_funcs(false), retain_comments(false){}
 
 	std::string filename() const { return cur_filename; }
 	unsigned long line() const { return cur_line_num; }
@@ -69,4 +69,7 @@ public:
 
 	unsigned int indent_depth; //current indentation
 	bool indent_enabled;
+	
+	bool procs_as_funcs;
+	bool retain_comments;
 };

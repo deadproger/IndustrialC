@@ -3,6 +3,7 @@
 #include "CodeGenContext.h"
 #include "iCVariable.h"
 #include "iCCompoundStatement.h"
+#include "ParserContext.h"
 
 iCFunction::iCFunction( const std::string& name,
 						const iCScope* scope,
@@ -16,6 +17,9 @@ iCFunction::iCFunction( const std::string& name,
 	//functions don't need prefixes - they are all in global scope
 	//this also eases using C functions
 	full_name = /*scope->name + "_" + */name;
+	
+	//appropriate the currently pending pre comment
+	pre_comment = const_cast<ParserContext&>(context).grab_pre_comment();
 }
 
 iCFunction::~iCFunction()
@@ -43,6 +47,13 @@ void iCFunction::gen_code( CodeGenContext& context )
 	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
 	context.to_code_fmt("//Function: %s\n", name.c_str());
 	context.to_code_fmt("%s\n", C_COMMENT_FRAME);
+	
+	if(!pre_comment.empty() && context.retain_comments)
+	{
+		//Add pre comment
+		context.to_code_fmt("%s", pre_comment.c_str());
+	}
+	
 	context.set_location(line_num, filename);
 	context.indent();
 	
