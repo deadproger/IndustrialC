@@ -9,13 +9,10 @@ void iCExpressionStatement::gen_code(CodeGenContext& context)
 {
 	//Add pre comment
 	if(!pre_comment.empty() && context.retain_comments)
-	{
-		context.to_code_fmt("\n");
-		context.indent();
-		context.to_code_fmt("%s", pre_comment.c_str());
-	}
+		context.print_comment(pre_comment, line_num, filename);
+	else
+		context.set_location(line_num, filename);
 	
-	context.set_location(line_num, filename);
 	if(NULL != expr)
 	{
 		context.indent();

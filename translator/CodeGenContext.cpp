@@ -1,6 +1,44 @@
 #include "CodeGenContext.h"
+#include <sstream>
 
 bool gen_line_markers = true;
+
+const std::string WHITESPACE = " \t";
+
+//Trims leading spaces and tabs in a string
+std::string ltrim(const std::string& s) {
+	size_t start = s.find_first_not_of (WHITESPACE);
+	return (start == std::string::npos) ? "" : s.substr(start);
+}
+
+//=================================================================================================
+//Prints a precomment line-by-line with proper indentation, sets location for the following node
+//=================================================================================================
+void CodeGenContext::print_comment(const std::string& cmt, unsigned long line_num, const std::string& file)
+{
+	//Split the cmt string into a list of lines, trim the indentation
+	std::stringstream ss(cmt);
+	std::list<std::string> cmt_lines;
+	std::string cmt_line;
+	unsigned int cmt_num_lines = 0;
+	while(std::getline(ss, cmt_line, '\n'))
+	{
+		cmt_line = ltrim(cmt_line);//trim indentation
+		cmt_lines.push_back(cmt_line);
+		cmt_num_lines++;
+	}
+	
+	//Set location so that once we output the comments, the subsequent node is located properly
+	to_code_fmt("\n");
+	set_location(line_num - cmt_num_lines, file );
+	
+	//Output the comment batch line-by-line, adding proper indentation
+	for(std::list<std::string>::iterator i=cmt_lines.begin();i!=cmt_lines.end();i++)
+	{
+		indent();
+		to_code_fmt("%s\n", i->c_str());
+	}
+}
 
 //=================================================================================================
 //Adds num newlines to the code
@@ -64,13 +102,9 @@ void CodeGenContext::set_location( unsigned long line_num, const std::string& fi
 	else
 	{
 		if(line_num < cur_line_num)
-		{
 			place_line_marker(line_num);
-		}
 		else
-		{
 			add_new_lines(line_num - cur_line_num);
-		}
 	}
 }
 

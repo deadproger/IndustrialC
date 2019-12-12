@@ -14,7 +14,7 @@ const unsigned int CODEGEN_BUFFER_SIZE = 1024;
 //=================================================================================================
 //Code generation context
 //Used and updated by code generator methods
-//All code generation is done via this class
+//All code generation is done via a common object of this class
 //=================================================================================================
 class CodeGenContext
 {
@@ -49,6 +49,7 @@ public:
 	void to_code_fmt(const char* format, ...); //C style
 	void to_code(const std::string& str); //Only for code without newlines
 	void to_code_string(const std::string& str);//For code with newlines
+	void print_comment(const std::string& cmt, unsigned long line_num, const std::string& file);
 	void atomic_header();//adds atomic block header to code
 	void atomic_footer();//adds atomic block foother to code
 	void disable_indentation(){indent_enabled = false;}
